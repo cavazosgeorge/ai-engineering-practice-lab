@@ -30,6 +30,7 @@ export interface Challenge {
   orderIndex: number;
   testCases?: TestCase[];
   concept?: Concept & { lesson?: Lesson };
+  lastSubmission?: { code: string; passed: boolean } | null;
 }
 
 export interface TestCase {
@@ -93,7 +94,8 @@ export async function fetchLesson(slug: string): Promise<Lesson> {
 }
 
 export async function fetchChallenge(id: string): Promise<Challenge> {
-  const res = await fetch(`${API_BASE}/challenges/${id}`);
+  const sessionId = getSessionId();
+  const res = await fetch(`${API_BASE}/challenges/${id}?sessionId=${sessionId}`);
   if (!res.ok) throw new Error("Failed to fetch challenge");
   return res.json();
 }

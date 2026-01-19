@@ -57,7 +57,8 @@ export function ChallengePage() {
     fetchChallenge(id)
       .then((data) => {
         setChallenge(data);
-        setCode(data.starterCode || "");
+        // Use last submission if available, otherwise use starter code
+        setCode(data.lastSubmission?.code || data.starterCode || "");
       })
       .catch(console.error)
       .finally(() => setLoading(false));

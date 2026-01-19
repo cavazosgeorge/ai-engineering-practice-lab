@@ -16,9 +16,22 @@ import {
 
 const app = new Hono();
 
+// Submission row type
+interface SubmissionRow {
+  id: string;
+  session_id: string;
+  challenge_id: string;
+  code: string;
+  passed: number;
+  test_results: string;
+  execution_time_ms: number;
+  created_at: string;
+}
+
 // Get a single challenge with test cases (non-hidden only)
 app.get("/:id", (c) => {
   const id = c.req.param("id");
+  const sessionId = c.req.query("sessionId");
 
   const challenge = db
     .query<ChallengeRow, [string]>(`SELECT * FROM challenges WHERE id = ?`)
@@ -44,6 +57,24 @@ app.get("/:id", (c) => {
         .query<LessonRow, [string]>(`SELECT * FROM lessons WHERE id = ?`)
         .get(concept.lesson_id)
     : null;
+
+  // Get user's last submission if sessionId provided
+  let lastSubmission: { code: string; passed: boolean } | null = null;
+  if (sessionId) {
+    const submission = db
+      .query<SubmissionRow, [string, string]>(
+        `SELECT code, passed FROM submissions
+         WHERE session_id = ? AND challenge_id = ?
+         ORDER BY created_at DESC LIMIT 1`
+      )
+      .get(sessionId, id);
+    if (submission) {
+      lastSubmission = {
+        code: submission.code,
+        passed: submission.passed === 1,
+      };
+    }
+  }
 
   // Build response (exclude solution_code)
   return c.json({
@@ -75,6 +106,7 @@ app.get("/:id", (c) => {
             : null,
         }
       : null,
+    lastSubmission,
   });
 });
 
