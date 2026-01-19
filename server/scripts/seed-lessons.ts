@@ -49,9 +49,9 @@ Word-level tokenization splits text into individual words, mapping each unique w
 3. Convert text by looking up each word's ID
 
 ## Example
-\`\`\`javascript
-const vocab = { "hello": 0, "world": 1, "the": 2 };
-// "hello world" -> [0, 1]
+\`\`\`python
+vocab = {"hello": 0, "world": 1, "the": 2}
+# "hello world" -> [0, 1]
 \`\`\`
 
 ## Limitations
@@ -72,28 +72,27 @@ const vocab = { "hello": 0, "world": 1, "the": 2 };
       concept1_1Id,
       "implement",
       "Implement word-level encode()",
-      `Create an \`encode\` function that takes a string and a vocabulary mapping, and returns an array of token IDs.
+      `Create an \`encode\` function that takes a string and a vocabulary dictionary, and returns a list of token IDs.
 
 The function should:
 - Split the input text on whitespace
 - Look up each word in the vocabulary
-- Return an array of token IDs
+- Return a list of token IDs
 
 **Example:**
-\`\`\`javascript
-const vocab = { "hello": 0, "world": 1 };
-encode("hello world", vocab); // => [0, 1]
+\`\`\`python
+vocab = {"hello": 0, "world": 1}
+encode("hello world", vocab)  # => [0, 1]
 \`\`\``,
-      `function encode(text, vocab) {
-  // Your code here
-}`,
-      `function encode(text, vocab) {
-  return text.split(' ').map(word => vocab[word]);
-}`,
+      `def encode(text, vocab):
+    # Your code here
+    pass`,
+      `def encode(text, vocab):
+    return [vocab[word] for word in text.split()]`,
       JSON.stringify([
-        "Start by splitting the text on whitespace using split(' ')",
-        "Use map() to transform each word into its vocabulary ID",
-        "For each word, look it up in the vocab object: vocab[word]",
+        "Start by splitting the text on whitespace using text.split()",
+        "Use a list comprehension to transform each word into its vocabulary ID",
+        "For each word, look it up in the vocab dictionary: vocab[word]",
       ]),
       "beginner",
       1,
@@ -145,7 +144,7 @@ encode("hello world", vocab); // => [0, 1]
       concept1_1Id,
       "implement",
       "Implement word-level decode()",
-      `Create a \`decode\` function that takes an array of token IDs and a vocabulary mapping, and returns the original text.
+      `Create a \`decode\` function that takes a list of token IDs and a vocabulary dictionary, and returns the original text.
 
 The function should:
 - Build a reverse mapping from IDs to words
@@ -153,23 +152,20 @@ The function should:
 - Join the words with spaces
 
 **Example:**
-\`\`\`javascript
-const vocab = { "hello": 0, "world": 1 };
-decode([0, 1], vocab); // => "hello world"
+\`\`\`python
+vocab = {"hello": 0, "world": 1}
+decode([0, 1], vocab)  # => "hello world"
 \`\`\``,
-      `function decode(ids, vocab) {
-  // Your code here
-}`,
-      `function decode(ids, vocab) {
-  const reverseVocab = Object.fromEntries(
-    Object.entries(vocab).map(([word, id]) => [id, word])
-  );
-  return ids.map(id => reverseVocab[id]).join(' ');
-}`,
+      `def decode(ids, vocab):
+    # Your code here
+    pass`,
+      `def decode(ids, vocab):
+    reverse_vocab = {v: k for k, v in vocab.items()}
+    return " ".join(reverse_vocab[id] for id in ids)`,
       JSON.stringify([
         "You need to create a reverse mapping: ID -> word",
-        "Use Object.entries() to get [word, id] pairs, then swap them",
-        "Object.fromEntries() can convert the swapped pairs back to an object",
+        "Use a dictionary comprehension: {v: k for k, v in vocab.items()}",
+        "Use ' '.join() to combine the words with spaces",
       ]),
       "beginner",
       2,
@@ -222,25 +218,22 @@ The function should:
 - The [UNK] token will always be in the vocabulary
 
 **Example:**
-\`\`\`javascript
-const vocab = { "[UNK]": 0, "hello": 1, "world": 2 };
-encode("hello universe", vocab); // => [1, 0]
-// "universe" is not in vocab, so we use [UNK]'s ID (0)
+\`\`\`python
+vocab = {"[UNK]": 0, "hello": 1, "world": 2}
+encode("hello universe", vocab)  # => [1, 0]
+# "universe" is not in vocab, so we use [UNK]'s ID (0)
 \`\`\``,
-      `function encode(text, vocab) {
-  // Your code here
-  // vocab["[UNK]"] contains the ID for unknown words
-}`,
-      `function encode(text, vocab) {
-  const unkId = vocab["[UNK]"];
-  return text.split(' ').map(word =>
-    word in vocab ? vocab[word] : unkId
-  );
-}`,
+      `def encode(text, vocab):
+    # Your code here
+    # vocab["[UNK]"] contains the ID for unknown words
+    pass`,
+      `def encode(text, vocab):
+    unk_id = vocab["[UNK]"]
+    return [vocab.get(word, unk_id) for word in text.split()]`,
       JSON.stringify([
-        "Store the [UNK] token ID at the start: vocab['[UNK]']",
-        "Check if each word exists in vocab before looking it up",
-        "Use the 'in' operator or hasOwnProperty to check: word in vocab",
+        "Store the [UNK] token ID at the start: unk_id = vocab['[UNK]']",
+        "Use vocab.get(word, unk_id) to return unk_id for missing words",
+        "Or use: vocab[word] if word in vocab else unk_id",
       ]),
       "beginner",
       3,
@@ -325,24 +318,23 @@ Character-level models need to learn spelling, word boundaries, and meaning from
 The function should:
 - Extract all unique characters from the text
 - Assign each character a unique ID starting from 0
-- Return the vocabulary as an object mapping characters to IDs
+- Return the vocabulary as a dictionary mapping characters to IDs
 
 **Example:**
-\`\`\`javascript
-buildVocab("hello"); // => { "h": 0, "e": 1, "l": 2, "o": 3 }
-// Note: "l" appears twice but only gets one ID
+\`\`\`python
+build_vocab("hello")  # => {"h": 0, "e": 1, "l": 2, "o": 3}
+# Note: "l" appears twice but only gets one ID
 \`\`\``,
-      `function buildVocab(text) {
-  // Your code here
-}`,
-      `function buildVocab(text) {
-  const chars = [...new Set(text)];
-  return Object.fromEntries(chars.map((char, i) => [char, i]));
-}`,
+      `def build_vocab(text):
+    # Your code here
+    pass`,
+      `def build_vocab(text):
+    chars = list(dict.fromkeys(text))  # Unique chars preserving order
+    return {char: i for i, char in enumerate(chars)}`,
       JSON.stringify([
-        "Use new Set() to get unique characters",
-        "Spread the Set into an array: [...new Set(text)]",
-        "Use map with index to assign IDs, then Object.fromEntries()",
+        "Get unique characters while preserving order",
+        "Use dict.fromkeys(text) to get ordered unique chars, then list()",
+        "Use enumerate to assign IDs and build the dictionary",
       ]),
       "beginner",
       1,
@@ -502,31 +494,31 @@ The function should:
 - Return the result
 
 **Example:**
-\`\`\`javascript
-const W = [[1, 2], [3, 4]];  // 2x2 matrix
-const b = [1, 1];            // bias vector
-const x = [1, 1];            // input vector
+\`\`\`python
+W = [[1, 2], [3, 4]]  # 2x2 matrix
+b = [1, 1]            # bias vector
+x = [1, 1]            # input vector
 
-linear(x, W, b); // => [4, 8]
-// W @ x = [1*1 + 2*1, 3*1 + 4*1] = [3, 7]
-// + b = [3+1, 7+1] = [4, 8]
+linear(x, W, b)  # => [4, 8]
+# W @ x = [1*1 + 2*1, 3*1 + 4*1] = [3, 7]
+# + b = [3+1, 7+1] = [4, 8]
 \`\`\``,
-      `function linear(x, W, b) {
-  // x: input vector (array of numbers)
-  // W: weight matrix (array of arrays)
-  // b: bias vector (array of numbers)
-  // Return: output vector
-}`,
-      `function linear(x, W, b) {
-  return W.map((row, i) => {
-    const dot = row.reduce((sum, w, j) => sum + w * x[j], 0);
-    return dot + b[i];
-  });
-}`,
+      `def linear(x, W, b):
+    # x: input vector (list of numbers)
+    # W: weight matrix (list of lists)
+    # b: bias vector (list of numbers)
+    # Return: output vector
+    pass`,
+      `def linear(x, W, b):
+    result = []
+    for i, row in enumerate(W):
+        dot = sum(w * x[j] for j, w in enumerate(row))
+        result.append(dot + b[i])
+    return result`,
       JSON.stringify([
         "For each row of W, compute the dot product with x",
         "A dot product is: sum of (w[i] * x[i]) for all i",
-        "Use reduce to compute the sum, then add the corresponding bias",
+        "Use sum() with a generator expression, then add the corresponding bias",
       ]),
       "intermediate",
       1,
@@ -578,7 +570,7 @@ softmax(x_i) = exp(x_i) / sum(exp(x_j) for all j)
 
 ## Numerical Stability
 In practice, we subtract the max value first to avoid overflow:
-\`\`\`
+\`\`\`python
 x_stable = x - max(x)
 softmax(x_stable)
 \`\`\`
@@ -604,25 +596,28 @@ Softmax is used to convert the model's output logits into probabilities over the
 The function should:
 - Apply the softmax formula: exp(x_i) / sum(exp(x_j))
 - Handle numerical stability by subtracting the max value first
-- Return an array of probabilities that sum to 1
+- Return a list of probabilities that sum to 1
 
 **Example:**
-\`\`\`javascript
-softmax([1, 2, 3]); // => [0.09, 0.24, 0.67] (approximately)
+\`\`\`python
+softmax([1, 2, 3])  # => [0.09, 0.24, 0.67] (approximately)
 \`\`\``,
-      `function softmax(logits) {
-  // logits: array of numbers (raw scores)
-  // Return: array of probabilities
-}`,
-      `function softmax(logits) {
-  const maxVal = Math.max(...logits);
-  const exps = logits.map(x => Math.exp(x - maxVal));
-  const sumExps = exps.reduce((a, b) => a + b, 0);
-  return exps.map(e => e / sumExps);
-}`,
+      `import math
+
+def softmax(logits):
+    # logits: list of numbers (raw scores)
+    # Return: list of probabilities
+    pass`,
+      `import math
+
+def softmax(logits):
+    max_val = max(logits)
+    exps = [math.exp(x - max_val) for x in logits]
+    sum_exps = sum(exps)
+    return [e / sum_exps for e in exps]`,
       JSON.stringify([
         "First subtract the max value from all logits for numerical stability",
-        "Apply Math.exp() to each shifted value",
+        "Apply math.exp() to each shifted value",
         "Divide each exp value by the sum of all exp values",
       ]),
       "intermediate",
@@ -694,13 +689,13 @@ Greedy decoding is the simplest text generation strategy. At each step, it selec
 3. Append to sequence and repeat
 
 ## Example
-\`\`\`javascript
-// Probabilities: { "the": 0.6, "a": 0.3, "an": 0.1 }
-// Greedy selects: "the" (highest probability)
+\`\`\`python
+# Probabilities: {"the": 0.6, "a": 0.3, "an": 0.1}
+# Greedy selects: "the" (highest probability)
 \`\`\`
 
 ## Pros
-- Deterministic (same input → same output)
+- Deterministic (same input -> same output)
 - Fast and simple to implement
 - Good for factual/precise tasks
 
@@ -725,33 +720,24 @@ Greedy decoding is the simplest text generation strategy. At each step, it selec
       `Create a function that implements greedy decoding by selecting the token with the highest probability.
 
 The function should:
-- Take an object mapping tokens to their probabilities
+- Take a dictionary mapping tokens to their probabilities
 - Return the token with the highest probability
 
 **Example:**
-\`\`\`javascript
-const probs = { "the": 0.6, "a": 0.3, "an": 0.1 };
-greedySelect(probs); // => "the"
+\`\`\`python
+probs = {"the": 0.6, "a": 0.3, "an": 0.1}
+greedy_select(probs)  # => "the"
 \`\`\``,
-      `function greedySelect(probabilities) {
-  // probabilities: object mapping tokens to their probabilities
-  // Return the token with the highest probability
-}`,
-      `function greedySelect(probabilities) {
-  let maxProb = -Infinity;
-  let maxToken = null;
-  for (const [token, prob] of Object.entries(probabilities)) {
-    if (prob > maxProb) {
-      maxProb = prob;
-      maxToken = token;
-    }
-  }
-  return maxToken;
-}`,
+      `def greedy_select(probabilities):
+    # probabilities: dict mapping tokens to their probabilities
+    # Return the token with the highest probability
+    pass`,
+      `def greedy_select(probabilities):
+    return max(probabilities, key=probabilities.get)`,
       JSON.stringify([
-        "Loop through Object.entries(probabilities) to get [token, prob] pairs",
-        "Track the maximum probability seen and the corresponding token",
-        "Return the token with the highest probability",
+        "Use the max() function with a key argument",
+        "The key should be a function that gets the probability: probabilities.get",
+        "max(dict, key=dict.get) returns the key with the maximum value",
       ]),
       "beginner",
       1,
@@ -812,11 +798,11 @@ Top-k sampling introduces randomness by sampling from the k most likely tokens i
 4. Randomly sample from this reduced set
 
 ## Example with k=3
-\`\`\`javascript
-// Original: { "the": 0.4, "a": 0.3, "an": 0.2, "this": 0.1 }
-// Top-3: { "the": 0.4, "a": 0.3, "an": 0.2 }
-// Renormalized: { "the": 0.44, "a": 0.33, "an": 0.22 }
-// Sample randomly from these 3
+\`\`\`python
+# Original: {"the": 0.4, "a": 0.3, "an": 0.2, "this": 0.1}
+# Top-3: {"the": 0.4, "a": 0.3, "an": 0.2}
+# Renormalized: {"the": 0.44, "a": 0.33, "an": 0.22}
+# Sample randomly from these 3
 \`\`\`
 
 ## Benefits
@@ -845,26 +831,23 @@ The function should:
 - Return the filtered distribution (don't renormalize)
 
 **Example:**
-\`\`\`javascript
-const probs = { "the": 0.4, "a": 0.3, "an": 0.2, "this": 0.1 };
-topK(probs, 2); // => { "the": 0.4, "a": 0.3 }
+\`\`\`python
+probs = {"the": 0.4, "a": 0.3, "an": 0.2, "this": 0.1}
+top_k(probs, 2)  # => {"the": 0.4, "a": 0.3}
 \`\`\``,
-      `function topK(probabilities, k) {
-  // probabilities: object mapping tokens to probabilities
-  // k: number of top tokens to keep
-  // Return object with only the top k tokens
-}`,
-      `function topK(probabilities, k) {
-  const sorted = Object.entries(probabilities)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, k);
-  return Object.fromEntries(sorted);
-}`,
+      `def top_k(probabilities, k):
+    # probabilities: dict mapping tokens to probabilities
+    # k: number of top tokens to keep
+    # Return dict with only the top k tokens
+    pass`,
+      `def top_k(probabilities, k):
+    sorted_items = sorted(probabilities.items(), key=lambda x: x[1], reverse=True)
+    return dict(sorted_items[:k])`,
       JSON.stringify([
-        "Use Object.entries() to convert to an array of [token, prob] pairs",
-        "Sort by probability in descending order: sort((a, b) => b[1] - a[1])",
-        "Use slice(0, k) to keep only the top k",
-        "Convert back to object with Object.fromEntries()",
+        "Use sorted() with items() to get a list of (token, prob) tuples",
+        "Sort by probability in descending order: key=lambda x: x[1], reverse=True",
+        "Slice to keep only the top k: [:k]",
+        "Convert back to dict with dict()",
       ]),
       "intermediate",
       1,
@@ -920,14 +903,14 @@ Top-p sampling dynamically selects tokens until their cumulative probability exc
 
 ## How it works
 1. Sort tokens by probability (descending)
-2. Add tokens until cumulative probability ≥ p
+2. Add tokens until cumulative probability >= p
 3. Sample from this "nucleus" of tokens
 
 ## Example with p=0.8
-\`\`\`javascript
-// Sorted: { "the": 0.5, "a": 0.3, "an": 0.15, "this": 0.05 }
-// Cumulative: 0.5 → 0.8 → 0.95 → 1.0
-// With p=0.8: keep ["the", "a"] (cumsum reaches 0.8)
+\`\`\`python
+# Sorted: {"the": 0.5, "a": 0.3, "an": 0.15, "this": 0.05}
+# Cumulative: 0.5 -> 0.8 -> 0.95 -> 1.0
+# With p=0.8: keep ["the", "a"] (cumsum reaches 0.8)
 \`\`\`
 
 ## Top-p vs Top-k
@@ -956,40 +939,35 @@ Top-p sampling dynamically selects tokens until their cumulative probability exc
 
 The function should:
 - Sort tokens by probability (descending)
-- Keep adding tokens until cumulative probability ≥ p
+- Keep adding tokens until cumulative probability >= p
 - Return the filtered distribution
 
 **Example:**
-\`\`\`javascript
-const probs = { "the": 0.5, "a": 0.3, "an": 0.15, "this": 0.05 };
-topP(probs, 0.8); // => { "the": 0.5, "a": 0.3 }
-// 0.5 + 0.3 = 0.8 which meets the threshold
+\`\`\`python
+probs = {"the": 0.5, "a": 0.3, "an": 0.15, "this": 0.05}
+top_p(probs, 0.8)  # => {"the": 0.5, "a": 0.3}
+# 0.5 + 0.3 = 0.8 which meets the threshold
 \`\`\``,
-      `function topP(probabilities, p) {
-  // probabilities: object mapping tokens to probabilities
-  // p: cumulative probability threshold
-  // Return object with tokens that sum to >= p
-}`,
-      `function topP(probabilities, p) {
-  const sorted = Object.entries(probabilities)
-    .sort((a, b) => b[1] - a[1]);
-
-  const result = [];
-  let cumsum = 0;
-
-  for (const [token, prob] of sorted) {
-    result.push([token, prob]);
-    cumsum += prob;
-    if (cumsum >= p) break;
-  }
-
-  return Object.fromEntries(result);
-}`,
+      `def top_p(probabilities, p):
+    # probabilities: dict mapping tokens to probabilities
+    # p: cumulative probability threshold
+    # Return dict with tokens that sum to >= p
+    pass`,
+      `def top_p(probabilities, p):
+    sorted_items = sorted(probabilities.items(), key=lambda x: x[1], reverse=True)
+    result = {}
+    cumsum = 0
+    for token, prob in sorted_items:
+        result[token] = prob
+        cumsum += prob
+        if cumsum >= p:
+            break
+    return result`,
       JSON.stringify([
-        "Sort entries by probability descending first",
+        "Sort items by probability descending first",
         "Track cumulative sum as you iterate",
         "Stop when cumulative sum reaches or exceeds p",
-        "Use Object.fromEntries() to convert back to object",
+        "Build the result dictionary as you go",
       ]),
       "intermediate",
       1,
@@ -1058,12 +1036,12 @@ probabilities = softmax(adjusted_logits)
 | T > 1.0 | Flatter distribution, more random |
 
 ## Examples
-\`\`\`javascript
-// Original probs: [0.7, 0.2, 0.1]
+\`\`\`python
+# Original probs: [0.7, 0.2, 0.1]
 
-// T = 0.5 (low): [0.9, 0.08, 0.02] - very confident
-// T = 1.0 (normal): [0.7, 0.2, 0.1] - unchanged
-// T = 2.0 (high): [0.5, 0.3, 0.2] - more uniform
+# T = 0.5 (low): [0.9, 0.08, 0.02] - very confident
+# T = 1.0 (normal): [0.7, 0.2, 0.1] - unchanged
+# T = 2.0 (high): [0.5, 0.3, 0.2] - more uniform
 \`\`\`
 
 ## Common Values
@@ -1088,27 +1066,26 @@ probabilities = softmax(adjusted_logits)
 
 The function should:
 - Divide each logit by the temperature
-- Return the scaled logits array
+- Return the scaled logits list
 
 **Example:**
-\`\`\`javascript
-applyTemperature([2.0, 1.0, 0.5], 0.5);
-// => [4.0, 2.0, 1.0] (each divided by 0.5)
+\`\`\`python
+apply_temperature([2.0, 1.0, 0.5], 0.5)
+# => [4.0, 2.0, 1.0] (each divided by 0.5)
 
-applyTemperature([2.0, 1.0, 0.5], 2.0);
-// => [1.0, 0.5, 0.25] (each divided by 2.0)
+apply_temperature([2.0, 1.0, 0.5], 2.0)
+# => [1.0, 0.5, 0.25] (each divided by 2.0)
 \`\`\``,
-      `function applyTemperature(logits, temperature) {
-  // logits: array of raw model outputs
-  // temperature: scaling factor
-  // Return array of temperature-scaled logits
-}`,
-      `function applyTemperature(logits, temperature) {
-  return logits.map(logit => logit / temperature);
-}`,
+      `def apply_temperature(logits, temperature):
+    # logits: list of raw model outputs
+    # temperature: scaling factor
+    # Return list of temperature-scaled logits
+    pass`,
+      `def apply_temperature(logits, temperature):
+    return [logit / temperature for logit in logits]`,
       JSON.stringify([
         "Temperature scaling divides each logit by temperature",
-        "Use map to apply the division to each element",
+        "Use a list comprehension to apply the division to each element",
         "Lower temperature = larger values = sharper distribution",
       ]),
       "beginner",
@@ -1224,11 +1201,11 @@ Output: "Paris. France is a country in Western Europe..."
 The model continues naturally, but doesn't "understand" you're asking a question.
 
 ## Key Characteristics
-- ✅ Excellent at text continuation
-- ✅ Good for creative writing, code completion
-- ❌ Don't naturally follow instructions
-- ❌ May continue prompts instead of answering
-- ❌ No inherent safety guardrails
+- Excellent at text continuation
+- Good for creative writing, code completion
+- Don't naturally follow instructions
+- May continue prompts instead of answering
+- No inherent safety guardrails
 
 ## Examples
 - GPT-2
@@ -1264,12 +1241,12 @@ Output: "The capital of France is Paris."
 The model interprets this as a question and provides a direct answer.
 
 ## Key Characteristics
-- ✅ Follow instructions naturally
-- ✅ Stay in conversation mode
-- ✅ Include safety guardrails
-- ✅ More helpful and aligned
-- ❌ May refuse some requests
-- ❌ Can be overly cautious
+- Follow instructions naturally
+- Stay in conversation mode
+- Include safety guardrails
+- More helpful and aligned
+- May refuse some requests
+- Can be overly cautious
 
 ## Examples
 - ChatGPT (GPT-3.5/4 + RLHF)
@@ -1323,12 +1300,12 @@ What is 2+2? [/INST]
 
 ## Using Templates
 Most libraries handle this automatically:
-\`\`\`javascript
-// Hugging Face
+\`\`\`python
+# Hugging Face
 tokenizer.apply_chat_template(messages)
 
-// OpenAI API
-{ role: "user", content: "Hello" }
+# OpenAI API
+{"role": "user", "content": "Hello"}
 \`\`\``,
       3,
     ]
@@ -1372,32 +1349,32 @@ Consider:
       concept4_3Id,
       "implement",
       "Format messages into ChatML template",
-      `Create a function that formats an array of chat messages into the ChatML format.
+      `Create a function that formats a list of chat messages into the ChatML format.
 
 Each message has a \`role\` (system, user, or assistant) and \`content\`.
 
 **Example:**
-\`\`\`javascript
-const messages = [
-  { role: "system", content: "You are helpful." },
-  { role: "user", content: "Hi!" }
-];
-formatChatML(messages);
-// => "<|im_start|>system\\nYou are helpful.<|im_end|>\\n<|im_start|>user\\nHi!<|im_end|>\\n"
+\`\`\`python
+messages = [
+    {"role": "system", "content": "You are helpful."},
+    {"role": "user", "content": "Hi!"}
+]
+format_chatml(messages)
+# => "<|im_start|>system\\nYou are helpful.<|im_end|>\\n<|im_start|>user\\nHi!<|im_end|>\\n"
 \`\`\``,
-      `function formatChatML(messages) {
-  // messages: array of { role, content } objects
-  // Return formatted ChatML string
-}`,
-      `function formatChatML(messages) {
-  return messages
-    .map(m => \`<|im_start|>\${m.role}\\n\${m.content}<|im_end|>\`)
-    .join("\\n") + "\\n";
-}`,
+      `def format_chatml(messages):
+    # messages: list of dicts with "role" and "content" keys
+    # Return formatted ChatML string
+    pass`,
+      `def format_chatml(messages):
+    parts = []
+    for m in messages:
+        parts.append(f"<|im_start|>{m['role']}\\n{m['content']}<|im_end|>")
+    return "\\n".join(parts) + "\\n"`,
       JSON.stringify([
         "Each message wraps in <|im_start|>role...content<|im_end|>",
-        "Use template literals for cleaner string building",
-        "Join messages with newlines",
+        "Use f-strings for cleaner string building",
+        "Join messages with newlines and add trailing newline",
       ]),
       "intermediate",
       1,
@@ -1471,25 +1448,25 @@ Now you understand all the pieces. Here's how they fit together:
 ## The Flow
 \`\`\`
 User Input
-    ↓
-Tokenization (text → token IDs)
-    ↓
+    |
+Tokenization (text -> token IDs)
+    |
 Model Forward Pass
-    ↓
+    |
 Logits (raw scores for each token)
-    ↓
+    |
 Temperature Scaling
-    ↓
-Softmax → Probabilities
-    ↓
+    |
+Softmax -> Probabilities
+    |
 Decoding Strategy (greedy/top-k/top-p)
-    ↓
+    |
 Selected Token
-    ↓
+    |
 Append to sequence, repeat
-    ↓
-Detokenization (token IDs → text)
-    ↓
+    |
+Detokenization (token IDs -> text)
+    |
 Output to User
 \`\`\`
 
@@ -1499,7 +1476,7 @@ Output to User
 | \`max_tokens\` | Maximum length of generation |
 | \`temperature\` | Randomness (0 = deterministic, >1 = creative) |
 | \`top_k\` | Sample from top k tokens |
-| \`top_p\` | Sample from tokens with cumulative prob ≥ p |
+| \`top_p\` | Sample from tokens with cumulative prob >= p |
 | \`stop_sequences\` | Stop generation at specific strings |
 
 ## Building Applications
@@ -1527,50 +1504,46 @@ When building LLM apps, you control these parameters to get the right behavior:
 3. Select a token using greedy decoding
 
 **Example:**
-\`\`\`javascript
-const logits = [2.0, 1.0, 0.5];
-const vocab = ["the", "a", "an"];
-generateStep(logits, vocab, 1.0);
-// => "the" (highest probability after softmax)
+\`\`\`python
+logits = [2.0, 1.0, 0.5]
+vocab = ["the", "a", "an"]
+generate_step(logits, vocab, 1.0)
+# => "the" (highest probability after softmax)
 \`\`\``,
-      `function generateStep(logits, vocab, temperature) {
-  // 1. Apply temperature scaling
-  // 2. Apply softmax to get probabilities
-  // 3. Return the token with highest probability
+      `import math
 
-  // Helper: softmax function
-  function softmax(arr) {
-    const max = Math.max(...arr);
-    const exps = arr.map(x => Math.exp(x - max));
-    const sum = exps.reduce((a, b) => a + b, 0);
-    return exps.map(e => e / sum);
-  }
+def generate_step(logits, vocab, temperature):
+    # 1. Apply temperature scaling
+    # 2. Apply softmax to get probabilities
+    # 3. Return the token with highest probability
 
-  // Your code here
-}`,
-      `function generateStep(logits, vocab, temperature) {
-  function softmax(arr) {
-    const max = Math.max(...arr);
-    const exps = arr.map(x => Math.exp(x - max));
-    const sum = exps.reduce((a, b) => a + b, 0);
-    return exps.map(e => e / sum);
-  }
+    # Helper: softmax function
+    def softmax(arr):
+        max_val = max(arr)
+        exps = [math.exp(x - max_val) for x in arr]
+        total = sum(exps)
+        return [e / total for e in exps]
 
-  const scaled = logits.map(l => l / temperature);
-  const probs = softmax(scaled);
+    # Your code here
+    pass`,
+      `import math
 
-  let maxIdx = 0;
-  for (let i = 1; i < probs.length; i++) {
-    if (probs[i] > probs[maxIdx]) maxIdx = i;
-  }
+def generate_step(logits, vocab, temperature):
+    def softmax(arr):
+        max_val = max(arr)
+        exps = [math.exp(x - max_val) for x in arr]
+        total = sum(exps)
+        return [e / total for e in exps]
 
-  return vocab[maxIdx];
-}`,
+    scaled = [l / temperature for l in logits]
+    probs = softmax(scaled)
+    max_idx = probs.index(max(probs))
+    return vocab[max_idx]`,
       JSON.stringify([
         "First divide each logit by temperature",
         "Then apply the provided softmax function",
-        "Find the index with the highest probability",
-        "Return vocab[maxIdx]",
+        "Find the index with the highest probability using list.index(max(list))",
+        "Return vocab[max_idx]",
       ]),
       "intermediate",
       1,
@@ -1614,7 +1587,7 @@ generateStep(logits, vocab, 1.0);
   console.log("Database seeded successfully!");
   console.log("- 5 lessons");
   console.log("- 12 concepts");
-  console.log("- 14 challenges");
+  console.log("- 14 challenges (now in Python!)");
 }
 
 seed();

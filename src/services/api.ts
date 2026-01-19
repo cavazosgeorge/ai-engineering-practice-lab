@@ -98,18 +98,19 @@ export async function fetchChallenge(id: string): Promise<Challenge> {
   return res.json();
 }
 
-export async function submitChallenge(
+// Record a submission result for progress tracking (code executed client-side)
+export async function recordSubmission(
   challengeId: string,
   code: string,
+  passed: boolean,
   hintUsed: boolean = false
-): Promise<SubmissionResult> {
-  const res = await fetch(`${API_BASE}/challenges/${challengeId}/submit`, {
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/challenges/${challengeId}/record`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code, sessionId: getSessionId(), hintUsed }),
+    body: JSON.stringify({ code, passed, sessionId: getSessionId(), hintUsed }),
   });
-  if (!res.ok) throw new Error("Failed to submit challenge");
-  return res.json();
+  if (!res.ok) throw new Error("Failed to record submission");
 }
 
 export async function fetchProgress(): Promise<{

@@ -1,5 +1,5 @@
 import CodeMirror from "@uiw/react-codemirror";
-import { javascript } from "@codemirror/lang-javascript";
+import { python } from "@codemirror/lang-python";
 import { oneDark } from "@codemirror/theme-one-dark";
 
 interface CodeEditorProps {
@@ -14,7 +14,7 @@ export function CodeEditor({ value, onChange, readOnly = false }: CodeEditorProp
       value={value}
       height="300px"
       theme={oneDark}
-      extensions={[javascript({ typescript: true })]}
+      extensions={[python()]}
       onChange={onChange}
       readOnly={readOnly}
       basicSetup={{

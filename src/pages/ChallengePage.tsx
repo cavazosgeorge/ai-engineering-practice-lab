@@ -10,18 +10,19 @@ import {
   Card,
   Breadcrumb,
   Collapsible,
+  Spinner,
 } from "@chakra-ui/react";
 import { Link, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import {
-  fetchChallenge,
-  submitChallenge,
-  type Challenge,
-  type SubmissionResult,
-} from "../services/api";
+import { fetchChallenge, recordSubmission, type Challenge } from "../services/api";
 import { CodeEditor } from "../components/challenges/CodeEditor";
 import { TestResults } from "../components/challenges/TestResults";
+import { usePyodide } from "../hooks/usePyodide";
+import {
+  validatePythonCode,
+  type ValidationResult,
+} from "../services/pythonValidator";
 
 const difficultyColors = {
   beginner: "green",
@@ -29,14 +30,27 @@ const difficultyColors = {
   advanced: "red",
 };
 
+// Extract function name from Python code (e.g., "def encode(" -> "encode")
+function extractFunctionName(code: string): string | null {
+  const match = code.match(/def\s+(\w+)\s*\(/);
+  return match ? match[1] : null;
+}
+
 export function ChallengePage() {
   const { id } = useParams<{ id: string }>();
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [code, setCode] = useState("");
-  const [result, setResult] = useState<SubmissionResult | null>(null);
+  const [result, setResult] = useState<ValidationResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [hintsRevealed, setHintsRevealed] = useState(0);
+
+  const {
+    isLoading: pyodideLoading,
+    isReady: pyodideReady,
+    error: pyodideError,
+    runPython,
+  } = usePyodide();
 
   useEffect(() => {
     if (!id) return;
@@ -50,13 +64,66 @@ export function ChallengePage() {
   }, [id]);
 
   const handleSubmit = async () => {
-    if (!challenge || !code.trim()) return;
+    if (!challenge || !code.trim() || !pyodideReady) return;
+
+    const functionName = extractFunctionName(code);
+    if (!functionName) {
+      setResult({
+        passed: false,
+        results: [
+          {
+            testId: "parse",
+            passed: false,
+            error: "Could not find a function definition. Make sure to define a function using 'def function_name(...):'",
+          },
+        ],
+        executionTimeMs: 0,
+      });
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const res = await submitChallenge(challenge.id, code, hintsRevealed > 0);
-      setResult(res);
+      const testCases =
+        challenge.testCases?.map((tc) => ({
+          id: tc.id,
+          input: tc.input,
+          expectedOutput: tc.expectedOutput,
+          description: tc.description ?? undefined,
+        })) || [];
+
+      const validationResult = await validatePythonCode(
+        runPython,
+        code,
+        functionName,
+        testCases
+      );
+      setResult(validationResult);
+
+      // Record the submission to the server for progress tracking
+      try {
+        await recordSubmission(
+          challenge.id,
+          code,
+          validationResult.passed,
+          hintsRevealed > 0
+        );
+      } catch (err) {
+        console.error("Failed to record submission:", err);
+      }
     } catch (err) {
       console.error(err);
+      setResult({
+        passed: false,
+        results: [
+          {
+            testId: "error",
+            passed: false,
+            error: err instanceof Error ? err.message : String(err),
+          },
+        ],
+        executionTimeMs: 0,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -177,8 +244,18 @@ export function ChallengePage() {
                       colorPalette="cyan"
                       onClick={handleSubmit}
                       loading={submitting}
+                      disabled={!pyodideReady || submitting}
                     >
-                      Run Tests
+                      {pyodideLoading ? (
+                        <HStack gap={2}>
+                          <Spinner size="sm" />
+                          <span>Loading Python...</span>
+                        </HStack>
+                      ) : pyodideError ? (
+                        "Python Error"
+                      ) : (
+                        "Run Tests"
+                      )}
                     </Button>
                   </HStack>
                 </HStack>

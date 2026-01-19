@@ -78,18 +78,19 @@ app.get("/:id", (c) => {
   });
 });
 
-// Submit a solution
-app.post("/:id/submit", async (c) => {
+// Record a submission result (code executed client-side via Pyodide)
+app.post("/:id/record", async (c) => {
   const id = c.req.param("id");
   const body = await c.req.json<{
     code: string;
+    passed: boolean;
     sessionId: string;
     hintUsed?: boolean;
   }>();
-  const { code, sessionId, hintUsed = false } = body;
+  const { code, passed, sessionId, hintUsed = false } = body;
 
-  if (!code || !sessionId) {
-    return c.json({ error: "Missing code or sessionId" }, 400);
+  if (!code || !sessionId || passed === undefined) {
+    return c.json({ error: "Missing code, passed, or sessionId" }, 400);
   }
 
   // Get challenge
@@ -101,55 +102,22 @@ app.post("/:id/submit", async (c) => {
     return c.json({ error: "Challenge not found" }, 404);
   }
 
-  // Get all test cases (including hidden)
-  const testCases = db
-    .query<TestCaseRow, [string]>(
-      `SELECT * FROM test_cases WHERE challenge_id = ? ORDER BY order_index ASC`
-    )
-    .all(id);
-
-  // Extract function name from starter code or use default
-  const functionMatch = challenge.starter_code?.match(/function\s+(\w+)/);
-  const functionName = functionMatch ? functionMatch[1] : "solution";
-
-  // Validate the code
-  const testCasesForValidation = testCases.map((tc) => ({
-    id: tc.id,
-    input: JSON.parse(tc.input),
-    expectedOutput: JSON.parse(tc.expected_output),
-    description: tc.description ?? undefined,
-  }));
-
-  const validation = await validateCode(
-    code,
-    functionName,
-    testCasesForValidation
-  );
-
   // Save submission
   db.run(
     `INSERT INTO submissions (id, session_id, challenge_id, code, passed, test_results, execution_time_ms)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [
-      nanoid(),
-      sessionId,
-      id,
-      code,
-      validation.passed ? 1 : 0,
-      JSON.stringify(validation.results),
-      Math.round(validation.executionTimeMs),
-    ]
+    [nanoid(), sessionId, id, code, passed ? 1 : 0, "[]", 0]
   );
 
   // Update progress if passed
-  if (validation.passed) {
+  if (passed) {
     const existing = db
       .query<UserProgressRow, [string, string]>(
         `SELECT * FROM user_progress WHERE session_id = ? AND challenge_id = ?`
       )
       .get(sessionId, id);
 
-    const quality = qualityFromPassed(validation.passed, hintUsed);
+    const quality = qualityFromPassed(passed, hintUsed);
     const now = new Date().toISOString();
 
     if (existing) {
@@ -205,20 +173,7 @@ app.post("/:id/submit", async (c) => {
     }
   }
 
-  // Return results (filter out hidden test details for non-passed hidden tests)
-  const filteredResults = validation.results.map((r) => {
-    const testCase = testCases.find((tc) => tc.id === r.testId);
-    if (testCase?.is_hidden && !r.passed) {
-      return { testId: r.testId, passed: false, error: "Hidden test failed" };
-    }
-    return r;
-  });
-
-  return c.json({
-    passed: validation.passed,
-    results: filteredResults,
-    executionTimeMs: validation.executionTimeMs,
-  });
+  return c.json({ success: true });
 });
 
 export default app;
