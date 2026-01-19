@@ -6,7 +6,7 @@ A learning application for practicing AI/ML engineering fundamentals, designed t
 
 - **Frontend**: React 18 + TypeScript + Vite + Chakra UI v3 + CodeMirror
 - **Backend**: Bun + Hono
-- **Database**: SQLite (bun:sqlite) with Drizzle ORM
+- **Database**: SQLite (bun:sqlite) with raw SQL + auto-migrations
 - **State**: TanStack Query for server state
 
 ## Commands
@@ -16,9 +16,7 @@ A learning application for practicing AI/ML engineering fundamentals, designed t
 - `bun run start` - Run production server
 - `bun run lint` - Run ESLint
 - `bun test` - Run tests
-- `bun run db:push` - Push schema changes to database
-- `bun run db:studio` - Open Drizzle Studio
-- `bun run db:seed` - Seed initial lesson content
+- `bun run db:seed` - Seed lesson content (clears and reseeds)
 
 ## Architecture
 
@@ -41,17 +39,17 @@ src/                    # Frontend
 server/                 # Backend
 ├── index.ts            # Hono app entry
 ├── routes/             # API route handlers
-│   ├── lessons.ts      # Lesson CRUD
+│   ├── lessons.ts      # Lesson retrieval
 │   ├── challenges.ts   # Challenge retrieval + submission
-│   ├── progress.ts     # User progress + spaced repetition
-│   └── admin.ts        # Content management
+│   └── progress.ts     # User progress + spaced repetition
 ├── services/           # Business logic
 │   ├── code-validator.ts    # Test runner
 │   └── spaced-repetition.ts # SM-2 algorithm
 ├── db/                 # Database
-│   ├── index.ts        # Connection setup
-│   └── schema.ts       # Drizzle schema
-└── scripts/            # Seeding, etc.
+│   ├── index.ts        # Connection + migration runner
+│   └── migrations/     # SQL migration files
+└── scripts/
+    └── seed-lessons.ts # Lesson content (edit to add new lessons)
 ```
 
 ## Core Features
