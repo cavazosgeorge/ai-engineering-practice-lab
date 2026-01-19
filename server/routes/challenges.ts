@@ -1,144 +1,214 @@
 import { Hono } from "hono";
-import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { db, schema } from "../db";
+import {
+  db,
+  type ChallengeRow,
+  type TestCaseRow,
+  type ConceptRow,
+  type LessonRow,
+  type UserProgressRow,
+} from "../db";
 import { validateCode } from "../services/code-validator";
-import { calculateNextReview, qualityFromPassed } from "../services/spaced-repetition";
+import {
+  calculateNextReview,
+  qualityFromPassed,
+} from "../services/spaced-repetition";
 
 const app = new Hono();
 
 // Get a single challenge with test cases (non-hidden only)
-app.get("/:id", async (c) => {
+app.get("/:id", (c) => {
   const id = c.req.param("id");
 
-  const challenge = await db.query.challenges.findFirst({
-    where: eq(schema.challenges.id, id),
-    with: {
-      testCases: {
-        where: eq(schema.testCases.isHidden, false),
-        orderBy: (testCases, { asc }) => [asc(testCases.orderIndex)],
-      },
-      concept: {
-        with: {
-          lesson: true,
-        },
-      },
-    },
-  });
+  const challenge = db
+    .query<ChallengeRow, [string]>(`SELECT * FROM challenges WHERE id = ?`)
+    .get(id);
 
   if (!challenge) {
     return c.json({ error: "Challenge not found" }, 404);
   }
 
-  // Don't expose solution code
-  const { solutionCode, ...challengeData } = challenge;
+  const testCases = db
+    .query<TestCaseRow, [string]>(
+      `SELECT * FROM test_cases WHERE challenge_id = ? AND is_hidden = 0 ORDER BY order_index ASC`
+    )
+    .all(id);
 
-  return c.json(challengeData);
+  // Get concept and lesson
+  const concept = db
+    .query<ConceptRow, [string]>(`SELECT * FROM concepts WHERE id = ?`)
+    .get(challenge.concept_id);
+
+  const lesson = concept
+    ? db
+        .query<LessonRow, [string]>(`SELECT * FROM lessons WHERE id = ?`)
+        .get(concept.lesson_id)
+    : null;
+
+  // Build response (exclude solution_code)
+  return c.json({
+    id: challenge.id,
+    conceptId: challenge.concept_id,
+    type: challenge.type,
+    title: challenge.title,
+    description: challenge.description,
+    starterCode: challenge.starter_code,
+    hints: challenge.hints ? JSON.parse(challenge.hints) : null,
+    difficulty: challenge.difficulty,
+    orderIndex: challenge.order_index,
+    testCases: testCases.map((tc) => ({
+      id: tc.id,
+      input: JSON.parse(tc.input),
+      expectedOutput: JSON.parse(tc.expected_output),
+      description: tc.description,
+    })),
+    concept: concept
+      ? {
+          id: concept.id,
+          title: concept.title,
+          lesson: lesson
+            ? {
+                id: lesson.id,
+                title: lesson.title,
+                slug: lesson.slug,
+              }
+            : null,
+        }
+      : null,
+  });
 });
 
 // Submit a solution
 app.post("/:id/submit", async (c) => {
   const id = c.req.param("id");
-  const body = await c.req.json<{ code: string; sessionId: string; hintUsed?: boolean }>();
+  const body = await c.req.json<{
+    code: string;
+    sessionId: string;
+    hintUsed?: boolean;
+  }>();
   const { code, sessionId, hintUsed = false } = body;
 
   if (!code || !sessionId) {
     return c.json({ error: "Missing code or sessionId" }, 400);
   }
 
-  // Get challenge with all test cases (including hidden)
-  const challenge = await db.query.challenges.findFirst({
-    where: eq(schema.challenges.id, id),
-    with: {
-      testCases: {
-        orderBy: (testCases, { asc }) => [asc(testCases.orderIndex)],
-      },
-    },
-  });
+  // Get challenge
+  const challenge = db
+    .query<ChallengeRow, [string]>(`SELECT * FROM challenges WHERE id = ?`)
+    .get(id);
 
   if (!challenge) {
     return c.json({ error: "Challenge not found" }, 404);
   }
 
+  // Get all test cases (including hidden)
+  const testCases = db
+    .query<TestCaseRow, [string]>(
+      `SELECT * FROM test_cases WHERE challenge_id = ? ORDER BY order_index ASC`
+    )
+    .all(id);
+
   // Extract function name from starter code or use default
-  const functionMatch = challenge.starterCode?.match(/function\s+(\w+)/);
+  const functionMatch = challenge.starter_code?.match(/function\s+(\w+)/);
   const functionName = functionMatch ? functionMatch[1] : "solution";
 
   // Validate the code
-  const testCases = challenge.testCases.map((tc) => ({
+  const testCasesForValidation = testCases.map((tc) => ({
     id: tc.id,
-    input: tc.input,
-    expectedOutput: tc.expectedOutput,
+    input: JSON.parse(tc.input),
+    expectedOutput: JSON.parse(tc.expected_output),
     description: tc.description ?? undefined,
   }));
 
-  const validation = await validateCode(code, functionName, testCases);
+  const validation = await validateCode(
+    code,
+    functionName,
+    testCasesForValidation
+  );
 
   // Save submission
-  await db.insert(schema.submissions).values({
-    id: nanoid(),
-    sessionId,
-    challengeId: id,
-    code,
-    passed: validation.passed,
-    testResults: validation.results,
-    executionTimeMs: Math.round(validation.executionTimeMs),
-  });
+  db.run(
+    `INSERT INTO submissions (id, session_id, challenge_id, code, passed, test_results, execution_time_ms)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      nanoid(),
+      sessionId,
+      id,
+      code,
+      validation.passed ? 1 : 0,
+      JSON.stringify(validation.results),
+      Math.round(validation.executionTimeMs),
+    ]
+  );
 
   // Update progress if passed
   if (validation.passed) {
-    const existing = await db.query.userProgress.findFirst({
-      where: and(
-        eq(schema.userProgress.sessionId, sessionId),
-        eq(schema.userProgress.challengeId, id)
-      ),
-    });
+    const existing = db
+      .query<UserProgressRow, [string, string]>(
+        `SELECT * FROM user_progress WHERE session_id = ? AND challenge_id = ?`
+      )
+      .get(sessionId, id);
 
     const quality = qualityFromPassed(validation.passed, hintUsed);
+    const now = new Date().toISOString();
 
     if (existing) {
       const update = calculateNextReview(
         existing.repetitions,
-        existing.easeFactor,
+        existing.ease_factor,
         existing.interval,
         quality
       );
 
-      await db
-        .update(schema.userProgress)
-        .set({
-          repetitions: update.repetitions,
-          easeFactor: update.easeFactor,
-          interval: update.interval,
-          nextReviewDate: update.nextReviewDate,
-          lastReviewDate: new Date(),
-          lastQuality: quality,
-          masteryLevel: update.masteryLevel,
-          updatedAt: new Date(),
-        })
-        .where(eq(schema.userProgress.id, existing.id));
+      db.run(
+        `UPDATE user_progress SET
+          repetitions = ?,
+          ease_factor = ?,
+          interval = ?,
+          next_review_date = ?,
+          last_review_date = ?,
+          last_quality = ?,
+          mastery_level = ?,
+          updated_at = ?
+         WHERE id = ?`,
+        [
+          update.repetitions,
+          update.easeFactor,
+          update.interval,
+          update.nextReviewDate.toISOString(),
+          now,
+          quality,
+          update.masteryLevel,
+          now,
+          existing.id,
+        ]
+      );
     } else {
       const update = calculateNextReview(0, 2.5, 0, quality);
 
-      await db.insert(schema.userProgress).values({
-        id: nanoid(),
-        sessionId,
-        challengeId: id,
-        repetitions: update.repetitions,
-        easeFactor: update.easeFactor,
-        interval: update.interval,
-        nextReviewDate: update.nextReviewDate,
-        lastReviewDate: new Date(),
-        lastQuality: quality,
-        masteryLevel: update.masteryLevel,
-      });
+      db.run(
+        `INSERT INTO user_progress (id, session_id, challenge_id, repetitions, ease_factor, interval, next_review_date, last_review_date, last_quality, mastery_level)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          nanoid(),
+          sessionId,
+          id,
+          update.repetitions,
+          update.easeFactor,
+          update.interval,
+          update.nextReviewDate.toISOString(),
+          now,
+          quality,
+          update.masteryLevel,
+        ]
+      );
     }
   }
 
   // Return results (filter out hidden test details for non-passed hidden tests)
   const filteredResults = validation.results.map((r) => {
-    const testCase = challenge.testCases.find((tc) => tc.id === r.testId);
-    if (testCase?.isHidden && !r.passed) {
+    const testCase = testCases.find((tc) => tc.id === r.testId);
+    if (testCase?.is_hidden && !r.passed) {
       return { testId: r.testId, passed: false, error: "Hidden test failed" };
     }
     return r;

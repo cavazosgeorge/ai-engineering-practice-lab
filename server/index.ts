@@ -3,9 +3,13 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { serveStatic } from "hono/bun";
 
+import { runMigrations } from "./db";
 import lessonsRoutes from "./routes/lessons";
 import challengesRoutes from "./routes/challenges";
 import progressRoutes from "./routes/progress";
+
+// Run migrations on startup
+runMigrations();
 
 const app = new Hono();
 
