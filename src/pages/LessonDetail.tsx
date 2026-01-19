@@ -8,11 +8,13 @@ import {
   Badge,
   Card,
   Breadcrumb,
+  Icon,
 } from "@chakra-ui/react";
 import { Link, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { fetchLesson, type Lesson } from "../services/api";
+import { fetchLesson, fetchProgress, type Lesson } from "../services/api";
 import ReactMarkdown from "react-markdown";
+import { LuCheck } from "react-icons/lu";
 
 const difficultyColors = {
   beginner: "green",
@@ -31,11 +33,23 @@ export function LessonDetail() {
   const { slug } = useParams<{ slug: string }>();
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
+  const [completedChallenges, setCompletedChallenges] = useState<Set<string>>(
+    new Set()
+  );
 
   useEffect(() => {
     if (!slug) return;
-    fetchLesson(slug)
-      .then(setLesson)
+
+    // Fetch lesson and progress in parallel
+    Promise.all([fetchLesson(slug), fetchProgress()])
+      .then(([lessonData, progressData]) => {
+        setLesson(lessonData);
+        // Build set of completed challenge IDs
+        const completed = new Set(
+          progressData.progress.map((p) => p.challengeId)
+        );
+        setCompletedChallenges(completed);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [slug]);
@@ -127,40 +141,52 @@ export function LessonDetail() {
                   Challenges
                 </Heading>
                 <VStack gap={3} align="stretch">
-                  {concept.challenges.map((challenge) => (
-                    <Link
-                      key={challenge.id}
-                      to={`/challenges/${challenge.id}`}
-                    >
-                      <Box
-                        p={4}
-                        bg="gray.800"
-                        borderRadius="lg"
-                        _hover={{ bg: "gray.750" }}
-                        transition="background 0.2s"
+                  {concept.challenges.map((challenge) => {
+                    const isCompleted = completedChallenges.has(challenge.id);
+                    return (
+                      <Link
+                        key={challenge.id}
+                        to={`/challenges/${challenge.id}`}
                       >
-                        <HStack justify="space-between">
-                          <HStack gap={3}>
-                            <Badge
-                              colorPalette={difficultyColors[challenge.difficulty]}
-                              variant="subtle"
-                            >
-                              {challenge.difficulty}
-                            </Badge>
-                            <Badge colorPalette="gray" variant="subtle">
-                              {typeLabels[challenge.type]}
-                            </Badge>
-                            <Text color="white" fontWeight="medium">
-                              {challenge.title}
-                            </Text>
+                        <Box
+                          p={4}
+                          bg="gray.800"
+                          borderRadius="lg"
+                          _hover={{ bg: "gray.750" }}
+                          transition="background 0.2s"
+                          borderRight={isCompleted ? "3px solid" : "none"}
+                          borderRightColor="green.500"
+                        >
+                          <HStack justify="space-between">
+                            <HStack gap={3}>
+                              <Badge
+                                colorPalette={difficultyColors[challenge.difficulty]}
+                                variant="subtle"
+                              >
+                                {challenge.difficulty}
+                              </Badge>
+                              <Badge colorPalette="gray" variant="subtle">
+                                {typeLabels[challenge.type]}
+                              </Badge>
+                              <Text color="white" fontWeight="medium">
+                                {challenge.title}
+                              </Text>
+                            </HStack>
+                            <HStack gap={2}>
+                              {isCompleted && (
+                                <Icon color="green.400" boxSize={5}>
+                                  <LuCheck />
+                                </Icon>
+                              )}
+                              <Text color="gray.400" fontSize="sm">
+                                →
+                              </Text>
+                            </HStack>
                           </HStack>
-                          <Text color="gray.400" fontSize="sm">
-                            →
-                          </Text>
-                        </HStack>
-                      </Box>
-                    </Link>
-                  ))}
+                        </Box>
+                      </Link>
+                    );
+                  })}
                 </VStack>
               </Card.Body>
             </Card.Root>

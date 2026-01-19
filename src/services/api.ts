@@ -129,3 +129,13 @@ export async function fetchReviewQueue(): Promise<UserProgress[]> {
   if (!res.ok) throw new Error("Failed to fetch review queue");
   return res.json();
 }
+
+// Reset progress for a challenge (clears submissions and progress)
+export async function resetChallengeProgress(challengeId: string): Promise<void> {
+  const sessionId = getSessionId();
+  const res = await fetch(
+    `${API_BASE}/challenges/${challengeId}/progress?sessionId=${sessionId}`,
+    { method: "DELETE" }
+  );
+  if (!res.ok) throw new Error("Failed to reset progress");
+}

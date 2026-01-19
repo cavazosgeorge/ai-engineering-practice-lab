@@ -15,7 +15,12 @@ import {
 import { Link, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { fetchChallenge, recordSubmission, type Challenge } from "../services/api";
+import {
+  fetchChallenge,
+  recordSubmission,
+  resetChallengeProgress,
+  type Challenge,
+} from "../services/api";
 import { CodeEditor } from "../components/challenges/CodeEditor";
 import { TestResults } from "../components/challenges/TestResults";
 import { usePyodide } from "../hooks/usePyodide";
@@ -130,10 +135,16 @@ export function ChallengePage() {
     }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (challenge) {
       setCode(challenge.starterCode || "");
       setResult(null);
+      // Also reset progress on the server
+      try {
+        await resetChallengeProgress(challenge.id);
+      } catch (err) {
+        console.error("Failed to reset progress:", err);
+      }
     }
   };
 

@@ -208,4 +208,28 @@ app.post("/:id/record", async (c) => {
   return c.json({ success: true });
 });
 
+// Reset progress for a challenge (clears submissions and progress)
+app.delete("/:id/progress", async (c) => {
+  const id = c.req.param("id");
+  const sessionId = c.req.query("sessionId");
+
+  if (!sessionId) {
+    return c.json({ error: "Missing sessionId" }, 400);
+  }
+
+  // Delete submissions for this challenge
+  db.run(
+    `DELETE FROM submissions WHERE session_id = ? AND challenge_id = ?`,
+    [sessionId, id]
+  );
+
+  // Delete progress for this challenge
+  db.run(
+    `DELETE FROM user_progress WHERE session_id = ? AND challenge_id = ?`,
+    [sessionId, id]
+  );
+
+  return c.json({ success: true });
+});
+
 export default app;
