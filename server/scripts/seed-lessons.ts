@@ -658,10 +658,963 @@ softmax([1, 2, 3]); // => [0.09, 0.24, 0.67] (approximately)
     );
   }
 
+  // ============================================
+  // LESSON 3: TEXT GENERATION (DECODING)
+  // ============================================
+  const lesson3Id = nanoid();
+  db.run(
+    `INSERT INTO lessons (id, title, slug, description, order_index, is_published)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      lesson3Id,
+      "Text Generation (Decoding)",
+      "text-generation",
+      "Learn how language models generate text using different decoding strategies: greedy, top-k, and top-p sampling.",
+      3,
+      1,
+    ]
+  );
+
+  // Concept 3.1: Greedy Decoding
+  const concept3_1Id = nanoid();
+  db.run(
+    `INSERT INTO concepts (id, lesson_id, title, explanation, order_index)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      concept3_1Id,
+      lesson3Id,
+      "Greedy Decoding",
+      `# Greedy Decoding
+
+Greedy decoding is the simplest text generation strategy. At each step, it selects the token with the highest probability.
+
+## How it works
+1. Get probability distribution over vocabulary
+2. Select token with highest probability
+3. Append to sequence and repeat
+
+## Example
+\`\`\`javascript
+// Probabilities: { "the": 0.6, "a": 0.3, "an": 0.1 }
+// Greedy selects: "the" (highest probability)
+\`\`\`
+
+## Pros
+- Deterministic (same input → same output)
+- Fast and simple to implement
+- Good for factual/precise tasks
+
+## Cons
+- Often produces repetitive text
+- Can get stuck in loops ("is is is is...")
+- Misses creative or diverse outputs`,
+      1,
+    ]
+  );
+
+  // Challenge 3.1.1: Implement greedy decode
+  const challenge3_1_1Id = nanoid();
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      challenge3_1_1Id,
+      concept3_1Id,
+      "implement",
+      "Implement greedy token selection",
+      `Create a function that implements greedy decoding by selecting the token with the highest probability.
+
+The function should:
+- Take an object mapping tokens to their probabilities
+- Return the token with the highest probability
+
+**Example:**
+\`\`\`javascript
+const probs = { "the": 0.6, "a": 0.3, "an": 0.1 };
+greedySelect(probs); // => "the"
+\`\`\``,
+      `function greedySelect(probabilities) {
+  // probabilities: object mapping tokens to their probabilities
+  // Return the token with the highest probability
+}`,
+      `function greedySelect(probabilities) {
+  let maxProb = -Infinity;
+  let maxToken = null;
+  for (const [token, prob] of Object.entries(probabilities)) {
+    if (prob > maxProb) {
+      maxProb = prob;
+      maxToken = token;
+    }
+  }
+  return maxToken;
+}`,
+      JSON.stringify([
+        "Loop through Object.entries(probabilities) to get [token, prob] pairs",
+        "Track the maximum probability seen and the corresponding token",
+        "Return the token with the highest probability",
+      ]),
+      "beginner",
+      1,
+    ]
+  );
+
+  for (const tc of [
+    {
+      input: [{ the: 0.6, a: 0.3, an: 0.1 }],
+      expected: "the",
+      desc: "Selects highest probability token",
+      order: 1,
+    },
+    {
+      input: [{ cat: 0.25, dog: 0.25, bird: 0.5 }],
+      expected: "bird",
+      desc: "Bird has highest probability",
+      order: 2,
+    },
+    {
+      input: [{ only: 1.0 }],
+      expected: "only",
+      desc: "Single token",
+      order: 3,
+    },
+  ]) {
+    db.run(
+      `INSERT INTO test_cases (id, challenge_id, input, expected_output, description, order_index)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        nanoid(),
+        challenge3_1_1Id,
+        JSON.stringify(tc.input),
+        JSON.stringify(tc.expected),
+        tc.desc,
+        tc.order,
+      ]
+    );
+  }
+
+  // Concept 3.2: Top-k Sampling
+  const concept3_2Id = nanoid();
+  db.run(
+    `INSERT INTO concepts (id, lesson_id, title, explanation, order_index)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      concept3_2Id,
+      lesson3Id,
+      "Top-k Sampling",
+      `# Top-k Sampling
+
+Top-k sampling introduces randomness by sampling from the k most likely tokens instead of always picking the best one.
+
+## How it works
+1. Sort tokens by probability (descending)
+2. Keep only the top k tokens
+3. Renormalize probabilities to sum to 1
+4. Randomly sample from this reduced set
+
+## Example with k=3
+\`\`\`javascript
+// Original: { "the": 0.4, "a": 0.3, "an": 0.2, "this": 0.1 }
+// Top-3: { "the": 0.4, "a": 0.3, "an": 0.2 }
+// Renormalized: { "the": 0.44, "a": 0.33, "an": 0.22 }
+// Sample randomly from these 3
+\`\`\`
+
+## Benefits
+- Adds variety while staying reasonable
+- Prevents very unlikely tokens from being selected
+- Parameter k controls diversity (smaller k = more focused)`,
+      2,
+    ]
+  );
+
+  // Challenge 3.2.1: Implement top-k filtering
+  const challenge3_2_1Id = nanoid();
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      challenge3_2_1Id,
+      concept3_2Id,
+      "implement",
+      "Implement top-k filtering",
+      `Create a function that filters a probability distribution to keep only the top k tokens.
+
+The function should:
+- Sort tokens by probability (highest first)
+- Keep only the top k tokens
+- Return the filtered distribution (don't renormalize)
+
+**Example:**
+\`\`\`javascript
+const probs = { "the": 0.4, "a": 0.3, "an": 0.2, "this": 0.1 };
+topK(probs, 2); // => { "the": 0.4, "a": 0.3 }
+\`\`\``,
+      `function topK(probabilities, k) {
+  // probabilities: object mapping tokens to probabilities
+  // k: number of top tokens to keep
+  // Return object with only the top k tokens
+}`,
+      `function topK(probabilities, k) {
+  const sorted = Object.entries(probabilities)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, k);
+  return Object.fromEntries(sorted);
+}`,
+      JSON.stringify([
+        "Use Object.entries() to convert to an array of [token, prob] pairs",
+        "Sort by probability in descending order: sort((a, b) => b[1] - a[1])",
+        "Use slice(0, k) to keep only the top k",
+        "Convert back to object with Object.fromEntries()",
+      ]),
+      "intermediate",
+      1,
+    ]
+  );
+
+  for (const tc of [
+    {
+      input: [{ the: 0.4, a: 0.3, an: 0.2, this: 0.1 }, 2],
+      expected: { the: 0.4, a: 0.3 },
+      desc: "Keep top 2 tokens",
+      order: 1,
+    },
+    {
+      input: [{ x: 0.5, y: 0.3, z: 0.2 }, 3],
+      expected: { x: 0.5, y: 0.3, z: 0.2 },
+      desc: "k equals number of tokens",
+      order: 2,
+    },
+    {
+      input: [{ a: 0.1, b: 0.9 }, 1],
+      expected: { b: 0.9 },
+      desc: "k=1 is like greedy",
+      order: 3,
+    },
+  ]) {
+    db.run(
+      `INSERT INTO test_cases (id, challenge_id, input, expected_output, description, order_index)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        nanoid(),
+        challenge3_2_1Id,
+        JSON.stringify(tc.input),
+        JSON.stringify(tc.expected),
+        tc.desc,
+        tc.order,
+      ]
+    );
+  }
+
+  // Concept 3.3: Top-p (Nucleus) Sampling
+  const concept3_3Id = nanoid();
+  db.run(
+    `INSERT INTO concepts (id, lesson_id, title, explanation, order_index)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      concept3_3Id,
+      lesson3Id,
+      "Top-p (Nucleus) Sampling",
+      `# Top-p (Nucleus) Sampling
+
+Top-p sampling dynamically selects tokens until their cumulative probability exceeds p. This adapts to the model's confidence.
+
+## How it works
+1. Sort tokens by probability (descending)
+2. Add tokens until cumulative probability ≥ p
+3. Sample from this "nucleus" of tokens
+
+## Example with p=0.8
+\`\`\`javascript
+// Sorted: { "the": 0.5, "a": 0.3, "an": 0.15, "this": 0.05 }
+// Cumulative: 0.5 → 0.8 → 0.95 → 1.0
+// With p=0.8: keep ["the", "a"] (cumsum reaches 0.8)
+\`\`\`
+
+## Top-p vs Top-k
+- Top-k: fixed number of tokens
+- Top-p: adaptive based on probability mass
+- Top-p is often preferred because it adapts to model confidence
+
+## Common values
+- p = 0.9 or 0.95 for diverse but coherent text
+- p = 1.0 is equivalent to sampling from full distribution`,
+      3,
+    ]
+  );
+
+  // Challenge 3.3.1: Implement top-p filtering
+  const challenge3_3_1Id = nanoid();
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      challenge3_3_1Id,
+      concept3_3Id,
+      "implement",
+      "Implement top-p (nucleus) filtering",
+      `Create a function that filters tokens until their cumulative probability exceeds p.
+
+The function should:
+- Sort tokens by probability (descending)
+- Keep adding tokens until cumulative probability ≥ p
+- Return the filtered distribution
+
+**Example:**
+\`\`\`javascript
+const probs = { "the": 0.5, "a": 0.3, "an": 0.15, "this": 0.05 };
+topP(probs, 0.8); // => { "the": 0.5, "a": 0.3 }
+// 0.5 + 0.3 = 0.8 which meets the threshold
+\`\`\``,
+      `function topP(probabilities, p) {
+  // probabilities: object mapping tokens to probabilities
+  // p: cumulative probability threshold
+  // Return object with tokens that sum to >= p
+}`,
+      `function topP(probabilities, p) {
+  const sorted = Object.entries(probabilities)
+    .sort((a, b) => b[1] - a[1]);
+
+  const result = [];
+  let cumsum = 0;
+
+  for (const [token, prob] of sorted) {
+    result.push([token, prob]);
+    cumsum += prob;
+    if (cumsum >= p) break;
+  }
+
+  return Object.fromEntries(result);
+}`,
+      JSON.stringify([
+        "Sort entries by probability descending first",
+        "Track cumulative sum as you iterate",
+        "Stop when cumulative sum reaches or exceeds p",
+        "Use Object.fromEntries() to convert back to object",
+      ]),
+      "intermediate",
+      1,
+    ]
+  );
+
+  for (const tc of [
+    {
+      input: [{ the: 0.5, a: 0.3, an: 0.15, this: 0.05 }, 0.8],
+      expected: { the: 0.5, a: 0.3 },
+      desc: "Cumsum reaches 0.8 after two tokens",
+      order: 1,
+    },
+    {
+      input: [{ x: 0.9, y: 0.1 }, 0.5],
+      expected: { x: 0.9 },
+      desc: "First token exceeds threshold",
+      order: 2,
+    },
+    {
+      input: [{ a: 0.33, b: 0.33, c: 0.34 }, 1.0],
+      expected: { a: 0.33, b: 0.33, c: 0.34 },
+      desc: "p=1.0 keeps all tokens",
+      order: 3,
+    },
+  ]) {
+    db.run(
+      `INSERT INTO test_cases (id, challenge_id, input, expected_output, description, order_index)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        nanoid(),
+        challenge3_3_1Id,
+        JSON.stringify(tc.input),
+        JSON.stringify(tc.expected),
+        tc.desc,
+        tc.order,
+      ]
+    );
+  }
+
+  // Concept 3.4: Temperature
+  const concept3_4Id = nanoid();
+  db.run(
+    `INSERT INTO concepts (id, lesson_id, title, explanation, order_index)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      concept3_4Id,
+      lesson3Id,
+      "Temperature",
+      `# Temperature
+
+Temperature controls the "sharpness" of the probability distribution before sampling.
+
+## The Math
+\`\`\`
+adjusted_logits = logits / temperature
+probabilities = softmax(adjusted_logits)
+\`\`\`
+
+## Effect of Temperature
+
+| Temperature | Effect |
+|------------|--------|
+| T < 1.0 | Sharper distribution, more confident choices |
+| T = 1.0 | Original distribution (no change) |
+| T > 1.0 | Flatter distribution, more random |
+
+## Examples
+\`\`\`javascript
+// Original probs: [0.7, 0.2, 0.1]
+
+// T = 0.5 (low): [0.9, 0.08, 0.02] - very confident
+// T = 1.0 (normal): [0.7, 0.2, 0.1] - unchanged
+// T = 2.0 (high): [0.5, 0.3, 0.2] - more uniform
+\`\`\`
+
+## Common Values
+- T = 0.0-0.3: Very focused, almost deterministic
+- T = 0.7-0.9: Balanced creativity and coherence
+- T = 1.0-2.0: High creativity, may be less coherent`,
+      4,
+    ]
+  );
+
+  // Challenge 3.4.1: Apply temperature to logits
+  const challenge3_4_1Id = nanoid();
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      challenge3_4_1Id,
+      concept3_4Id,
+      "implement",
+      "Apply temperature scaling to logits",
+      `Create a function that applies temperature scaling to logits (raw model outputs).
+
+The function should:
+- Divide each logit by the temperature
+- Return the scaled logits array
+
+**Example:**
+\`\`\`javascript
+applyTemperature([2.0, 1.0, 0.5], 0.5);
+// => [4.0, 2.0, 1.0] (each divided by 0.5)
+
+applyTemperature([2.0, 1.0, 0.5], 2.0);
+// => [1.0, 0.5, 0.25] (each divided by 2.0)
+\`\`\``,
+      `function applyTemperature(logits, temperature) {
+  // logits: array of raw model outputs
+  // temperature: scaling factor
+  // Return array of temperature-scaled logits
+}`,
+      `function applyTemperature(logits, temperature) {
+  return logits.map(logit => logit / temperature);
+}`,
+      JSON.stringify([
+        "Temperature scaling divides each logit by temperature",
+        "Use map to apply the division to each element",
+        "Lower temperature = larger values = sharper distribution",
+      ]),
+      "beginner",
+      1,
+    ]
+  );
+
+  for (const tc of [
+    {
+      input: [[2.0, 1.0, 0.5], 0.5],
+      expected: [4.0, 2.0, 1.0],
+      desc: "Low temperature amplifies differences",
+      order: 1,
+    },
+    {
+      input: [[2.0, 1.0, 0.5], 2.0],
+      expected: [1.0, 0.5, 0.25],
+      desc: "High temperature reduces differences",
+      order: 2,
+    },
+    {
+      input: [[1.0, 1.0, 1.0], 1.0],
+      expected: [1.0, 1.0, 1.0],
+      desc: "Temperature 1.0 is identity",
+      order: 3,
+    },
+  ]) {
+    db.run(
+      `INSERT INTO test_cases (id, challenge_id, input, expected_output, description, order_index)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        nanoid(),
+        challenge3_4_1Id,
+        JSON.stringify(tc.input),
+        JSON.stringify(tc.expected),
+        tc.desc,
+        tc.order,
+      ]
+    );
+  }
+
+  // Challenge: Compare decoding strategies
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      nanoid(),
+      concept3_1Id,
+      "explain",
+      "Compare greedy decoding with sampling methods",
+      `Explain the key differences between greedy decoding and sampling-based methods (top-k, top-p).
+
+Consider these aspects in your answer:
+1. **Determinism** - Does the same input always produce the same output?
+2. **Repetition** - Which method is more prone to repetitive loops?
+3. **Creativity** - Which methods produce more diverse outputs?
+4. **Use cases** - When would you choose each method?
+
+Write a clear comparison (3-5 paragraphs).`,
+      null,
+      null,
+      JSON.stringify([
+        "Greedy is deterministic; sampling methods introduce randomness",
+        "Greedy can get stuck repeating phrases because it always picks the same token",
+        "Consider: code generation vs creative writing - which needs which approach?",
+      ]),
+      "intermediate",
+      2,
+    ]
+  );
+
+  // ============================================
+  // LESSON 4: COMPLETION VS INSTRUCTION-TUNED
+  // ============================================
+  const lesson4Id = nanoid();
+  db.run(
+    `INSERT INTO lessons (id, title, slug, description, order_index, is_published)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      lesson4Id,
+      "Completion vs Instruction-Tuned Models",
+      "model-types",
+      "Understand the difference between base language models (completion) and instruction-tuned models that follow directions.",
+      4,
+      1,
+    ]
+  );
+
+  // Concept 4.1: Completion Models
+  const concept4_1Id = nanoid();
+  db.run(
+    `INSERT INTO concepts (id, lesson_id, title, explanation, order_index)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      concept4_1Id,
+      lesson4Id,
+      "Completion Models",
+      `# Completion Models (Base LLMs)
+
+Base language models are trained on one objective: **predict the next token**. They learn to continue text in a statistically likely way.
+
+## How They Work
+- Trained on massive text corpora (books, web pages, code)
+- Learn patterns, grammar, facts through prediction
+- Generate text that "looks like" their training data
+
+## Example Behavior
+\`\`\`
+Input: "The capital of France is"
+Output: "Paris. France is a country in Western Europe..."
+\`\`\`
+
+The model continues naturally, but doesn't "understand" you're asking a question.
+
+## Key Characteristics
+- ✅ Excellent at text continuation
+- ✅ Good for creative writing, code completion
+- ❌ Don't naturally follow instructions
+- ❌ May continue prompts instead of answering
+- ❌ No inherent safety guardrails
+
+## Examples
+- GPT-2
+- GPT-3 (davinci-base)
+- LLaMA base models`,
+      1,
+    ]
+  );
+
+  // Concept 4.2: Instruction-Tuned Models
+  const concept4_2Id = nanoid();
+  db.run(
+    `INSERT INTO concepts (id, lesson_id, title, explanation, order_index)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      concept4_2Id,
+      lesson4Id,
+      "Instruction-Tuned Models",
+      `# Instruction-Tuned Models
+
+Instruction-tuned models undergo additional training to follow human instructions and engage in helpful dialogue.
+
+## Post-Training Process
+1. **Supervised Fine-Tuning (SFT)**: Train on instruction-response pairs
+2. **RLHF/DPO**: Align with human preferences for helpfulness and safety
+
+## How They Behave
+\`\`\`
+Input: "What is the capital of France?"
+Output: "The capital of France is Paris."
+\`\`\`
+
+The model interprets this as a question and provides a direct answer.
+
+## Key Characteristics
+- ✅ Follow instructions naturally
+- ✅ Stay in conversation mode
+- ✅ Include safety guardrails
+- ✅ More helpful and aligned
+- ❌ May refuse some requests
+- ❌ Can be overly cautious
+
+## Examples
+- ChatGPT (GPT-3.5/4 + RLHF)
+- Claude
+- Qwen-Chat
+- LLaMA-Chat`,
+      2,
+    ]
+  );
+
+  // Concept 4.3: Chat Templates
+  const concept4_3Id = nanoid();
+  db.run(
+    `INSERT INTO concepts (id, lesson_id, title, explanation, order_index)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      concept4_3Id,
+      lesson4Id,
+      "Chat Templates",
+      `# Chat Templates
+
+Instruction-tuned models expect input in a specific format called a chat template. This helps the model understand the conversation structure.
+
+## Why Templates Matter
+Without proper formatting, instruction-tuned models may:
+- Continue text instead of responding
+- Give inconsistent outputs
+- Ignore the conversational context
+
+## Example Formats
+
+### ChatML (OpenAI style)
+\`\`\`
+<|im_start|>system
+You are a helpful assistant.
+<|im_end|>
+<|im_start|>user
+What is 2+2?
+<|im_end|>
+<|im_start|>assistant
+\`\`\`
+
+### Llama 2 style
+\`\`\`
+[INST] <<SYS>>
+You are a helpful assistant.
+<</SYS>>
+
+What is 2+2? [/INST]
+\`\`\`
+
+## Using Templates
+Most libraries handle this automatically:
+\`\`\`javascript
+// Hugging Face
+tokenizer.apply_chat_template(messages)
+
+// OpenAI API
+{ role: "user", content: "Hello" }
+\`\`\``,
+      3,
+    ]
+  );
+
+  // Challenge 4.1: Explain the difference
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      nanoid(),
+      concept4_1Id,
+      "explain",
+      "Why would GPT-2 fail at answering questions?",
+      `Explain why a base model like GPT-2 would struggle to answer "What is the capital of France?" compared to an instruction-tuned model.
+
+Consider:
+1. What objective was GPT-2 trained on?
+2. How does it interpret the input prompt?
+3. What kind of output would it likely produce?
+4. How does instruction-tuning change this behavior?`,
+      null,
+      null,
+      JSON.stringify([
+        "GPT-2 was trained only on next-token prediction",
+        "It might continue with: 'What is the capital of Germany?'",
+        "Instruction-tuning teaches models to interpret prompts as requests",
+      ]),
+      "beginner",
+      1,
+    ]
+  );
+
+  // Challenge 4.2: Format chat messages
+  const challenge4_2_1Id = nanoid();
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      challenge4_2_1Id,
+      concept4_3Id,
+      "implement",
+      "Format messages into ChatML template",
+      `Create a function that formats an array of chat messages into the ChatML format.
+
+Each message has a \`role\` (system, user, or assistant) and \`content\`.
+
+**Example:**
+\`\`\`javascript
+const messages = [
+  { role: "system", content: "You are helpful." },
+  { role: "user", content: "Hi!" }
+];
+formatChatML(messages);
+// => "<|im_start|>system\\nYou are helpful.<|im_end|>\\n<|im_start|>user\\nHi!<|im_end|>\\n"
+\`\`\``,
+      `function formatChatML(messages) {
+  // messages: array of { role, content } objects
+  // Return formatted ChatML string
+}`,
+      `function formatChatML(messages) {
+  return messages
+    .map(m => \`<|im_start|>\${m.role}\\n\${m.content}<|im_end|>\`)
+    .join("\\n") + "\\n";
+}`,
+      JSON.stringify([
+        "Each message wraps in <|im_start|>role...content<|im_end|>",
+        "Use template literals for cleaner string building",
+        "Join messages with newlines",
+      ]),
+      "intermediate",
+      1,
+    ]
+  );
+
+  for (const tc of [
+    {
+      input: [[{ role: "user", content: "Hello" }]],
+      expected: "<|im_start|>user\nHello<|im_end|>\n",
+      desc: "Single user message",
+      order: 1,
+    },
+    {
+      input: [
+        [
+          { role: "system", content: "Be helpful" },
+          { role: "user", content: "Hi" },
+        ],
+      ],
+      expected:
+        "<|im_start|>system\nBe helpful<|im_end|>\n<|im_start|>user\nHi<|im_end|>\n",
+      desc: "System and user messages",
+      order: 2,
+    },
+  ]) {
+    db.run(
+      `INSERT INTO test_cases (id, challenge_id, input, expected_output, description, order_index)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        nanoid(),
+        challenge4_2_1Id,
+        JSON.stringify(tc.input),
+        JSON.stringify(tc.expected),
+        tc.desc,
+        tc.order,
+      ]
+    );
+  }
+
+  // ============================================
+  // LESSON 5: LLM PLAYGROUND (Optional)
+  // ============================================
+  const lesson5Id = nanoid();
+  db.run(
+    `INSERT INTO lessons (id, title, slug, description, order_index, is_published)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      lesson5Id,
+      "Building LLM Applications",
+      "llm-applications",
+      "Optional: Learn to build interactive applications with language models, combining all the concepts from previous lessons.",
+      5,
+      1,
+    ]
+  );
+
+  // Concept 5.1: Putting It All Together
+  const concept5_1Id = nanoid();
+  db.run(
+    `INSERT INTO concepts (id, lesson_id, title, explanation, order_index)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      concept5_1Id,
+      lesson5Id,
+      "The LLM Pipeline",
+      `# The Complete LLM Pipeline
+
+Now you understand all the pieces. Here's how they fit together:
+
+## The Flow
+\`\`\`
+User Input
+    ↓
+Tokenization (text → token IDs)
+    ↓
+Model Forward Pass
+    ↓
+Logits (raw scores for each token)
+    ↓
+Temperature Scaling
+    ↓
+Softmax → Probabilities
+    ↓
+Decoding Strategy (greedy/top-k/top-p)
+    ↓
+Selected Token
+    ↓
+Append to sequence, repeat
+    ↓
+Detokenization (token IDs → text)
+    ↓
+Output to User
+\`\`\`
+
+## Key Parameters
+| Parameter | Effect |
+|-----------|--------|
+| \`max_tokens\` | Maximum length of generation |
+| \`temperature\` | Randomness (0 = deterministic, >1 = creative) |
+| \`top_k\` | Sample from top k tokens |
+| \`top_p\` | Sample from tokens with cumulative prob ≥ p |
+| \`stop_sequences\` | Stop generation at specific strings |
+
+## Building Applications
+When building LLM apps, you control these parameters to get the right behavior:
+- **Code generation**: Low temperature (0.2), greedy or top_p=0.95
+- **Creative writing**: Higher temperature (0.9), top_p=0.95
+- **Factual Q&A**: Low temperature, maybe greedy`,
+      1,
+    ]
+  );
+
+  // Challenge 5.1: Build a generation pipeline
+  const challenge5_1_1Id = nanoid();
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      challenge5_1_1Id,
+      concept5_1Id,
+      "implement",
+      "Implement a simplified generation step",
+      `Create a function that performs one step of text generation:
+1. Apply temperature to logits
+2. Convert to probabilities with softmax
+3. Select a token using greedy decoding
+
+**Example:**
+\`\`\`javascript
+const logits = [2.0, 1.0, 0.5];
+const vocab = ["the", "a", "an"];
+generateStep(logits, vocab, 1.0);
+// => "the" (highest probability after softmax)
+\`\`\``,
+      `function generateStep(logits, vocab, temperature) {
+  // 1. Apply temperature scaling
+  // 2. Apply softmax to get probabilities
+  // 3. Return the token with highest probability
+
+  // Helper: softmax function
+  function softmax(arr) {
+    const max = Math.max(...arr);
+    const exps = arr.map(x => Math.exp(x - max));
+    const sum = exps.reduce((a, b) => a + b, 0);
+    return exps.map(e => e / sum);
+  }
+
+  // Your code here
+}`,
+      `function generateStep(logits, vocab, temperature) {
+  function softmax(arr) {
+    const max = Math.max(...arr);
+    const exps = arr.map(x => Math.exp(x - max));
+    const sum = exps.reduce((a, b) => a + b, 0);
+    return exps.map(e => e / sum);
+  }
+
+  const scaled = logits.map(l => l / temperature);
+  const probs = softmax(scaled);
+
+  let maxIdx = 0;
+  for (let i = 1; i < probs.length; i++) {
+    if (probs[i] > probs[maxIdx]) maxIdx = i;
+  }
+
+  return vocab[maxIdx];
+}`,
+      JSON.stringify([
+        "First divide each logit by temperature",
+        "Then apply the provided softmax function",
+        "Find the index with the highest probability",
+        "Return vocab[maxIdx]",
+      ]),
+      "intermediate",
+      1,
+    ]
+  );
+
+  for (const tc of [
+    {
+      input: [[2.0, 1.0, 0.5], ["the", "a", "an"], 1.0],
+      expected: "the",
+      desc: "Highest logit becomes highest prob",
+      order: 1,
+    },
+    {
+      input: [[1.0, 1.0, 1.0], ["x", "y", "z"], 1.0],
+      expected: "x",
+      desc: "Equal logits - first one wins (greedy)",
+      order: 2,
+    },
+    {
+      input: [[0.5, 2.0, 1.0], ["a", "b", "c"], 0.5],
+      expected: "b",
+      desc: "Low temperature keeps same winner",
+      order: 3,
+    },
+  ]) {
+    db.run(
+      `INSERT INTO test_cases (id, challenge_id, input, expected_output, description, order_index)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        nanoid(),
+        challenge5_1_1Id,
+        JSON.stringify(tc.input),
+        JSON.stringify(tc.expected),
+        tc.desc,
+        tc.order,
+      ]
+    );
+  }
+
   console.log("Database seeded successfully!");
-  console.log("- 2 lessons");
-  console.log("- 5 concepts");
-  console.log("- 7 challenges");
+  console.log("- 5 lessons");
+  console.log("- 12 concepts");
+  console.log("- 14 challenges");
 }
 
 seed();
