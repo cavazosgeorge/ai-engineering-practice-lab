@@ -43,7 +43,7 @@ export function LessonDetail() {
   if (loading) {
     return (
       <Container maxW="container.xl" py={12}>
-        <Text color="gray.500">Loading...</Text>
+        <Text color="gray.400">Loading...</Text>
       </Container>
     );
   }
@@ -51,7 +51,7 @@ export function LessonDetail() {
   if (!lesson) {
     return (
       <Container maxW="container.xl" py={12}>
-        <Text color="gray.500">Lesson not found</Text>
+        <Text color="gray.400">Lesson not found</Text>
       </Container>
     );
   }
@@ -63,13 +63,13 @@ export function LessonDetail() {
           <Breadcrumb.List>
             <Breadcrumb.Item>
               <Link to="/">
-                <Breadcrumb.Link color="gray.500">Home</Breadcrumb.Link>
+                <Breadcrumb.Link color="gray.400">Home</Breadcrumb.Link>
               </Link>
             </Breadcrumb.Item>
             <Breadcrumb.Separator />
             <Breadcrumb.Item>
               <Link to="/lessons">
-                <Breadcrumb.Link color="gray.500">Lessons</Breadcrumb.Link>
+                <Breadcrumb.Link color="gray.400">Lessons</Breadcrumb.Link>
               </Link>
             </Breadcrumb.Item>
             <Breadcrumb.Separator />
@@ -154,7 +154,7 @@ export function LessonDetail() {
                               {challenge.title}
                             </Text>
                           </HStack>
-                          <Text color="gray.500" fontSize="sm">
+                          <Text color="gray.400" fontSize="sm">
                             →
                           </Text>
                         </HStack>

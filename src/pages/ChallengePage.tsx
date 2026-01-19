@@ -72,7 +72,7 @@ export function ChallengePage() {
   if (loading) {
     return (
       <Container maxW="container.xl" py={12}>
-        <Text color="gray.500">Loading...</Text>
+        <Text color="gray.400">Loading...</Text>
       </Container>
     );
   }
@@ -80,7 +80,7 @@ export function ChallengePage() {
   if (!challenge) {
     return (
       <Container maxW="container.xl" py={12}>
-        <Text color="gray.500">Challenge not found</Text>
+        <Text color="gray.400">Challenge not found</Text>
       </Container>
     );
   }
@@ -94,7 +94,7 @@ export function ChallengePage() {
           <Breadcrumb.List>
             <Breadcrumb.Item>
               <Link to="/">
-                <Breadcrumb.Link color="gray.500">Home</Breadcrumb.Link>
+                <Breadcrumb.Link color="gray.400">Home</Breadcrumb.Link>
               </Link>
             </Breadcrumb.Item>
             <Breadcrumb.Separator />
@@ -102,7 +102,7 @@ export function ChallengePage() {
               <>
                 <Breadcrumb.Item>
                   <Link to={`/lessons/${lesson.slug}`}>
-                    <Breadcrumb.Link color="gray.500">
+                    <Breadcrumb.Link color="gray.400">
                       {lesson.title}
                     </Breadcrumb.Link>
                   </Link>
@@ -166,8 +166,9 @@ export function ChallengePage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      colorPalette="gray"
+                      color="gray.300"
                       onClick={handleReset}
+                      _hover={{ bg: "gray.800" }}
                     >
                       Reset
                     </Button>
@@ -220,7 +221,6 @@ export function ChallengePage() {
                     {challenge.hints.map((hint, index) => (
                       <Collapsible.Root
                         key={index}
-                        open={index < hintsRevealed}
                         onOpenChange={(details) => {
                           if (details.open && index >= hintsRevealed) {
                             setHintsRevealed(index + 1);
@@ -230,9 +230,11 @@ export function ChallengePage() {
                         <Collapsible.Trigger asChild>
                           <Button
                             variant="ghost"
-                            colorPalette="gray"
+                            color="gray.300"
                             width="full"
                             justifyContent="flex-start"
+                            _hover={{ bg: "gray.800" }}
+                            _expanded={{ bg: "gray.800" }}
                           >
                             {index < hintsRevealed
                               ? `Hint ${index + 1}`
@@ -324,7 +326,6 @@ export function ChallengePage() {
                   {challenge.hints.map((hint, index) => (
                     <Collapsible.Root
                       key={index}
-                      open={index < hintsRevealed}
                       onOpenChange={(details) => {
                         if (details.open && index >= hintsRevealed) {
                           setHintsRevealed(index + 1);
@@ -334,9 +335,11 @@ export function ChallengePage() {
                       <Collapsible.Trigger asChild>
                         <Button
                           variant="ghost"
-                          colorPalette="gray"
+                          color="gray.300"
                           width="full"
                           justifyContent="flex-start"
+                          _hover={{ bg: "gray.800" }}
+                          _expanded={{ bg: "gray.800" }}
                         >
                           {index < hintsRevealed
                             ? `Hint ${index + 1}`

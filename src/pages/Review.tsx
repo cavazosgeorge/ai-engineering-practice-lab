@@ -33,7 +33,7 @@ export function Review() {
   if (loading) {
     return (
       <Container maxW="container.xl" py={12}>
-        <Text color="gray.500">Loading...</Text>
+        <Text color="gray.400">Loading...</Text>
       </Container>
     );
   }
@@ -51,7 +51,7 @@ export function Review() {
               <Text color="gray.400" fontSize="lg" mb={4}>
                 No challenges due for review!
               </Text>
-              <Text color="gray.500">
+              <Text color="gray.400">
                 Complete some challenges to start building your review queue.
               </Text>
               <Link to="/lessons">
@@ -85,7 +85,7 @@ export function Review() {
                           >
                             {item.masteryLevel}
                           </Badge>
-                          <Text color="gray.500" fontSize="sm">
+                          <Text color="gray.400" fontSize="sm">
                             {item.repetitions} reviews
                           </Text>
                         </HStack>
@@ -93,7 +93,7 @@ export function Review() {
                           {item.challenge.title}
                         </Text>
                         {item.nextReviewDate && (
-                          <Text color="gray.500" fontSize="sm">
+                          <Text color="gray.400" fontSize="sm">
                             Due{" "}
                             {formatDistanceToNow(new Date(item.nextReviewDate), {
                               addSuffix: true,

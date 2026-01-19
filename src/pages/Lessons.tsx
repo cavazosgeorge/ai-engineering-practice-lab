@@ -26,7 +26,7 @@ export function Lessons() {
   if (loading) {
     return (
       <Container maxW="container.xl" py={12}>
-        <Text color="gray.500">Loading...</Text>
+        <Text color="gray.400">Loading...</Text>
       </Container>
     );
   }
@@ -57,7 +57,7 @@ export function Lessons() {
                     <Badge colorPalette="cyan" variant="subtle" fontSize="xs">
                       Lesson {lesson.orderIndex}
                     </Badge>
-                    <Text color="gray.500" fontSize="sm">
+                    <Text color="gray.400" fontSize="sm">
                       {lesson.concepts.reduce(
                         (acc, c) => acc + c.challenges.length,
                         0
@@ -75,7 +75,7 @@ export function Lessons() {
                     {lesson.concepts.slice(0, 3).map((concept) => (
                       <Text
                         key={concept.id}
-                        color="gray.500"
+                        color="gray.400"
                         fontSize="sm"
                       >
                         • {concept.title}
@@ -96,7 +96,7 @@ export function Lessons() {
         {lessons.length === 0 && (
           <Card.Root bg="gray.900" borderColor="gray.800">
             <Card.Body textAlign="center" py={12}>
-              <Text color="gray.500">
+              <Text color="gray.400">
                 No lessons available yet. Run `bun run db:seed` to add initial
                 content.
               </Text>

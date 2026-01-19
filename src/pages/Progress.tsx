@@ -41,7 +41,7 @@ export function ProgressPage() {
   if (loading) {
     return (
       <Container maxW="container.xl" py={12}>
-        <Text color="gray.500">Loading...</Text>
+        <Text color="gray.400">Loading...</Text>
       </Container>
     );
   }
@@ -82,7 +82,7 @@ export function ProgressPage() {
             <SimpleGrid columns={{ base: 2, md: 4 }} gap={4}>
               <Card.Root bg="gray.900" borderColor="gray.800">
                 <Card.Body>
-                  <Text color="gray.500" fontSize="sm">
+                  <Text color="gray.400" fontSize="sm">
                     Total Practiced
                   </Text>
                   <Text color="white" fontSize="2xl" fontWeight="bold">
@@ -92,7 +92,7 @@ export function ProgressPage() {
               </Card.Root>
               <Card.Root bg="gray.900" borderColor="gray.800">
                 <Card.Body>
-                  <Text color="gray.500" fontSize="sm">
+                  <Text color="gray.400" fontSize="sm">
                     Mastered
                   </Text>
                   <Text color="green.400" fontSize="2xl" fontWeight="bold">
@@ -102,7 +102,7 @@ export function ProgressPage() {
               </Card.Root>
               <Card.Root bg="gray.900" borderColor="gray.800">
                 <Card.Body>
-                  <Text color="gray.500" fontSize="sm">
+                  <Text color="gray.400" fontSize="sm">
                     Reviewing
                   </Text>
                   <Text color="yellow.400" fontSize="2xl" fontWeight="bold">
@@ -112,7 +112,7 @@ export function ProgressPage() {
               </Card.Root>
               <Card.Root bg="gray.900" borderColor="gray.800">
                 <Card.Body>
-                  <Text color="gray.500" fontSize="sm">
+                  <Text color="gray.400" fontSize="sm">
                     Learning
                   </Text>
                   <Text color="blue.400" fontSize="2xl" fontWeight="bold">
@@ -147,7 +147,7 @@ export function ProgressPage() {
                           </Badge>
                           <Text color="white">{item.challenge.title}</Text>
                         </HStack>
-                        <Text color="gray.500" fontSize="sm">
+                        <Text color="gray.400" fontSize="sm">
                           {item.repetitions} reviews
                         </Text>
                       </HStack>
@@ -163,7 +163,7 @@ export function ProgressPage() {
               <Text color="gray.400" fontSize="lg" mb={4}>
                 No progress yet!
               </Text>
-              <Text color="gray.500">
+              <Text color="gray.400">
                 Start practicing challenges to track your progress.
               </Text>
               <Link to="/lessons">
