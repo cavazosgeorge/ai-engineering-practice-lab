@@ -84,6 +84,7 @@ export function ChallengePage() {
           },
         ],
         executionTimeMs: 0,
+        stdout: "",
       });
       return;
     }
@@ -129,6 +130,7 @@ export function ChallengePage() {
           },
         ],
         executionTimeMs: 0,
+        stdout: "",
       });
     } finally {
       setSubmitting(false);
@@ -294,6 +296,24 @@ export function ChallengePage() {
                 </Card.Header>
                 <Card.Body pt={0}>
                   <TestResults results={result.results} />
+                  {result.stdout && (
+                    <Box mt={4}>
+                      <Text color="gray.400" fontSize="sm" mb={2}>
+                        Console Output:
+                      </Text>
+                      <Box
+                        p={3}
+                        bg="gray.800"
+                        borderRadius="md"
+                        fontFamily="mono"
+                        fontSize="sm"
+                        color="cyan.300"
+                        whiteSpace="pre-wrap"
+                      >
+                        {result.stdout}
+                      </Box>
+                    </Box>
+                  )}
                 </Card.Body>
               </Card.Root>
             )}

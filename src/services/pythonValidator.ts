@@ -17,6 +17,7 @@ export interface ValidationResult {
   passed: boolean;
   results: TestResult[];
   executionTimeMs: number;
+  stdout: string;
 }
 
 // Deep equality check for comparing results
@@ -85,8 +86,18 @@ export async function validatePythonCode(
 ): Promise<ValidationResult> {
   const startTime = performance.now();
   const results: TestResult[] = [];
+  let stdout = "";
 
   try {
+    // Set up stdout capture
+    await runPython(`
+import sys
+import io
+__captured_stdout__ = io.StringIO()
+__original_stdout__ = sys.stdout
+sys.stdout = __captured_stdout__
+`);
+
     // First, execute the user's code to define their function
     await runPython(userCode);
 
@@ -138,10 +149,21 @@ __result__
     });
   }
 
+  // Capture stdout and restore original
+  try {
+    const capturedOutput = await runPython(`
+sys.stdout = __original_stdout__
+__captured_stdout__.getvalue()
+`);
+    stdout = String(capturedOutput || "");
+  } catch {
+    // Ignore errors in stdout capture
+  }
+
   const executionTimeMs = performance.now() - startTime;
   const passed = results.length > 0 && results.every((r) => r.passed);
 
-  return { passed, results, executionTimeMs };
+  return { passed, results, executionTimeMs, stdout };
 }
 
 // Convert JS value to Python literal string
