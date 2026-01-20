@@ -76,7 +76,7 @@ app.get("/:id", (c) => {
     }
   }
 
-  // Build response (exclude solution_code)
+  // Build response (exclude solution_code for implement challenges)
   return c.json({
     id: challenge.id,
     conceptId: challenge.concept_id,
@@ -107,6 +107,8 @@ app.get("/:id", (c) => {
         }
       : null,
     lastSubmission,
+    // Include model answer for explain challenges (used for self-assessment)
+    modelAnswer: challenge.type === "explain" ? challenge.solution_code : null,
   });
 });
 

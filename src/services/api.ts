@@ -31,6 +31,7 @@ export interface Challenge {
   testCases?: TestCase[];
   concept?: Concept & { lesson?: Lesson };
   lastSubmission?: { code: string; passed: boolean } | null;
+  modelAnswer?: string | null;
 }
 
 export interface TestCase {
