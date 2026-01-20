@@ -11,6 +11,7 @@ import {
   Breadcrumb,
   Collapsible,
   Spinner,
+  Textarea,
 } from "@chakra-ui/react";
 import { Link, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -41,6 +42,11 @@ function extractFunctionName(code: string): string | null {
   return match ? match[1] : null;
 }
 
+// localStorage key for saving explanation drafts
+function getExplanationDraftKey(challengeId: string): string {
+  return `explanation_draft_${challengeId}`;
+}
+
 export function ChallengePage() {
   const { id } = useParams<{ id: string }>();
   const [challenge, setChallenge] = useState<Challenge | null>(null);
@@ -49,6 +55,10 @@ export function ChallengePage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [hintsRevealed, setHintsRevealed] = useState(0);
+  // Explain challenge state
+  const [explanation, setExplanation] = useState("");
+  const [answerRevealed, setAnswerRevealed] = useState(false);
+  const [selfAssessment, setSelfAssessment] = useState<"got_it" | "review" | null>(null);
 
   const {
     isLoading: pyodideLoading,
@@ -64,10 +74,37 @@ export function ChallengePage() {
         setChallenge(data);
         // Use last submission if available, otherwise use starter code
         setCode(data.lastSubmission?.code || data.starterCode || "");
+        // For explain challenges, load saved explanation and assessment state
+        if (data.type === "explain") {
+          if (data.lastSubmission) {
+            // Load from server submission
+            setExplanation(data.lastSubmission.code);
+            setAnswerRevealed(true);
+            setSelfAssessment(data.lastSubmission.passed ? "got_it" : "review");
+          } else {
+            // Load draft from localStorage if no submission
+            const draft = localStorage.getItem(getExplanationDraftKey(data.id));
+            if (draft) {
+              setExplanation(draft);
+            }
+          }
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [id]);
+
+  // Auto-save explanation draft to localStorage
+  useEffect(() => {
+    if (!challenge || challenge.type !== "explain" || selfAssessment) return;
+
+    // Save draft to localStorage (debounced by React's batching)
+    if (explanation.trim()) {
+      localStorage.setItem(getExplanationDraftKey(challenge.id), explanation);
+    } else {
+      localStorage.removeItem(getExplanationDraftKey(challenge.id));
+    }
+  }, [explanation, challenge, selfAssessment]);
 
   const handleSubmit = async () => {
     if (!challenge || !code.trim() || !pyodideReady) return;
@@ -418,59 +455,216 @@ export function ChallengePage() {
         )}
 
         {challenge.type === "explain" && (
-          <Card.Root bg="gray.900" borderColor="gray.800">
-            <Card.Header>
-              <Heading size="md" color="white">
-                Your Explanation
-              </Heading>
-            </Card.Header>
-            <Card.Body>
-              <Text color="gray.400">
-                This is an explanation challenge. Take some time to think through
-                the question and formulate your answer. You can use the hints if
-                you get stuck.
-              </Text>
-              {challenge.hints && challenge.hints.length > 0 && (
-                <VStack gap={3} align="stretch" mt={4}>
-                  {challenge.hints.map((hint, index) => (
-                    <Collapsible.Root
-                      key={index}
-                      onOpenChange={(details) => {
-                        if (details.open && index >= hintsRevealed) {
-                          setHintsRevealed(index + 1);
+          <>
+            <Card.Root bg="gray.900" borderColor="gray.800">
+              <Card.Header>
+                <Heading size="md" color="white">
+                  Your Explanation
+                </Heading>
+              </Card.Header>
+              <Card.Body>
+                <Text color="gray.400" mb={4}>
+                  Write your explanation below, then reveal the model answer to
+                  compare and self-assess your understanding.
+                </Text>
+                <Textarea
+                  value={explanation}
+                  onChange={(e) => setExplanation(e.target.value)}
+                  placeholder="Type your explanation here..."
+                  bg="gray.800"
+                  borderColor="gray.700"
+                  color="white"
+                  minH="200px"
+                  mb={4}
+                  _placeholder={{ color: "gray.400" }}
+                />
+                {!answerRevealed ? (
+                  <Button
+                    colorPalette="cyan"
+                    onClick={() => setAnswerRevealed(true)}
+                    disabled={!explanation.trim()}
+                  >
+                    Reveal Model Answer
+                  </Button>
+                ) : (
+                  <Text color="gray.400" fontSize="sm">
+                    Compare your answer with the model answer below
+                  </Text>
+                )}
+              </Card.Body>
+            </Card.Root>
+
+            {answerRevealed && (
+              <Card.Root bg="cyan.900/20" borderColor="cyan.800">
+                <Card.Header>
+                  <Heading size="md" color="white">
+                    Model Answer
+                  </Heading>
+                </Card.Header>
+                <Card.Body>
+                  {challenge.modelAnswer ? (
+                    <Box
+                      color="gray.300"
+                      css={{
+                        "& h1, & h2, & h3": { color: "white", marginTop: "1rem" },
+                        "& code": {
+                          background: "var(--chakra-colors-gray-800)",
+                          padding: "0.2em 0.4em",
+                          borderRadius: "4px",
+                        },
+                        "& pre": {
+                          background: "var(--chakra-colors-gray-800)",
+                          padding: "1rem",
+                          borderRadius: "8px",
+                          overflow: "auto",
+                        },
+                        "& ul, & ol": { paddingLeft: "1.5rem" },
+                        "& li": { marginBottom: "0.5rem" },
+                      }}
+                    >
+                      <ReactMarkdown>{challenge.modelAnswer}</ReactMarkdown>
+                    </Box>
+                  ) : (
+                    <Text color="gray.400" fontStyle="italic">
+                      Model answer not yet available for this challenge. Self-assess based on your understanding of the concepts.
+                    </Text>
+                  )}
+                </Card.Body>
+              </Card.Root>
+            )}
+
+            {answerRevealed && !selfAssessment && (
+              <Card.Root bg="gray.900" borderColor="gray.800">
+                <Card.Header>
+                  <Heading size="md" color="white">
+                    How did you do?
+                  </Heading>
+                </Card.Header>
+                <Card.Body>
+                  <Text color="gray.400" mb={4}>
+                    Compare your explanation with the model answer. Did you cover
+                    the key points?
+                  </Text>
+                  <HStack gap={4}>
+                    <Button
+                      colorPalette="green"
+                      onClick={async () => {
+                        setSelfAssessment("got_it");
+                        localStorage.removeItem(getExplanationDraftKey(challenge.id));
+                        try {
+                          await recordSubmission(challenge.id, explanation, true, hintsRevealed > 0);
+                        } catch (err) {
+                          console.error("Failed to record:", err);
                         }
                       }}
                     >
-                      <Collapsible.Trigger asChild>
-                        <Button
-                          variant="ghost"
-                          color="gray.300"
-                          width="full"
-                          justifyContent="flex-start"
-                          _hover={{ bg: "gray.800" }}
-                          _expanded={{ bg: "gray.800" }}
-                        >
-                          {index < hintsRevealed
-                            ? `Hint ${index + 1}`
-                            : `Reveal Hint ${index + 1}`}
-                        </Button>
-                      </Collapsible.Trigger>
-                      <Collapsible.Content>
-                        <Box
-                          p={4}
-                          bg="gray.800"
-                          borderRadius="md"
-                          color="gray.300"
-                        >
-                          <ReactMarkdown>{hint}</ReactMarkdown>
-                        </Box>
-                      </Collapsible.Content>
-                    </Collapsible.Root>
-                  ))}
-                </VStack>
-              )}
-            </Card.Body>
-          </Card.Root>
+                      Got it!
+                    </Button>
+                    <Button
+                      colorPalette="orange"
+                      variant="subtle"
+                      onClick={async () => {
+                        setSelfAssessment("review");
+                        localStorage.removeItem(getExplanationDraftKey(challenge.id));
+                        try {
+                          await recordSubmission(challenge.id, explanation, false, hintsRevealed > 0);
+                        } catch (err) {
+                          console.error("Failed to record:", err);
+                        }
+                      }}
+                    >
+                      Need to Review
+                    </Button>
+                  </HStack>
+                </Card.Body>
+              </Card.Root>
+            )}
+
+            {selfAssessment && (
+              <Card.Root
+                bg={selfAssessment === "got_it" ? "green.900/20" : "orange.900/20"}
+                borderColor={selfAssessment === "got_it" ? "green.800" : "orange.800"}
+              >
+                <Card.Body>
+                  <HStack justify="space-between">
+                    <Text color="white" fontWeight="medium">
+                      {selfAssessment === "got_it"
+                        ? "Great job! You've marked this as understood."
+                        : "Marked for review. Keep practicing!"}
+                    </Text>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      color="gray.300"
+                      _hover={{ bg: "gray.700", color: "white" }}
+                      onClick={async () => {
+                        setExplanation("");
+                        setAnswerRevealed(false);
+                        setSelfAssessment(null);
+                        localStorage.removeItem(getExplanationDraftKey(challenge.id));
+                        try {
+                          await resetChallengeProgress(challenge.id);
+                        } catch (err) {
+                          console.error("Failed to reset:", err);
+                        }
+                      }}
+                    >
+                      Try Again
+                    </Button>
+                  </HStack>
+                </Card.Body>
+              </Card.Root>
+            )}
+
+            {challenge.hints && challenge.hints.length > 0 && (
+              <Card.Root bg="gray.900" borderColor="gray.800">
+                <Card.Header>
+                  <Heading size="md" color="white">
+                    Hints
+                  </Heading>
+                </Card.Header>
+                <Card.Body pt={0}>
+                  <VStack gap={3} align="stretch">
+                    {challenge.hints.map((hint, index) => (
+                      <Collapsible.Root
+                        key={index}
+                        onOpenChange={(details) => {
+                          if (details.open && index >= hintsRevealed) {
+                            setHintsRevealed(index + 1);
+                          }
+                        }}
+                      >
+                        <Collapsible.Trigger asChild>
+                          <Button
+                            variant="ghost"
+                            color="gray.300"
+                            width="full"
+                            justifyContent="flex-start"
+                            _hover={{ bg: "gray.800" }}
+                            _expanded={{ bg: "gray.800" }}
+                          >
+                            {index < hintsRevealed
+                              ? `Hint ${index + 1}`
+                              : `Reveal Hint ${index + 1}`}
+                          </Button>
+                        </Collapsible.Trigger>
+                        <Collapsible.Content>
+                          <Box
+                            p={4}
+                            bg="gray.800"
+                            borderRadius="md"
+                            color="gray.300"
+                          >
+                            <ReactMarkdown>{hint}</ReactMarkdown>
+                          </Box>
+                        </Collapsible.Content>
+                      </Collapsible.Root>
+                    ))}
+                  </VStack>
+                </Card.Body>
+              </Card.Root>
+            )}
+          </>
         )}
       </VStack>
     </Container>
