@@ -411,7 +411,21 @@ Consider these aspects in your answer:
 
 Write a clear, concise explanation (3-5 paragraphs).`,
       null,
-      null,
+      `## Vocabulary Efficiency
+
+Word-level tokenization requires an enormous vocabulary to achieve good coverage of a language. English alone has hundreds of thousands of words, and when you include technical terms, proper nouns, and compound words, the vocabulary can grow to millions of entries. This creates memory and computational challenges. BPE, on the other hand, achieves excellent coverage with a fixed, manageable vocabulary size (typically 30,000-50,000 tokens) by breaking words into commonly occurring subword pieces.
+
+## Out-of-Vocabulary Handling
+
+The most critical advantage of BPE is how it handles unknown words. Word-level tokenizers must use a special [UNK] token for any word not in their vocabulary, losing all semantic information about that word. BPE can tokenize *any* word by breaking it into known subword pieces. For example, "unfriendliness" might become ["un", "friend", "li", "ness"], preserving meaningful components even for words the model has never seen as a whole.
+
+## Morphological Awareness
+
+BPE naturally captures morphological patterns in language. Related words like "run", "running", "runner", and "runs" will share common subword tokens (like "run"), allowing the model to recognize their relationship and share learned parameters. Word-level tokenization treats each form as a completely separate entity with no connection, requiring the model to independently learn that "running" relates to "run."
+
+## Trade-offs
+
+BPE isn't without downsides. It produces longer token sequences than word-level tokenization (more tokens to process), and the segmentation can sometimes be counterintuitive (splitting words in unexpected places). Word-level tokenization is simpler to understand and debug. However, for most modern NLP applications, BPE's flexibility and efficient vocabulary usage far outweigh these minor drawbacks, which is why it's used in virtually all state-of-the-art language models.`,
       JSON.stringify([
         "Think about what happens when you encounter a word not in your vocabulary",
         "Consider words like 'unhappiness' - how would each method tokenize it?",
@@ -1146,7 +1160,21 @@ Consider these aspects in your answer:
 
 Write a clear comparison (3-5 paragraphs).`,
       null,
-      null,
+      `## Determinism
+
+Greedy decoding is completely deterministic—given the same input and model, it will always produce the exact same output because it always selects the highest probability token. Sampling methods (top-k and top-p) introduce controlled randomness by selecting from a pool of likely candidates, meaning each run can produce different outputs. This non-determinism is a feature, not a bug, when you want variety in your outputs.
+
+## Repetition Problem
+
+Greedy decoding is notorious for producing repetitive text. Because it always picks the most probable token, it can get stuck in loops like "the cat sat on the mat on the mat on the mat..." Once a pattern becomes locally probable, greedy will keep selecting it. Sampling methods break out of these loops naturally because they occasionally pick different tokens, introducing variation that prevents the model from getting trapped in repetitive patterns.
+
+## Creativity and Diversity
+
+Sampling methods produce more diverse and creative outputs by allowing the model to explore less obvious word choices. Top-k keeps a fixed number of candidates (e.g., the top 40 tokens), while top-p (nucleus sampling) dynamically adjusts based on the probability mass, including more options when the model is uncertain and fewer when it's confident. This adaptability makes top-p particularly effective for balancing creativity with coherence.
+
+## Use Cases
+
+**Greedy decoding** is best for tasks requiring precision and reproducibility: code generation, factual question answering, math problems, or any situation where there's typically one "correct" answer. **Sampling methods** excel at creative tasks: story writing, dialogue generation, brainstorming, or any application where variety and human-like naturalness matter more than deterministic correctness. Many applications use top-p with values like 0.9-0.95 combined with a moderate temperature (0.7-0.9) for the best balance of quality and diversity.`,
       JSON.stringify([
         "Greedy is deterministic; sampling methods introduce randomness",
         "Greedy can get stuck repeating phrases because it always picks the same token",
@@ -1328,7 +1356,25 @@ Consider:
 3. What kind of output would it likely produce?
 4. How does instruction-tuning change this behavior?`,
       null,
-      null,
+      `## GPT-2's Training Objective
+
+GPT-2 was trained solely on **next-token prediction**—given a sequence of text, predict what token comes next. It learned to do this by reading billions of web pages, books, and articles. Crucially, it was never trained to recognize questions as requests for information. It only learned to predict what text typically follows other text.
+
+## How GPT-2 Interprets the Prompt
+
+When given "What is the capital of France?", GPT-2 doesn't think "this is a question I should answer." Instead, it thinks "what text typically follows this sequence in my training data?" The answer might be another question ("What is the capital of Germany?"), a list of quiz questions, or the beginning of a geography lesson. GPT-2 saw questions in many contexts—trivia games, textbooks, conversations—and will continue in whatever pattern seems most likely.
+
+## Likely GPT-2 Output
+
+GPT-2 might produce any of these:
+- "What is the capital of Germany? What is the capital of Spain?"
+- "This is a common question asked in geography classes..."
+- "A) Paris B) London C) Berlin D) Rome"
+- Sometimes it might luck into "Paris" if the training data had many direct Q&A pairs, but this is inconsistent.
+
+## How Instruction-Tuning Fixes This
+
+Instruction-tuned models (like ChatGPT or Claude) undergo additional training on curated instruction-response pairs. They learn that questions are requests requiring direct answers, that users expect helpful responses, and how to format replies appropriately. When an instruction-tuned model sees "What is the capital of France?", it understands this as a request and responds: "The capital of France is Paris." This alignment training fundamentally changes how the model interprets user input.`,
       JSON.stringify([
         "GPT-2 was trained only on next-token prediction",
         "It might continue with: 'What is the capital of Germany?'",
