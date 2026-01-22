@@ -21,6 +21,8 @@ import {
 import { MatrixOperation, isLinearLayerTestCase, extractLinearLayerParams } from "./visualizations/MatrixOperation";
 import { ArrayTransform, isArrayTransformTestCase } from "./visualizations/ArrayTransform";
 import { SoftmaxOperation, isSoftmaxTestCase, getSoftmaxTotalSteps } from "./visualizations/SoftmaxOperation";
+import { EncodeOperation, isEncodeTestCase, getEncodeTotalSteps } from "./visualizations/EncodeOperation";
+import { DecodeOperation, isDecodeTestCase, getDecodeTotalSteps } from "./visualizations/DecodeOperation";
 
 interface TestCase {
   id: string;
@@ -72,6 +74,14 @@ const MotionBox = motion.create(Box);
 function getTotalSteps(input: unknown, output: unknown, challengeTitle: string): number {
   if (isSoftmaxTestCase(input, challengeTitle)) {
     return getSoftmaxTotalSteps();
+  }
+  if (isEncodeTestCase(input, challengeTitle)) {
+    const [text] = input;
+    return getEncodeTotalSteps(text);
+  }
+  if (isDecodeTestCase(input, challengeTitle)) {
+    const [ids] = input;
+    return getDecodeTotalSteps(ids);
   }
   if (isLinearLayerTestCase(input)) {
     const { W } = extractLinearLayerParams(input);
@@ -173,6 +183,38 @@ export function ExecutionVisualizer({
       return (
         <SoftmaxOperation
           logits={logits}
+          currentStep={currentStep}
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
+        />
+      );
+    }
+
+    // Encode visualization
+    if (isEncodeTestCase(input, challengeTitle)) {
+      const [text, vocab] = input;
+      return (
+        <EncodeOperation
+          text={text}
+          vocab={vocab}
+          output={output as number[]}
+          currentStep={currentStep}
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
+        />
+      );
+    }
+
+    // Decode visualization
+    if (isDecodeTestCase(input, challengeTitle)) {
+      const [ids, vocab] = input;
+      return (
+        <DecodeOperation
+          ids={ids}
+          vocab={vocab}
+          output={output as string}
           currentStep={currentStep}
           codePatterns={codePatterns}
           solutionCode={solutionCode}
