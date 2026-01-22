@@ -20,6 +20,7 @@ import {
 } from "react-icons/fa";
 import { MatrixOperation, isLinearLayerTestCase, extractLinearLayerParams } from "./visualizations/MatrixOperation";
 import { ArrayTransform, isArrayTransformTestCase } from "./visualizations/ArrayTransform";
+import { SoftmaxOperation, isSoftmaxTestCase, getSoftmaxTotalSteps } from "./visualizations/SoftmaxOperation";
 
 interface TestCase {
   id: string;
@@ -68,7 +69,10 @@ function detectCodePatterns(code: string): CodePatterns {
 const MotionBox = motion.create(Box);
 
 // Calculate total steps based on visualization type
-function getTotalSteps(input: unknown, output: unknown): number {
+function getTotalSteps(input: unknown, output: unknown, challengeTitle: string): number {
+  if (isSoftmaxTestCase(input, challengeTitle)) {
+    return getSoftmaxTotalSteps();
+  }
   if (isLinearLayerTestCase(input)) {
     const { W } = extractLinearLayerParams(input);
     return W.length + 2; // Show inputs + compute each row + complete
@@ -95,7 +99,7 @@ export function ExecutionVisualizer({
   challengeTitle,
   onClose,
 }: ExecutionVisualizerProps) {
-  const totalSteps = getTotalSteps(testCase.input, testCase.expectedOutput);
+  const totalSteps = getTotalSteps(testCase.input, testCase.expectedOutput, challengeTitle);
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
@@ -162,6 +166,20 @@ export function ExecutionVisualizer({
   const renderVisualization = () => {
     const input = testCase.input;
     const output = testCase.expectedOutput;
+
+    // Softmax visualization
+    if (isSoftmaxTestCase(input, challengeTitle)) {
+      const logits = input[0];
+      return (
+        <SoftmaxOperation
+          logits={logits}
+          currentStep={currentStep}
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
+        />
+      );
+    }
 
     if (isLinearLayerTestCase(input)) {
       const { x, W, b } = extractLinearLayerParams(input);
