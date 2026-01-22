@@ -23,6 +23,7 @@ import { ArrayTransform, isArrayTransformTestCase } from "./visualizations/Array
 import { SoftmaxOperation, isSoftmaxTestCase, getSoftmaxTotalSteps } from "./visualizations/SoftmaxOperation";
 import { EncodeOperation, isEncodeTestCase, getEncodeTotalSteps } from "./visualizations/EncodeOperation";
 import { DecodeOperation, isDecodeTestCase, getDecodeTotalSteps } from "./visualizations/DecodeOperation";
+import { UnkEncodeOperation, isUnkEncodeTestCase, getUnkEncodeTotalSteps } from "./visualizations/UnkEncodeOperation";
 
 interface TestCase {
   id: string;
@@ -74,6 +75,11 @@ const MotionBox = motion.create(Box);
 function getTotalSteps(input: unknown, output: unknown, challengeTitle: string): number {
   if (isSoftmaxTestCase(input, challengeTitle)) {
     return getSoftmaxTotalSteps();
+  }
+  // UNK encode check must come before regular encode (more specific)
+  if (isUnkEncodeTestCase(input, challengeTitle)) {
+    const [text] = input;
+    return getUnkEncodeTotalSteps(text);
   }
   if (isEncodeTestCase(input, challengeTitle)) {
     const [text] = input;
@@ -183,6 +189,22 @@ export function ExecutionVisualizer({
       return (
         <SoftmaxOperation
           logits={logits}
+          currentStep={currentStep}
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
+        />
+      );
+    }
+
+    // UNK Encode visualization (must come before regular encode)
+    if (isUnkEncodeTestCase(input, challengeTitle)) {
+      const [text, vocab] = input;
+      return (
+        <UnkEncodeOperation
+          text={text}
+          vocab={vocab}
+          output={output as number[]}
           currentStep={currentStep}
           codePatterns={codePatterns}
           solutionCode={solutionCode}
