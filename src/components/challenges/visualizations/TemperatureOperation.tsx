@@ -61,7 +61,7 @@ function LogitBar({
           </Box>
         </Box>
         <Box w="60px">
-          <Text color={color.replace("500", "300").replace(".", "")} fontFamily="mono" fontSize="sm" fontWeight="bold">
+          <Text color={color.replace("500", "300")} fontFamily="mono" fontSize="sm" fontWeight="bold">
             {value.toFixed(1)}
           </Text>
         </Box>
