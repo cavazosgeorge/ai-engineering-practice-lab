@@ -20,6 +20,17 @@ import {
 } from "react-icons/fa";
 import { MatrixOperation, isLinearLayerTestCase, extractLinearLayerParams } from "./visualizations/MatrixOperation";
 import { ArrayTransform, isArrayTransformTestCase } from "./visualizations/ArrayTransform";
+import { SoftmaxOperation, isSoftmaxTestCase, getSoftmaxTotalSteps } from "./visualizations/SoftmaxOperation";
+import { EncodeOperation, isEncodeTestCase, getEncodeTotalSteps } from "./visualizations/EncodeOperation";
+import { DecodeOperation, isDecodeTestCase, getDecodeTotalSteps } from "./visualizations/DecodeOperation";
+import { UnkEncodeOperation, isUnkEncodeTestCase, getUnkEncodeTotalSteps } from "./visualizations/UnkEncodeOperation";
+import { BuildVocabOperation, isBuildVocabTestCase, getBuildVocabTotalSteps } from "./visualizations/BuildVocabOperation";
+import { GreedySelectOperation, isGreedySelectTestCase, getGreedySelectTotalSteps } from "./visualizations/GreedySelectOperation";
+import { TopKOperation, isTopKTestCase, getTopKTotalSteps } from "./visualizations/TopKOperation";
+import { TopPOperation, isTopPTestCase, getTopPTotalSteps } from "./visualizations/TopPOperation";
+import { TemperatureOperation, isTemperatureTestCase, getTemperatureTotalSteps } from "./visualizations/TemperatureOperation";
+import { ChatMLOperation, isChatMLTestCase, getChatMLTotalSteps } from "./visualizations/ChatMLOperation";
+import { GenerateStepOperation, isGenerateStepTestCase, getGenerateStepTotalSteps } from "./visualizations/GenerateStepOperation";
 
 interface TestCase {
   id: string;
@@ -68,7 +79,48 @@ function detectCodePatterns(code: string): CodePatterns {
 const MotionBox = motion.create(Box);
 
 // Calculate total steps based on visualization type
-function getTotalSteps(input: unknown, output: unknown): number {
+function getTotalSteps(input: unknown, output: unknown, challengeTitle: string): number {
+  if (isSoftmaxTestCase(input, challengeTitle)) {
+    return getSoftmaxTotalSteps();
+  }
+  // Build vocab check (input is string, output is object/dict)
+  if (isBuildVocabTestCase(input, output, challengeTitle)) {
+    return getBuildVocabTotalSteps();
+  }
+  // UNK encode check must come before regular encode (more specific)
+  if (isUnkEncodeTestCase(input, challengeTitle)) {
+    const [text] = input;
+    return getUnkEncodeTotalSteps(text);
+  }
+  if (isEncodeTestCase(input, challengeTitle)) {
+    const [text] = input;
+    return getEncodeTotalSteps(text);
+  }
+  if (isDecodeTestCase(input, challengeTitle)) {
+    const [ids] = input;
+    return getDecodeTotalSteps(ids);
+  }
+  // Lesson 3: Text Generation
+  if (isGreedySelectTestCase(input, challengeTitle)) {
+    return getGreedySelectTotalSteps();
+  }
+  if (isTopKTestCase(input, challengeTitle)) {
+    return getTopKTotalSteps();
+  }
+  if (isTopPTestCase(input, challengeTitle)) {
+    return getTopPTotalSteps();
+  }
+  if (isTemperatureTestCase(input, challengeTitle)) {
+    return getTemperatureTotalSteps();
+  }
+  // Lesson 4: Chat templates
+  if (isChatMLTestCase(input, challengeTitle)) {
+    return getChatMLTotalSteps();
+  }
+  // Lesson 5: Generation pipeline
+  if (isGenerateStepTestCase(input, challengeTitle)) {
+    return getGenerateStepTotalSteps();
+  }
   if (isLinearLayerTestCase(input)) {
     const { W } = extractLinearLayerParams(input);
     return W.length + 2; // Show inputs + compute each row + complete
@@ -95,7 +147,7 @@ export function ExecutionVisualizer({
   challengeTitle,
   onClose,
 }: ExecutionVisualizerProps) {
-  const totalSteps = getTotalSteps(testCase.input, testCase.expectedOutput);
+  const totalSteps = getTotalSteps(testCase.input, testCase.expectedOutput, challengeTitle);
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
@@ -162,6 +214,175 @@ export function ExecutionVisualizer({
   const renderVisualization = () => {
     const input = testCase.input;
     const output = testCase.expectedOutput;
+
+    // Softmax visualization
+    if (isSoftmaxTestCase(input, challengeTitle)) {
+      const logits = input[0];
+      return (
+        <SoftmaxOperation
+          logits={logits}
+          currentStep={currentStep}
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
+        />
+      );
+    }
+
+    // Build vocab visualization
+    if (isBuildVocabTestCase(input, output, challengeTitle)) {
+      const [text] = input as [string];
+      return (
+        <BuildVocabOperation
+          text={text}
+          output={output as Record<string, number>}
+          currentStep={currentStep}
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
+        />
+      );
+    }
+
+    // UNK Encode visualization (must come before regular encode)
+    if (isUnkEncodeTestCase(input, challengeTitle)) {
+      const [text, vocab] = input;
+      return (
+        <UnkEncodeOperation
+          text={text}
+          vocab={vocab}
+          output={output as number[]}
+          currentStep={currentStep}
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
+        />
+      );
+    }
+
+    // Encode visualization
+    if (isEncodeTestCase(input, challengeTitle)) {
+      const [text, vocab] = input;
+      return (
+        <EncodeOperation
+          text={text}
+          vocab={vocab}
+          output={output as number[]}
+          currentStep={currentStep}
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
+        />
+      );
+    }
+
+    // Decode visualization
+    if (isDecodeTestCase(input, challengeTitle)) {
+      const [ids, vocab] = input;
+      return (
+        <DecodeOperation
+          ids={ids}
+          vocab={vocab}
+          output={output as string}
+          currentStep={currentStep}
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
+        />
+      );
+    }
+
+    // Lesson 3: Text Generation visualizations
+    if (isGreedySelectTestCase(input, challengeTitle)) {
+      const [probs] = input;
+      return (
+        <GreedySelectOperation
+          probabilities={probs}
+          output={output as string}
+          currentStep={currentStep}
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
+        />
+      );
+    }
+
+    if (isTopKTestCase(input, challengeTitle)) {
+      const [probs, k] = input;
+      return (
+        <TopKOperation
+          probabilities={probs}
+          k={k}
+          output={output as Record<string, number>}
+          currentStep={currentStep}
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
+        />
+      );
+    }
+
+    if (isTopPTestCase(input, challengeTitle)) {
+      const [probs, p] = input;
+      return (
+        <TopPOperation
+          probabilities={probs}
+          p={p}
+          output={output as Record<string, number>}
+          currentStep={currentStep}
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
+        />
+      );
+    }
+
+    if (isTemperatureTestCase(input, challengeTitle)) {
+      const [logits, temp] = input;
+      return (
+        <TemperatureOperation
+          logits={logits}
+          temperature={temp}
+          output={output as number[]}
+          currentStep={currentStep}
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
+        />
+      );
+    }
+
+    // Lesson 4: Chat templates
+    if (isChatMLTestCase(input, challengeTitle)) {
+      const [messages] = input;
+      return (
+        <ChatMLOperation
+          messages={messages}
+          output={output as string}
+          currentStep={currentStep}
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
+        />
+      );
+    }
+
+    // Lesson 5: Generation pipeline
+    if (isGenerateStepTestCase(input, challengeTitle)) {
+      const [logits, vocab, temp] = input;
+      return (
+        <GenerateStepOperation
+          logits={logits}
+          vocab={vocab}
+          temperature={temp}
+          output={output as string}
+          currentStep={currentStep}
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
+        />
+      );
+    }
 
     if (isLinearLayerTestCase(input)) {
       const { x, W, b } = extractLinearLayerParams(input);

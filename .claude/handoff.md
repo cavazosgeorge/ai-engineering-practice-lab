@@ -6,17 +6,62 @@
 - Added animated step-by-step visualization for passed challenges
 - Created visualization components:
   - `ExecutionVisualizer.tsx` - Main container with playback controls (play/pause, step forward/back, speed control)
-  - `MatrixOperation.tsx` - Animated matrix multiplication visualization for linear layer challenges
-  - `ArrayTransform.tsx` - Array transformation visualization for tokenization and mapping operations
+  - `MatrixOperation.tsx` - Linear layer (y = Wx + b) visualization
+  - `ArrayTransform.tsx` - Generic array transformation visualization
+  - `SoftmaxOperation.tsx` - Softmax function step-by-step visualization
+  - `EncodeOperation.tsx` - Word-level tokenization encode visualization
+  - `DecodeOperation.tsx` - Word-level tokenization decode visualization
+  - `UnkEncodeOperation.tsx` - Handle out-of-vocabulary words with [UNK]
+  - `BuildVocabOperation.tsx` - Build character vocabulary visualization
+  - `GreedySelectOperation.tsx` - Greedy token selection visualization
+  - `TopKOperation.tsx` - Top-k filtering visualization
+  - `TopPOperation.tsx` - Top-p (nucleus) sampling visualization
+  - `TemperatureOperation.tsx` - Temperature scaling visualization
+  - `ChatMLOperation.tsx` - ChatML template formatting visualization
+  - `GenerateStepOperation.tsx` - Full generation pipeline visualization
   - `StepCard.tsx` - Reusable step display component
+- Fixed: Temperature visualization had black/unreadable text due to broken color token replacement
 - Features:
   - "See How It Works" button appears after passing all tests
   - Full-screen modal with keyboard controls (Space: play/pause, ←→: step, Esc: close)
-  - Animated dot product calculations with highlighted active cells
-  - Step-by-step bias addition visualization
+  - Challenge-specific visualizations with tailored animations
+  - Code pattern detection (only shows explanations for patterns used in the solution)
   - Speed control (0.5x, 1x, 2x)
   - Progress slider to jump between steps
-- Supports both array format `[x, W, b]` and object format `{x, W, b}` test case inputs
+
+#### Process for Creating New Visualizations
+
+When adding a visualization for a new challenge type, follow this process:
+
+1. **Solve the problem yourself** - Work through the challenge step-by-step, documenting each operation:
+   - What are the inputs?
+   - What intermediate values are computed?
+   - What is the final output?
+
+2. **Document the steps** - Write out the algorithm as discrete, visual steps. Example for decode:
+   ```
+   Step 1: Start with input token IDs [0, 1]
+   Step 2: Build reverse vocabulary (ID → word)
+   Step 3: Look up each ID to get word
+   Step 4: Join words with spaces → "hello world"
+   ```
+
+3. **Create the visualization component** - In `src/components/challenges/visualizations/`:
+   - Create `{Operation}Operation.tsx` file
+   - Implement step-by-step AnimatePresence sections for each step
+   - Use consistent styling (gray.800 bg, cyan/green/yellow color coding)
+   - Add active highlighting for current element being processed
+   - Export detection function: `is{Operation}TestCase(input, challengeTitle)`
+   - Export step count function: `get{Operation}TotalSteps(input)`
+
+4. **Integrate into ExecutionVisualizer.tsx**:
+   - Import the new component and helper functions
+   - Add detection logic to `getTotalSteps()` function
+   - Add rendering logic to `renderVisualization()` function
+
+5. **Test the visualization** - Run the app, solve the challenge, click "See How It Works"
+
+This approach ensures visualizations are educationally valuable by mapping directly to how the algorithm actually works.
 
 ### Session: Explain Challenge UI & Console Output
 - Added console output capture for Python `print()` statements

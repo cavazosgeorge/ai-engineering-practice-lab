@@ -369,95 +369,146 @@ export function MatrixOperation({
               Computing y[{activeRow}]:
             </Text>
 
-            {/* Dot product breakdown */}
+            {/* Dot product breakdown - table layout for clarity */}
             <Box mb={4}>
-              <Text color="gray.400" fontSize="sm" mb={2}>
+              <Text color="gray.400" fontSize="sm" mb={3}>
                 Step 1: Dot product — multiply each W[{activeRow}][j] × x[j], then sum
               </Text>
-              <HStack gap={2} wrap="wrap" fontFamily="'JetBrains Mono', monospace" fontSize="sm" mb={2}>
-                {weightMatrix[activeRow].map((_, j) => (
-                  <HStack key={j} gap={1}>
-                    <MotionBox
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: j * 0.15 }}
-                    >
-                      <Text color="yellow.300">W[{activeRow}][{j}]</Text>
-                      <Text color="gray.500">×</Text>
-                      <Text color="cyan.300">x[{j}]</Text>
-                    </MotionBox>
-                    {j < weightMatrix[activeRow].length - 1 && (
-                      <Text color="gray.500">+</Text>
-                    )}
-                  </HStack>
-                ))}
-              </HStack>
-              <HStack gap={2} wrap="wrap" fontFamily="'JetBrains Mono', monospace" fontSize="sm">
+
+              {/* Each multiplication on its own row */}
+              <VStack gap={2} align="stretch" fontFamily="'JetBrains Mono', monospace" fontSize="sm" mb={3}>
                 {weightMatrix[activeRow].map((w, j) => (
-                  <HStack key={j} gap={1}>
-                    <MotionBox
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: j * 0.15 + 0.3 }}
+                  <MotionBox
+                    key={j}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: j * 0.2 }}
+                  >
+                    <HStack
+                      gap={0}
+                      bg="gray.900"
+                      p={2}
+                      borderRadius="md"
+                      justify="space-between"
                     >
-                      <Text color="yellow.300">{w}</Text>
-                      <Text color="gray.500">×</Text>
-                      <Text color="cyan.300">{inputVector[j]}</Text>
-                      <Text color="gray.600"> = {w * inputVector[j]}</Text>
-                    </MotionBox>
-                    {j < weightMatrix[activeRow].length - 1 && (
-                      <Text color="gray.500">+</Text>
-                    )}
-                  </HStack>
+                      {/* Variable names */}
+                      <HStack gap={2} minW="140px">
+                        <Text color="yellow.300" w="70px" textAlign="right">W[{activeRow}][{j}]</Text>
+                        <Text color="gray.500">×</Text>
+                        <Text color="cyan.300" w="40px">x[{j}]</Text>
+                      </HStack>
+
+                      {/* Arrow */}
+                      <Text color="gray.600" mx={2}>→</Text>
+
+                      {/* Actual values */}
+                      <HStack gap={2} minW="120px">
+                        <Text color="yellow.300" w="30px" textAlign="right">{w}</Text>
+                        <Text color="gray.500">×</Text>
+                        <Text color="cyan.300" w="30px">{inputVector[j]}</Text>
+                      </HStack>
+
+                      {/* Result */}
+                      <Text color="gray.500" mx={2}>=</Text>
+                      <Text color="white" fontWeight="semibold" w="40px" textAlign="right">
+                        {(w * inputVector[j]).toFixed((w * inputVector[j]) % 1 === 0 ? 0 : 2)}
+                      </Text>
+                    </HStack>
+                  </MotionBox>
                 ))}
-                <Text color="gray.500">=</Text>
-                <MotionBox
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: weightMatrix[activeRow].length * 0.15 + 0.5 }}
+              </VStack>
+
+              {/* Sum line */}
+              <MotionBox
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: weightMatrix[activeRow].length * 0.2 + 0.2 }}
+              >
+                <HStack
+                  gap={3}
+                  bg="cyan.900/30"
+                  p={3}
+                  borderRadius="md"
+                  border="1px solid"
+                  borderColor="cyan.700"
+                  justify="center"
+                  fontFamily="'JetBrains Mono', monospace"
+                  fontSize="sm"
                 >
-                  <Text color="white" fontWeight="bold">{currentDotProduct?.toFixed(currentDotProduct % 1 === 0 ? 0 : 2)}</Text>
-                </MotionBox>
-              </HStack>
+                  <Text color="gray.400">sum(</Text>
+                  {weightMatrix[activeRow].map((w, j) => (
+                    <HStack key={j} gap={1}>
+                      <Text color="white">{(w * inputVector[j]).toFixed((w * inputVector[j]) % 1 === 0 ? 0 : 2)}</Text>
+                      {j < weightMatrix[activeRow].length - 1 && (
+                        <Text color="gray.500">,</Text>
+                      )}
+                    </HStack>
+                  ))}
+                  <Text color="gray.400">)</Text>
+                  <Text color="gray.500">=</Text>
+                  <Text color="cyan.300" fontWeight="bold" fontSize="md">
+                    {currentDotProduct?.toFixed(currentDotProduct % 1 === 0 ? 0 : 2)}
+                  </Text>
+                </HStack>
+              </MotionBox>
             </Box>
 
             {/* Bias addition */}
             <Box>
-              <Text color="gray.400" fontSize="sm" mb={2}>
+              <Text color="gray.400" fontSize="sm" mb={3}>
                 Step 2: Add bias b[{activeRow}] to get y[{activeRow}]
               </Text>
-              <HStack gap={2} fontFamily="'JetBrains Mono', monospace" fontSize="sm">
-                <MotionBox
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <Text color="gray.400">dot</Text>
-                  <Text color="white"> = {currentDotProduct?.toFixed(currentDotProduct % 1 === 0 ? 0 : 2)}</Text>
-                </MotionBox>
-                <Text color="gray.500">+</Text>
-                <MotionBox
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.45 }}
-                >
-                  <Text color="orange.300">b[{activeRow}]</Text>
-                  <Text color="orange.300"> = {biasVector[activeRow]}</Text>
-                </MotionBox>
-                <Text color="gray.500">=</Text>
-                <MotionBox
-                  initial={{ scale: 0, backgroundColor: "transparent" }}
-                  animate={{ scale: 1, backgroundColor: "rgba(72, 187, 120, 0.2)" }}
-                  transition={{ delay: 0.6 }}
-                  px={2}
-                  py={1}
+              <MotionBox
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <HStack
+                  gap={4}
+                  bg="green.900/30"
+                  p={3}
                   borderRadius="md"
+                  border="1px solid"
+                  borderColor="green.700"
+                  justify="center"
+                  fontFamily="'JetBrains Mono', monospace"
+                  fontSize="sm"
                 >
-                  <Text color="green.300" fontWeight="bold">
-                    y[{activeRow}] = {currentBiasAddition?.toFixed(currentBiasAddition % 1 === 0 ? 0 : 2)}
-                  </Text>
-                </MotionBox>
-              </HStack>
+                  {/* Dot product result */}
+                  <HStack gap={2}>
+                    <Text color="gray.400">dot</Text>
+                    <Text color="gray.500">=</Text>
+                    <Text color="cyan.300" fontWeight="semibold">
+                      {currentDotProduct?.toFixed(currentDotProduct % 1 === 0 ? 0 : 2)}
+                    </Text>
+                  </HStack>
+
+                  <Text color="gray.500" fontSize="lg">+</Text>
+
+                  {/* Bias */}
+                  <HStack gap={2}>
+                    <Text color="orange.300">b[{activeRow}]</Text>
+                    <Text color="gray.500">=</Text>
+                    <Text color="orange.300" fontWeight="semibold">{biasVector[activeRow]}</Text>
+                  </HStack>
+
+                  <Text color="gray.500" fontSize="lg">=</Text>
+
+                  {/* Final result */}
+                  <Box
+                    bg="green.800/50"
+                    px={3}
+                    py={1}
+                    borderRadius="md"
+                    border="1px solid"
+                    borderColor="green.500"
+                  >
+                    <Text color="green.300" fontWeight="bold" fontSize="md">
+                      y[{activeRow}] = {currentBiasAddition?.toFixed(currentBiasAddition % 1 === 0 ? 0 : 2)}
+                    </Text>
+                  </Box>
+                </HStack>
+              </MotionBox>
             </Box>
           </MotionBox>
         )}
