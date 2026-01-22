@@ -1,4 +1,5 @@
 import {
+  Box,
   Container,
   Heading,
   Text,
@@ -7,21 +8,44 @@ import {
   Badge,
   Card,
   SimpleGrid,
+  Icon,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { fetchLessons, type Lesson } from "../services/api";
+import { fetchLessons, fetchProgress, type Lesson } from "../services/api";
+import { LuCheck } from "react-icons/lu";
 
 export function Lessons() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [completedChallenges, setCompletedChallenges] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchLessons()
-      .then(setLessons)
+    Promise.all([fetchLessons(), fetchProgress()])
+      .then(([lessonsData, progressData]) => {
+        setLessons(lessonsData);
+        // Build set of completed challenge IDs
+        const completed = new Set(
+          progressData.progress.map((p) => p.challengeId)
+        );
+        setCompletedChallenges(completed);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  // Calculate completion stats for a lesson
+  const getLessonProgress = (lesson: Lesson) => {
+    const totalChallenges = lesson.concepts.reduce(
+      (acc, c) => acc + c.challenges.length,
+      0
+    );
+    const completedCount = lesson.concepts.reduce(
+      (acc, c) => acc + c.challenges.filter(ch => completedChallenges.has(ch.id)).length,
+      0
+    );
+    return { total: totalChallenges, completed: completedCount };
+  };
 
   if (loading) {
     return (
@@ -39,58 +63,89 @@ export function Lessons() {
         </Heading>
 
         <SimpleGrid columns={{ base: 1, md: 2 }} gap={6}>
-          {lessons.map((lesson) => (
-            <Link key={lesson.id} to={`/lessons/${lesson.slug}`}>
-              <Card.Root
-                bg="gray.900"
-                borderColor="gray.800"
-                _hover={{
-                  borderColor: "cyan.700",
-                  transform: "translateY(-2px)",
-                }}
-                transition="all 0.2s"
-                cursor="pointer"
-                h="full"
-              >
-                <Card.Body>
-                  <HStack justify="space-between" mb={3}>
-                    <Badge colorPalette="cyan" variant="subtle" fontSize="xs">
-                      Lesson {lesson.orderIndex}
-                    </Badge>
-                    <Text color="gray.400" fontSize="sm">
-                      {lesson.concepts.reduce(
-                        (acc, c) => acc + c.challenges.length,
-                        0
-                      )}{" "}
-                      challenges
+          {lessons.map((lesson) => {
+            const progress = getLessonProgress(lesson);
+            const isComplete = progress.completed === progress.total && progress.total > 0;
+            const progressPercent = progress.total > 0 ? (progress.completed / progress.total) * 100 : 0;
+
+            return (
+              <Link key={lesson.id} to={`/lessons/${lesson.slug}`}>
+                <Card.Root
+                  bg="gray.900"
+                  borderColor={isComplete ? "green.700" : "gray.800"}
+                  _hover={{
+                    borderColor: isComplete ? "green.600" : "cyan.700",
+                    transform: "translateY(-2px)",
+                  }}
+                  transition="all 0.2s"
+                  cursor="pointer"
+                  h="full"
+                >
+                  <Card.Body>
+                    <HStack justify="space-between" mb={3}>
+                      <HStack gap={2}>
+                        <Badge colorPalette="cyan" variant="subtle" fontSize="xs">
+                          Lesson {lesson.orderIndex}
+                        </Badge>
+                        {isComplete && (
+                          <Icon color="green.400" boxSize={4}>
+                            <LuCheck />
+                          </Icon>
+                        )}
+                      </HStack>
+                      <HStack gap={2}>
+                        <Text
+                          color={isComplete ? "green.400" : progress.completed > 0 ? "cyan.400" : "gray.400"}
+                          fontSize="sm"
+                          fontWeight={progress.completed > 0 ? "medium" : "normal"}
+                        >
+                          {progress.completed}/{progress.total}
+                        </Text>
+                      </HStack>
+                    </HStack>
+                    <Heading size="lg" color="white" mb={3}>
+                      {lesson.title}
+                    </Heading>
+                    <Text color="gray.400" fontSize="sm" mb={3} lineClamp={2}>
+                      {lesson.description}
                     </Text>
-                  </HStack>
-                  <Heading size="lg" color="white" mb={3}>
-                    {lesson.title}
-                  </Heading>
-                  <Text color="gray.400" fontSize="sm" mb={4} lineClamp={2}>
-                    {lesson.description}
-                  </Text>
-                  <VStack gap={1} align="stretch">
-                    {lesson.concepts.slice(0, 3).map((concept) => (
-                      <Text
-                        key={concept.id}
-                        color="gray.400"
-                        fontSize="sm"
-                      >
-                        • {concept.title}
-                      </Text>
-                    ))}
-                    {lesson.concepts.length > 3 && (
-                      <Text color="gray.600" fontSize="sm">
-                        +{lesson.concepts.length - 3} more concepts
-                      </Text>
-                    )}
-                  </VStack>
-                </Card.Body>
-              </Card.Root>
-            </Link>
-          ))}
+                    {/* Progress bar */}
+                    <Box
+                      h="4px"
+                      bg="gray.700"
+                      borderRadius="full"
+                      overflow="hidden"
+                      mb={4}
+                    >
+                      <Box
+                        h="full"
+                        w={`${progressPercent}%`}
+                        bg={isComplete ? "green.500" : "cyan.500"}
+                        borderRadius="full"
+                        transition="width 0.3s ease"
+                      />
+                    </Box>
+                    <VStack gap={1} align="stretch">
+                      {lesson.concepts.slice(0, 3).map((concept) => (
+                        <Text
+                          key={concept.id}
+                          color="gray.400"
+                          fontSize="sm"
+                        >
+                          • {concept.title}
+                        </Text>
+                      ))}
+                      {lesson.concepts.length > 3 && (
+                        <Text color="gray.600" fontSize="sm">
+                          +{lesson.concepts.length - 3} more concepts
+                        </Text>
+                      )}
+                    </VStack>
+                  </Card.Body>
+                </Card.Root>
+              </Link>
+            );
+          })}
         </SimpleGrid>
 
         {lessons.length === 0 && (
