@@ -30,7 +30,39 @@ interface TestCase {
 
 interface ExecutionVisualizerProps {
   testCase: TestCase;
+  solutionCode: string;
+  challengeTitle: string;
   onClose: () => void;
+}
+
+// Detected Python patterns in the solution code
+export interface CodePatterns {
+  hasEnumerate: boolean;
+  hasListComprehension: boolean;
+  hasSum: boolean;
+  hasRange: boolean;
+  hasZip: boolean;
+  hasMap: boolean;
+  hasFilter: boolean;
+  hasForLoop: boolean;
+  hasNestedLoop: boolean;
+  hasDotProduct: boolean;
+}
+
+// Analyze solution code to detect Python patterns
+function detectCodePatterns(code: string): CodePatterns {
+  return {
+    hasEnumerate: /\benumerate\s*\(/.test(code),
+    hasListComprehension: /\[.+\bfor\b.+\bin\b.+\]/.test(code),
+    hasSum: /\bsum\s*\(/.test(code),
+    hasRange: /\brange\s*\(/.test(code),
+    hasZip: /\bzip\s*\(/.test(code),
+    hasMap: /\bmap\s*\(/.test(code),
+    hasFilter: /\bfilter\s*\(/.test(code),
+    hasForLoop: /\bfor\b.+\bin\b/.test(code),
+    hasNestedLoop: /\bfor\b.+\bin\b[\s\S]*\bfor\b.+\bin\b/.test(code),
+    hasDotProduct: /sum\s*\([^)]*\*[^)]*\)/.test(code) || /dot|@/.test(code),
+  };
 }
 
 const MotionBox = motion.create(Box);
@@ -59,12 +91,17 @@ function formatInput(input: unknown): string {
 
 export function ExecutionVisualizer({
   testCase,
+  solutionCode,
+  challengeTitle,
   onClose,
 }: ExecutionVisualizerProps) {
   const totalSteps = getTotalSteps(testCase.input, testCase.expectedOutput);
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
+
+  // Detect patterns used in the solution code
+  const codePatterns = detectCodePatterns(solutionCode);
 
   const goToStep = useCallback((step: number) => {
     setCurrentStep(Math.max(0, Math.min(totalSteps - 1, step)));
@@ -135,6 +172,9 @@ export function ExecutionVisualizer({
           biasVector={b}
           outputVector={output as number[]}
           currentStep={currentStep}
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
         />
       );
     }
@@ -148,7 +188,9 @@ export function ExecutionVisualizer({
           input={inputArray}
           output={output as unknown[]}
           currentStep={currentStep}
-          transformLabel="transform"
+          codePatterns={codePatterns}
+          solutionCode={solutionCode}
+          challengeTitle={challengeTitle}
         />
       );
     }
@@ -317,7 +359,7 @@ export function ExecutionVisualizer({
 
               {/* Speed control */}
               <HStack gap={3}>
-                <Text color="gray.500" fontSize="sm">Speed:</Text>
+                <Text color="gray.300" fontSize="sm">Speed:</Text>
                 <HStack gap={1}>
                   {[0.5, 1, 2].map((s) => (
                     <Button
@@ -325,6 +367,8 @@ export function ExecutionVisualizer({
                       size="xs"
                       variant={speed === s ? "solid" : "ghost"}
                       colorPalette={speed === s ? "cyan" : "gray"}
+                      color={speed === s ? undefined : "gray.300"}
+                      _hover={speed === s ? undefined : { bg: "gray.700", color: "white" }}
                       onClick={() => setSpeed(s)}
                     >
                       {s}x
@@ -335,7 +379,7 @@ export function ExecutionVisualizer({
 
               {/* Keyboard hints */}
               <HStack gap={2}>
-                <Text color="gray.600" fontSize="xs">
+                <Text color="gray.400" fontSize="xs">
                   Space: play/pause • ←→: step • Esc: close
                 </Text>
               </HStack>

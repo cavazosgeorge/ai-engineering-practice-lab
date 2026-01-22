@@ -1,5 +1,6 @@
 import { Box, Text, HStack, VStack } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { CodePatterns } from "../ExecutionVisualizer";
 
 interface MatrixOperationProps {
   inputVector: number[];
@@ -7,6 +8,9 @@ interface MatrixOperationProps {
   biasVector: number[];
   outputVector: number[];
   currentStep: number;
+  codePatterns: CodePatterns;
+  solutionCode: string;
+  challengeTitle: string;
 }
 
 const MotionBox = motion.create(Box);
@@ -151,6 +155,9 @@ export function MatrixOperation({
   biasVector,
   outputVector,
   currentStep,
+  codePatterns,
+  solutionCode,
+  challengeTitle,
 }: MatrixOperationProps) {
   const numRows = weightMatrix.length;
 
@@ -239,6 +246,112 @@ export function MatrixOperation({
 
       {/* Step-by-step calculation breakdown */}
       <AnimatePresence mode="wait">
+        {/* Step 0: Show the actual solution code and explain relevant concepts */}
+        {isShowingInputs && (
+          <MotionBox
+            key="intro"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            p={4}
+            bg="gray.800"
+            borderRadius="lg"
+            border="1px solid"
+            borderColor="purple.800"
+          >
+            <Text color="purple.400" fontWeight="semibold" mb={3}>
+              {challengeTitle}: y = Wx + b
+            </Text>
+
+            {/* Show actual solution code */}
+            <Box mb={4} p={3} bg="gray.900" borderRadius="md" fontFamily="'JetBrains Mono', monospace" fontSize="xs" whiteSpace="pre-wrap" overflowX="auto">
+              <Text color="gray.500" mb={1}># Your solution:</Text>
+              <Text color="gray.300">{solutionCode}</Text>
+            </Box>
+
+            {/* Only show explanations for concepts used in the code */}
+            <VStack gap={3} align="stretch">
+              {codePatterns.hasEnumerate && (
+                <Box p={3} bg="cyan.900/20" borderRadius="md" border="1px solid" borderColor="cyan.800">
+                  <Text color="cyan.300" fontSize="sm" fontWeight="semibold" mb={2}>
+                    What does enumerate() do?
+                  </Text>
+                  <Text color="gray.300" fontSize="sm">
+                    <Text as="span" color="cyan.300">enumerate()</Text> loops through a list and gives you both the
+                    <Text as="span" color="yellow.300"> index</Text> and the
+                    <Text as="span" color="cyan.300"> value</Text> at each position.
+                  </Text>
+                  <Box mt={2} fontFamily="'JetBrains Mono', monospace" fontSize="xs">
+                    <Text color="gray.500"># Example: enumerate([10, 20, 30])</Text>
+                    <Text color="gray.300">→ (0, 10), (1, 20), (2, 30)</Text>
+                  </Box>
+                </Box>
+              )}
+
+              {codePatterns.hasSum && (
+                <Box p={3} bg="green.900/20" borderRadius="md" border="1px solid" borderColor="green.800">
+                  <Text color="green.300" fontSize="sm" fontWeight="semibold" mb={2}>
+                    What does sum() do?
+                  </Text>
+                  <Text color="gray.300" fontSize="sm">
+                    <Text as="span" color="green.300">sum()</Text> adds up all values in an iterable (list, generator, etc.)
+                  </Text>
+                  <Box mt={2} fontFamily="'JetBrains Mono', monospace" fontSize="xs">
+                    <Text color="gray.500"># Example: sum([1, 2, 3])</Text>
+                    <Text color="gray.300">→ 6</Text>
+                  </Box>
+                </Box>
+              )}
+
+              {codePatterns.hasListComprehension && (
+                <Box p={3} bg="yellow.900/20" borderRadius="md" border="1px solid" borderColor="yellow.800">
+                  <Text color="yellow.300" fontSize="sm" fontWeight="semibold" mb={2}>
+                    List Comprehension
+                  </Text>
+                  <Text color="gray.300" fontSize="sm">
+                    A compact way to create lists by applying an expression to each item.
+                  </Text>
+                  <Box mt={2} fontFamily="'JetBrains Mono', monospace" fontSize="xs">
+                    <Text color="gray.500"># [expression for item in iterable]</Text>
+                    <Text color="gray.300">[x*2 for x in [1,2,3]] → [2, 4, 6]</Text>
+                  </Box>
+                </Box>
+              )}
+
+              {codePatterns.hasRange && (
+                <Box p={3} bg="orange.900/20" borderRadius="md" border="1px solid" borderColor="orange.800">
+                  <Text color="orange.300" fontSize="sm" fontWeight="semibold" mb={2}>
+                    What does range() do?
+                  </Text>
+                  <Text color="gray.300" fontSize="sm">
+                    <Text as="span" color="orange.300">range(n)</Text> generates numbers from 0 to n-1.
+                  </Text>
+                  <Box mt={2} fontFamily="'JetBrains Mono', monospace" fontSize="xs">
+                    <Text color="gray.500"># Example: range(3)</Text>
+                    <Text color="gray.300">→ 0, 1, 2</Text>
+                  </Box>
+                </Box>
+              )}
+
+              {codePatterns.hasZip && (
+                <Box p={3} bg="pink.900/20" borderRadius="md" border="1px solid" borderColor="pink.800">
+                  <Text color="pink.300" fontSize="sm" fontWeight="semibold" mb={2}>
+                    What does zip() do?
+                  </Text>
+                  <Text color="gray.300" fontSize="sm">
+                    <Text as="span" color="pink.300">zip()</Text> pairs up elements from multiple lists.
+                  </Text>
+                  <Box mt={2} fontFamily="'JetBrains Mono', monospace" fontSize="xs">
+                    <Text color="gray.500"># zip([1,2], ['a','b'])</Text>
+                    <Text color="gray.300">→ (1,'a'), (2,'b')</Text>
+                  </Box>
+                </Box>
+              )}
+            </VStack>
+          </MotionBox>
+        )}
+
         {activeRow >= 0 && activeRow < numRows && (
           <MotionBox
             key={activeRow}
@@ -257,21 +370,40 @@ export function MatrixOperation({
             </Text>
 
             {/* Dot product breakdown */}
-            <Box mb={3}>
+            <Box mb={4}>
               <Text color="gray.400" fontSize="sm" mb={2}>
-                Step 1: Dot product of W[{activeRow}] and x
+                Step 1: Dot product — multiply each W[{activeRow}][j] × x[j], then sum
               </Text>
-              <HStack gap={2} wrap="wrap" fontFamily="'JetBrains Mono', monospace" fontSize="sm">
-                {weightMatrix[activeRow].map((w, j) => (
+              <HStack gap={2} wrap="wrap" fontFamily="'JetBrains Mono', monospace" fontSize="sm" mb={2}>
+                {weightMatrix[activeRow].map((_, j) => (
                   <HStack key={j} gap={1}>
                     <MotionBox
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: j * 0.15 }}
                     >
+                      <Text color="yellow.300">W[{activeRow}][{j}]</Text>
+                      <Text color="gray.500">×</Text>
+                      <Text color="cyan.300">x[{j}]</Text>
+                    </MotionBox>
+                    {j < weightMatrix[activeRow].length - 1 && (
+                      <Text color="gray.500">+</Text>
+                    )}
+                  </HStack>
+                ))}
+              </HStack>
+              <HStack gap={2} wrap="wrap" fontFamily="'JetBrains Mono', monospace" fontSize="sm">
+                {weightMatrix[activeRow].map((w, j) => (
+                  <HStack key={j} gap={1}>
+                    <MotionBox
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: j * 0.15 + 0.3 }}
+                    >
                       <Text color="yellow.300">{w}</Text>
                       <Text color="gray.500">×</Text>
                       <Text color="cyan.300">{inputVector[j]}</Text>
+                      <Text color="gray.600"> = {w * inputVector[j]}</Text>
                     </MotionBox>
                     {j < weightMatrix[activeRow].length - 1 && (
                       <Text color="gray.500">+</Text>
@@ -282,7 +414,7 @@ export function MatrixOperation({
                 <MotionBox
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: weightMatrix[activeRow].length * 0.15 }}
+                  transition={{ delay: weightMatrix[activeRow].length * 0.15 + 0.5 }}
                 >
                   <Text color="white" fontWeight="bold">{currentDotProduct?.toFixed(currentDotProduct % 1 === 0 ? 0 : 2)}</Text>
                 </MotionBox>
@@ -292,7 +424,7 @@ export function MatrixOperation({
             {/* Bias addition */}
             <Box>
               <Text color="gray.400" fontSize="sm" mb={2}>
-                Step 2: Add bias b[{activeRow}]
+                Step 2: Add bias b[{activeRow}] to get y[{activeRow}]
               </Text>
               <HStack gap={2} fontFamily="'JetBrains Mono', monospace" fontSize="sm">
                 <MotionBox
@@ -300,7 +432,8 @@ export function MatrixOperation({
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.3 }}
                 >
-                  <Text color="white">{currentDotProduct?.toFixed(currentDotProduct % 1 === 0 ? 0 : 2)}</Text>
+                  <Text color="gray.400">dot</Text>
+                  <Text color="white"> = {currentDotProduct?.toFixed(currentDotProduct % 1 === 0 ? 0 : 2)}</Text>
                 </MotionBox>
                 <Text color="gray.500">+</Text>
                 <MotionBox
@@ -308,7 +441,8 @@ export function MatrixOperation({
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.45 }}
                 >
-                  <Text color="orange.300">{biasVector[activeRow]}</Text>
+                  <Text color="orange.300">b[{activeRow}]</Text>
+                  <Text color="orange.300"> = {biasVector[activeRow]}</Text>
                 </MotionBox>
                 <Text color="gray.500">=</Text>
                 <MotionBox
@@ -320,7 +454,7 @@ export function MatrixOperation({
                   borderRadius="md"
                 >
                   <Text color="green.300" fontWeight="bold">
-                    {currentBiasAddition?.toFixed(currentBiasAddition % 1 === 0 ? 0 : 2)}
+                    y[{activeRow}] = {currentBiasAddition?.toFixed(currentBiasAddition % 1 === 0 ? 0 : 2)}
                   </Text>
                 </MotionBox>
               </HStack>

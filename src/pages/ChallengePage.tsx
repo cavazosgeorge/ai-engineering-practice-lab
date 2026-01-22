@@ -359,7 +359,7 @@ export function ChallengePage() {
                     <Button
                       mt={4}
                       colorPalette="cyan"
-                      variant="outline"
+                      variant="solid"
                       onClick={() => setShowVisualization(true)}
                     >
                       <FaEye />
@@ -374,6 +374,8 @@ export function ChallengePage() {
             {showVisualization && challenge.testCases && challenge.testCases.length > 0 && (
               <ExecutionVisualizer
                 testCase={challenge.testCases[0]}
+                solutionCode={code}
+                challengeTitle={challenge.title}
                 onClose={() => setShowVisualization(false)}
               />
             )}
