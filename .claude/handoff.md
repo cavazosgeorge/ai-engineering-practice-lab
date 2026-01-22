@@ -11,7 +11,16 @@
   - `SoftmaxOperation.tsx` - Softmax function step-by-step visualization
   - `EncodeOperation.tsx` - Word-level tokenization encode visualization
   - `DecodeOperation.tsx` - Word-level tokenization decode visualization
+  - `UnkEncodeOperation.tsx` - Handle out-of-vocabulary words with [UNK]
+  - `BuildVocabOperation.tsx` - Build character vocabulary visualization
+  - `GreedySelectOperation.tsx` - Greedy token selection visualization
+  - `TopKOperation.tsx` - Top-k filtering visualization
+  - `TopPOperation.tsx` - Top-p (nucleus) sampling visualization
+  - `TemperatureOperation.tsx` - Temperature scaling visualization
+  - `ChatMLOperation.tsx` - ChatML template formatting visualization
+  - `GenerateStepOperation.tsx` - Full generation pipeline visualization
   - `StepCard.tsx` - Reusable step display component
+- Fixed: Temperature visualization had black/unreadable text due to broken color token replacement
 - Features:
   - "See How It Works" button appears after passing all tests
   - Full-screen modal with keyboard controls (Space: play/pause, ←→: step, Esc: close)
