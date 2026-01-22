@@ -16,6 +16,7 @@ import {
 import { Link, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { FaEye } from "react-icons/fa";
 import {
   fetchChallenge,
   recordSubmission,
@@ -24,6 +25,7 @@ import {
 } from "../services/api";
 import { CodeEditor } from "../components/challenges/CodeEditor";
 import { TestResults } from "../components/challenges/TestResults";
+import { ExecutionVisualizer } from "../components/challenges/ExecutionVisualizer";
 import { usePyodide } from "../hooks/usePyodide";
 import {
   validatePythonCode,
@@ -59,6 +61,8 @@ export function ChallengePage() {
   const [explanation, setExplanation] = useState("");
   const [answerRevealed, setAnswerRevealed] = useState(false);
   const [selfAssessment, setSelfAssessment] = useState<"got_it" | "review" | null>(null);
+  // Visualization state
+  const [showVisualization, setShowVisualization] = useState(false);
 
   const {
     isLoading: pyodideLoading,
@@ -351,8 +355,27 @@ export function ChallengePage() {
                       </Box>
                     </Box>
                   )}
+                  {result.passed && challenge.testCases && challenge.testCases.length > 0 && (
+                    <Button
+                      mt={4}
+                      colorPalette="cyan"
+                      variant="outline"
+                      onClick={() => setShowVisualization(true)}
+                    >
+                      <FaEye />
+                      See How It Works
+                    </Button>
+                  )}
                 </Card.Body>
               </Card.Root>
+            )}
+
+            {/* Execution Visualizer Modal */}
+            {showVisualization && challenge.testCases && challenge.testCases.length > 0 && (
+              <ExecutionVisualizer
+                testCase={challenge.testCases[0]}
+                onClose={() => setShowVisualization(false)}
+              />
             )}
 
             {challenge.hints && challenge.hints.length > 0 && (
