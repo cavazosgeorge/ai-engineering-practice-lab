@@ -5,6 +5,7 @@ import { fetchLessons, fetchProgress, fetchReviewQueue, fetchChallenge, type Les
 export const progressKeys = {
   all: ["progress"] as const,
   stats: () => [...progressKeys.all, "stats"] as const,
+  full: () => [...progressKeys.all, "full"] as const,
   lessons: () => ["lessons"] as const,
   reviewQueue: () => [...progressKeys.all, "review-queue"] as const,
 };
@@ -40,10 +41,11 @@ export function useProgressStats() {
 
 /**
  * Fetch full progress data including individual challenge progress
+ * Uses separate query key from useProgressStats to avoid cache conflicts
  */
 export function useFullProgress() {
   return useQuery({
-    queryKey: progressKeys.stats(),
+    queryKey: progressKeys.full(),
     queryFn: fetchProgress,
   });
 }
