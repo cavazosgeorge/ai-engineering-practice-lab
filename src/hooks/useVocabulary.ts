@@ -32,6 +32,22 @@ export function prefetchQuizQuestion(queryClient: QueryClient, termId: string) {
 }
 
 /**
+ * ✅ Prefetch vocabulary terms and stats - call this to warm the cache before navigation
+ */
+export function prefetchVocabulary(queryClient: QueryClient, lessonId: string) {
+  return Promise.all([
+    queryClient.prefetchQuery({
+      queryKey: vocabularyKeys.terms(lessonId),
+      queryFn: () => fetchVocabularyTerms(lessonId),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: vocabularyKeys.stats(lessonId),
+      queryFn: () => fetchVocabularyStats(lessonId),
+    }),
+  ]);
+}
+
+/**
  * Fetch vocabulary terms for a lesson with progress
  */
 export function useVocabularyTerms(lessonId: string) {

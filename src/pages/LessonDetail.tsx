@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import {
   Box,
   Container,
@@ -12,9 +13,10 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { Link, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLesson } from "../hooks/useLessons";
 import { useProgressStats } from "../hooks/useProgress";
-import { useVocabularyStats } from "../hooks/useVocabulary";
+import { useVocabularyStats, prefetchVocabulary } from "../hooks/useVocabulary";
 import ReactMarkdown from "react-markdown";
 import { LuCheck, LuBookOpen } from "react-icons/lu";
 
@@ -33,12 +35,20 @@ const typeLabels = {
 
 export function LessonDetail() {
   const { slug } = useParams<{ slug: string }>();
+  const queryClient = useQueryClient();
 
   const { data: lesson, isLoading: lessonLoading } = useLesson(slug);
   const { data: progressData, isLoading: progressLoading } = useProgressStats();
   const { data: vocabularyStats } = useVocabularyStats(lesson?.id);
 
   const completedChallenges = progressData?.completedChallenges ?? new Set<string>();
+
+  // ✅ Prefetch vocabulary on hover for instant navigation
+  const handleVocabularyHover = useCallback(() => {
+    if (lesson?.id) {
+      prefetchVocabulary(queryClient, lesson.id);
+    }
+  }, [queryClient, lesson?.id]);
 
   // ✅ Only show loading on initial load (no cached data)
   const isInitialLoading = (!lesson && lessonLoading) || (!progressData && progressLoading);
@@ -111,6 +121,7 @@ export function LessonDetail() {
               }}
               transition="all 0.2s"
               cursor="pointer"
+              onMouseEnter={handleVocabularyHover}
             >
               <Card.Body>
                 <HStack justify="space-between">
