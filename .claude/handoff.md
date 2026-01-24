@@ -2,6 +2,27 @@
 
 ## What Was Done
 
+### Session: Routing Fix & Repository Setup
+
+**Vocabulary Routing Fix:**
+- Fixed breadcrumb navigation not working in vocabulary flashcards/quiz modes
+- Changed from hybrid state/props mode detection to URL-derived mode
+- Mode now derived from `location.pathname` (reactive to route changes)
+- Removed `userMode` state that was persisting across navigations
+
+**Repository Configuration:**
+- Made repository public (enables branch protection on free plan)
+- Enabled branch protection on `main`:
+  - Requires pull requests (no direct pushes)
+  - Force pushes blocked
+  - Branch deletion blocked
+
+**Git Workflow:**
+- `main` - Protected production branch
+- `development` - Integration branch, kept in sync with main
+- Feature branches created from `development`
+- PRs merge to `main`, then sync back to `development`
+
 ### Session: Delayed Skeletons & Query Parallelization
 
 Applied delayed skeleton pattern and fixed cascading query dependencies for optimal loading UX.
@@ -217,6 +238,7 @@ The app has three challenge types:
 
 ## Don't Break
 
+- Git workflow: `development` → `feature/xyz` → PR → `main` (protected)
 - Pyodide Python execution (runs in browser)
 - Session-based progress tracking (localStorage sessionId)
 - Spaced repetition system for mastery tracking
@@ -230,5 +252,6 @@ The app has three challenge types:
   - Hover prefetch functions in hooks files
   - Dashboard prefetch on header link (AppShell.tsx)
   - VocabularyPage uses slug for all queries (parallel, no waterfall)
+  - VocabularyPage derives mode from URL path (no state, reactive to navigation)
   - Entrance animations in LessonDetail (framer-motion)
   - TanStack Query for all data fetching (no useEffect fetching)
