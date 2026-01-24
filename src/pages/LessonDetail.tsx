@@ -15,7 +15,7 @@ import {
 import { Link, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLesson } from "../hooks/useLessons";
-import { useProgressStats } from "../hooks/useProgress";
+import { useProgressStats, prefetchChallenge } from "../hooks/useProgress";
 import { useVocabularyStats, prefetchVocabulary } from "../hooks/useVocabulary";
 import ReactMarkdown from "react-markdown";
 import { LuCheck, LuBookOpen } from "react-icons/lu";
@@ -49,6 +49,11 @@ export function LessonDetail() {
       prefetchVocabulary(queryClient, lesson.id);
     }
   }, [queryClient, lesson?.id]);
+
+  // ✅ Prefetch challenge on hover for instant navigation
+  const handleChallengeHover = useCallback((challengeId: string) => {
+    prefetchChallenge(queryClient, challengeId);
+  }, [queryClient]);
 
   // ✅ Only show loading on initial load (no cached data)
   const isInitialLoading = (!lesson && lessonLoading) || (!progressData && progressLoading);
@@ -218,6 +223,7 @@ export function LessonDetail() {
                           transition="background 0.2s"
                           borderRight={isCompleted ? "3px solid" : "none"}
                           borderRightColor="green.500"
+                          onMouseEnter={() => handleChallengeHover(challenge.id)}
                         >
                           <HStack justify="space-between">
                             <HStack gap={3}>

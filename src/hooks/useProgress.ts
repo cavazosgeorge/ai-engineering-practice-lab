@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type QueryClient } from "@tanstack/react-query";
 import { fetchLessons, fetchProgress, fetchReviewQueue, fetchChallenge, type Lesson, type UserProgress, type Challenge } from "../services/api";
 
 // Query keys
@@ -72,5 +72,15 @@ export function useChallenge(id: string | undefined) {
     queryKey: challengeKeys.detail(id || ""),
     queryFn: () => fetchChallenge(id!),
     enabled: !!id,
+  });
+}
+
+/**
+ * ✅ Prefetch a challenge - call this to warm the cache before navigation
+ */
+export function prefetchChallenge(queryClient: QueryClient, id: string) {
+  return queryClient.prefetchQuery({
+    queryKey: challengeKeys.detail(id),
+    queryFn: () => fetchChallenge(id),
   });
 }
