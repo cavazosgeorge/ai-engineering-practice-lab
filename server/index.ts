@@ -7,6 +7,7 @@ import { runMigrations } from "./db";
 import lessonsRoutes from "./routes/lessons";
 import challengesRoutes from "./routes/challenges";
 import progressRoutes from "./routes/progress";
+import vocabularyRoutes from "./routes/vocabulary";
 
 // Run migrations on startup
 runMigrations();
@@ -30,6 +31,7 @@ app.get("/health", (c) => c.json({ status: "ok" }));
 app.route("/api/lessons", lessonsRoutes);
 app.route("/api/challenges", challengesRoutes);
 app.route("/api/progress", progressRoutes);
+app.route("/api/vocabulary", vocabularyRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === "production") {
