@@ -184,29 +184,40 @@ export function VocabularyQuiz({
           Submit
         </Button>
       ) : (
-        <VStack gap={4}>
+        <HStack
+          w="full"
+          justify="space-between"
+          align="center"
+          p={4}
+          bg="gray.900"
+          borderRadius="lg"
+          border="1px solid"
+          borderColor={feedback.correct ? "green.800" : "red.800"}
+        >
           <HStack gap={2}>
             <Icon
-              boxSize={6}
+              boxSize={5}
               color={feedback.correct ? "green.400" : "red.400"}
             >
               {feedback.correct ? <LuCheck /> : <LuX />}
             </Icon>
             <Text
               color={feedback.correct ? "green.400" : "red.400"}
-              fontSize="lg"
               fontWeight="medium"
             >
               {feedback.correct ? "Correct!" : "Incorrect"}
             </Text>
           </HStack>
-          <Button colorPalette="cyan" size="lg" onClick={onContinue}>
-            Continue
-          </Button>
-          <Text color="gray.500" fontSize="sm">
-            Press <Kbd>Enter</Kbd> to continue
-          </Text>
-        </VStack>
+
+          <HStack gap={3}>
+            <Text color="gray.600" fontSize="xs" display={{ base: "none", sm: "block" }}>
+              <Kbd size="sm">Enter</Kbd>
+            </Text>
+            <Button colorPalette="cyan" size="sm" onClick={onContinue}>
+              Continue
+            </Button>
+          </HStack>
+        </HStack>
       )}
     </VStack>
   );
