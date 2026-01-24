@@ -1,5 +1,5 @@
-import { useState, useCallback, startTransition } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useCallback, startTransition } from "react";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Container,
@@ -26,21 +26,21 @@ import { useLesson } from "../hooks/useLessons";
 
 type VocabularyMode = "dashboard" | "flashcards" | "quiz";
 
-interface VocabularyPageProps {
-  mode?: VocabularyMode;
-}
-
-export function VocabularyPage({ mode: initialMode }: VocabularyPageProps) {
+export function VocabularyPage() {
   const { lessonSlug } = useParams<{ lessonSlug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
 
   // ✅ Use TanStack Query for lesson fetching (not useEffect)
   const { data: lesson, isLoading: lessonLoading } = useLesson(lessonSlug);
 
-  // ✅ Derive initial mode from props, only use state for user-initiated changes
-  const [userMode, setUserMode] = useState<VocabularyMode | null>(null);
-  const mode = userMode ?? initialMode ?? "dashboard";
+  // ✅ Derive mode from URL path - no state needed, reactive to route changes
+  const mode: VocabularyMode = location.pathname.endsWith("/flashcards")
+    ? "flashcards"
+    : location.pathname.endsWith("/quiz")
+      ? "quiz"
+      : "dashboard";
 
   // ✅ Use lessonSlug directly - no cascading dependency on lesson.id
   // All three queries run in parallel instead of lesson → terms/stats waterfall
@@ -59,27 +59,24 @@ export function VocabularyPage({ mode: initialMode }: VocabularyPageProps) {
   const isInitialLoading = (!lesson && lessonLoading) || (!terms && termsLoading) || (!stats && statsLoading);
 
   // ✅ Stable callback references with useCallback
-  // ✅ Use startTransition to avoid showing loading spinners during mode changes
+  // ✅ Use startTransition to avoid showing loading spinners during navigation
   const handleStartFlashcards = useCallback(() => {
     startTransition(() => {
-      setUserMode("flashcards");
+      navigate(`/vocabulary/${lessonSlug}/flashcards`, { replace: true });
     });
-    navigate(`/vocabulary/${lessonSlug}/flashcards`, { replace: true });
   }, [navigate, lessonSlug]);
 
   const handleStartQuiz = useCallback(() => {
     startTransition(() => {
-      setUserMode("quiz");
+      navigate(`/vocabulary/${lessonSlug}/quiz`, { replace: true });
     });
-    navigate(`/vocabulary/${lessonSlug}/quiz`, { replace: true });
   }, [navigate, lessonSlug]);
 
   const handleBackToDashboard = useCallback(() => {
     startTransition(() => {
-      setUserMode("dashboard");
+      navigate(`/vocabulary/${lessonSlug}`, { replace: true });
     });
     refetchStats();
-    navigate(`/vocabulary/${lessonSlug}`, { replace: true });
   }, [navigate, lessonSlug, refetchStats]);
 
   // ✅ Prefetch first quiz question when user hovers over Quiz Mode card

@@ -20,8 +20,8 @@ function App() {
           <Route path="/review" element={<Review />} />
           <Route path="/progress" element={<ProgressPage />} />
           <Route path="/vocabulary/:lessonSlug" element={<VocabularyPage />} />
-          <Route path="/vocabulary/:lessonSlug/flashcards" element={<VocabularyPage mode="flashcards" />} />
-          <Route path="/vocabulary/:lessonSlug/quiz" element={<VocabularyPage mode="quiz" />} />
+          <Route path="/vocabulary/:lessonSlug/flashcards" element={<VocabularyPage />} />
+          <Route path="/vocabulary/:lessonSlug/quiz" element={<VocabularyPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
