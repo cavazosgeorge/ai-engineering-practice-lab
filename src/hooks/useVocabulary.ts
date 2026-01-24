@@ -1,0 +1,120 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  fetchVocabularyTerms,
+  submitFlashcardReview,
+  fetchQuizQuestion,
+  submitQuizAnswer,
+  fetchVocabularyReviewQueue,
+  fetchVocabularyStats,
+  type VocabularyTermWithProgress,
+  type VocabularyProgress,
+  type QuizQuestion,
+  type VocabularyStats,
+} from "../services/api";
+
+// Query keys
+const vocabularyKeys = {
+  all: ["vocabulary"] as const,
+  terms: (lessonId: string) => [...vocabularyKeys.all, "terms", lessonId] as const,
+  stats: (lessonId?: string) => [...vocabularyKeys.all, "stats", lessonId] as const,
+  reviewQueue: (lessonId?: string) => [...vocabularyKeys.all, "review-queue", lessonId] as const,
+  quizQuestion: (termId: string) => [...vocabularyKeys.all, "quiz", termId] as const,
+};
+
+/**
+ * Fetch vocabulary terms for a lesson with progress
+ */
+export function useVocabularyTerms(lessonId: string) {
+  return useQuery<VocabularyTermWithProgress[]>({
+    queryKey: vocabularyKeys.terms(lessonId),
+    queryFn: () => fetchVocabularyTerms(lessonId),
+    enabled: !!lessonId,
+  });
+}
+
+/**
+ * Fetch vocabulary statistics
+ */
+export function useVocabularyStats(lessonId?: string) {
+  return useQuery<VocabularyStats>({
+    queryKey: vocabularyKeys.stats(lessonId),
+    queryFn: () => fetchVocabularyStats(lessonId),
+  });
+}
+
+/**
+ * Fetch vocabulary terms due for review
+ */
+export function useVocabularyReviewQueue(lessonId?: string) {
+  return useQuery<VocabularyTermWithProgress[]>({
+    queryKey: vocabularyKeys.reviewQueue(lessonId),
+    queryFn: () => fetchVocabularyReviewQueue(lessonId),
+  });
+}
+
+/**
+ * Submit a flashcard review with quality rating
+ */
+export function useFlashcardReview() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    VocabularyProgress,
+    Error,
+    { termId: string; quality: number; lessonId?: string }
+  >({
+    mutationFn: ({ termId, quality }) => submitFlashcardReview(termId, quality),
+    onSuccess: (_, variables) => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: vocabularyKeys.all });
+      if (variables.lessonId) {
+        queryClient.invalidateQueries({
+          queryKey: vocabularyKeys.terms(variables.lessonId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: vocabularyKeys.stats(variables.lessonId),
+        });
+      }
+    },
+  });
+}
+
+/**
+ * Fetch a quiz question for a term
+ */
+export function useQuizQuestion(termId: string, enabled = true) {
+  return useQuery<QuizQuestion>({
+    queryKey: vocabularyKeys.quizQuestion(termId),
+    queryFn: () => fetchQuizQuestion(termId),
+    enabled: !!termId && enabled,
+    staleTime: 0, // Always refetch to get new question options
+  });
+}
+
+/**
+ * Submit a quiz answer
+ */
+export function useQuizAnswer() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    { correct: boolean; progress: VocabularyProgress },
+    Error,
+    { termId: string; selectedOptionId: string; timeSpentMs: number; lessonId?: string }
+  >({
+    mutationFn: ({ termId, selectedOptionId, timeSpentMs }) =>
+      submitQuizAnswer(termId, selectedOptionId, timeSpentMs),
+    onSuccess: (_, variables) => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: vocabularyKeys.all });
+      if (variables.lessonId) {
+        queryClient.invalidateQueries({
+          queryKey: vocabularyKeys.terms(variables.lessonId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: vocabularyKeys.stats(variables.lessonId),
+        });
+      }
+    },
+  });
+}
