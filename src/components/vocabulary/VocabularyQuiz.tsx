@@ -209,14 +209,9 @@ export function VocabularyQuiz({
             </Text>
           </HStack>
 
-          <HStack gap={3}>
-            <Text color="gray.600" fontSize="xs" display={{ base: "none", sm: "block" }}>
-              <Kbd size="sm">Enter</Kbd>
-            </Text>
-            <Button colorPalette="cyan" size="sm" onClick={onContinue}>
-              Continue
-            </Button>
-          </HStack>
+          <Button colorPalette="cyan" size="sm" onClick={onContinue}>
+            Continue
+          </Button>
         </HStack>
       )}
     </VStack>

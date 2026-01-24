@@ -234,7 +234,7 @@ export function VocabularyQuizSession({
 
   return (
     <VStack gap={6} py={4}>
-      {/* Progress bar with exit button */}
+      {/* Progress bar */}
       <Box w="full" maxW="600px">
         <HStack justify="space-between" mb={2}>
           <Text color="gray.400" fontSize="sm">
@@ -247,16 +247,6 @@ export function VocabularyQuizSession({
             <Text color="red.400" fontSize="sm">
               {sessionStats.incorrect} incorrect
             </Text>
-            <Button
-              variant="ghost"
-              color="gray.500"
-              _hover={{ bg: "gray.800", color: "gray.300" }}
-              onClick={onBack}
-              size="xs"
-              fontWeight="normal"
-            >
-              Exit
-            </Button>
           </HStack>
         </HStack>
         <Progress.Root value={progress} size="sm" colorPalette="cyan">
@@ -279,6 +269,18 @@ export function VocabularyQuizSession({
         feedback={feedback}
         onContinue={handleContinue}
       />
+
+      {/* Exit button */}
+      <Button
+        variant="ghost"
+        color="gray.500"
+        _hover={{ bg: "gray.800", color: "gray.300" }}
+        onClick={onBack}
+        size="sm"
+        mt={2}
+      >
+        Exit Quiz
+      </Button>
     </VStack>
   );
 }
