@@ -2,6 +2,31 @@
 
 ## What Was Done
 
+### Session: Delayed Skeletons & Query Parallelization
+
+Applied delayed skeleton pattern and fixed cascading query dependencies for optimal loading UX.
+
+**Delayed Skeleton Pattern (all pages):**
+- Replaced loading spinners with skeleton loaders that have 200ms CSS animation delay
+- Prevents skeleton "flash" on fast loads - only appears if data takes >200ms
+- Applied to: Dashboard, Lessons, LessonDetail, ChallengePage, VocabularyPage, Progress, Review
+- Pattern: `opacity={0}` + `animation="fadeIn 0.2s ease-in 0.2s forwards"`
+
+**Dashboard Prefetching:**
+- Added prefetch on "AI Practice Lab" header link hover
+- Warms cache for lessons and progress data before navigation
+- Eliminates loading state when navigating back to dashboard
+
+**Cascading Query Fix (VocabularyPage):**
+- Changed `useVocabularyTerms(lesson?.id)` to `useVocabularyTerms(lessonSlug)`
+- Updated hook and API function to accept `lessonIdOrSlug`
+- All three queries (lesson, terms, stats) now run in parallel instead of waterfall
+
+**react-performance Skill Updates:**
+- Added "Delayed Skeleton Pattern" section to data-fetching.md
+- Added skeleton flash anti-pattern to SKILL.md Pattern Selection Guide
+- Added to Quick Wins Checklist
+
 ### Session: React Performance Optimization & UI Polish
 
 Applied comprehensive React performance patterns across the application, eliminating loading spinner flicker and improving perceived performance.
@@ -168,8 +193,11 @@ The app has three challenge types:
 
 **Performance:**
 - All pages use TanStack Query with `!data && isLoading` pattern
+- Delayed skeleton loaders (200ms CSS delay) prevent flash on fast loads
 - Hover prefetching on navigation elements for instant page transitions
-- Entrance animations on LessonDetail to mask cascading query timing
+- Dashboard prefetching on header link hover
+- VocabularyPage queries run in parallel (no cascading dependency)
+- Entrance animations on LessonDetail to mask any remaining timing gaps
 - No loading spinner flicker on cached data or background refetches
 
 ## What's Next
@@ -198,6 +226,9 @@ The app has three challenge types:
 - Vocabulary seed script (`bun run db:seed-vocabulary`)
 - Performance patterns:
   - `!data && isLoading` for loading states (not just `isLoading`)
+  - Delayed skeleton pattern: `opacity={0}` + `animation="fadeIn 0.2s ease-in 0.2s forwards"`
   - Hover prefetch functions in hooks files
+  - Dashboard prefetch on header link (AppShell.tsx)
+  - VocabularyPage uses slug for all queries (parallel, no waterfall)
   - Entrance animations in LessonDetail (framer-motion)
   - TanStack Query for all data fetching (no useEffect fetching)
