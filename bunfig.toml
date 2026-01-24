@@ -1,0 +1,3 @@
+[test]
+# Preload DOM environment for React component tests
+preload = ["./src/__tests__/setup/dom.ts"]
