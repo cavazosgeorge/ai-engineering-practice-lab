@@ -21,7 +21,8 @@ export interface ValidationResult {
 }
 
 // Deep equality check for comparing results
-function deepEqual(a: unknown, b: unknown): boolean {
+// Exported for testing
+export function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (typeof a !== typeof b) return false;
   if (a === null || b === null) return a === b;
@@ -52,7 +53,8 @@ function deepEqual(a: unknown, b: unknown): boolean {
 }
 
 // Convert Python result to JS-comparable value
-function pythonToJS(value: unknown): unknown {
+// Exported for testing
+export function pythonToJS(value: unknown): unknown {
   if (value === null || value === undefined) return value;
 
   // Handle Pyodide proxy objects
@@ -167,7 +169,8 @@ __captured_stdout__.getvalue()
 }
 
 // Convert JS value to Python literal string
-function jsToPythonLiteral(value: unknown): string {
+// Exported for testing
+export function jsToPythonLiteral(value: unknown): string {
   if (value === null || value === undefined) {
     return "None";
   }
