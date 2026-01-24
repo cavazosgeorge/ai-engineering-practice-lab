@@ -14,36 +14,11 @@ import {
 } from "@chakra-ui/react";
 import { Link, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import { useLesson } from "../hooks/useLessons";
 import { useProgressStats, prefetchChallenge } from "../hooks/useProgress";
 import { useVocabularyStats, prefetchVocabulary } from "../hooks/useVocabulary";
 import ReactMarkdown from "react-markdown";
 import { LuBookOpen } from "react-icons/lu";
-
-const MotionBox = motion.create(Box);
-const MotionVStack = motion.create(VStack);
-const MotionCard = motion.create(Card.Root);
-
-// Staggered fade-in animation for smooth content appearance
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.3, ease: "easeOut" as const },
-  },
-};
 
 const difficultyColors = {
   beginner: "green",
@@ -105,15 +80,8 @@ export function LessonDetail() {
 
   return (
     <Container maxW="container.xl" py={12}>
-      <MotionVStack
-        gap={8}
-        align="stretch"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        <MotionBox variants={itemVariants}>
-          <Breadcrumb.Root>
+      <VStack gap={8} align="stretch">
+        <Breadcrumb.Root>
           <Breadcrumb.List>
             <Breadcrumb.Item>
               <Breadcrumb.Link asChild color="gray.400">
@@ -134,9 +102,8 @@ export function LessonDetail() {
             </Breadcrumb.Item>
           </Breadcrumb.List>
         </Breadcrumb.Root>
-        </MotionBox>
 
-        <MotionBox variants={itemVariants}>
+        <Box>
           <Badge colorPalette="cyan" variant="subtle" mb={2}>
             Lesson {lesson.orderIndex}
           </Badge>
@@ -146,12 +113,11 @@ export function LessonDetail() {
           <Text color="gray.400" fontSize="lg">
             {lesson.description}
           </Text>
-        </MotionBox>
+        </Box>
 
         {/* Study Vocabulary Card */}
         {vocabularyStats && vocabularyStats.total > 0 && (
-          <MotionBox variants={itemVariants}>
-            <Link to={`/vocabulary/${lesson.slug}`}>
+          <Link to={`/vocabulary/${lesson.slug}`}>
               <Card.Root
                 bg="gray.900"
                 borderColor="gray.800"
@@ -207,17 +173,11 @@ export function LessonDetail() {
               </Card.Body>
             </Card.Root>
           </Link>
-          </MotionBox>
         )}
 
         <VStack gap={8} align="stretch">
           {lesson.concepts.map((concept) => (
-            <MotionCard
-              key={concept.id}
-              bg="gray.900"
-              borderColor="gray.800"
-              variants={itemVariants}
-            >
+            <Card.Root key={concept.id} bg="gray.900" borderColor="gray.800">
               <Card.Body>
                 <Heading size="lg" color="white" mb={4}>
                   {concept.title}
@@ -291,10 +251,10 @@ export function LessonDetail() {
                   })}
                 </VStack>
               </Card.Body>
-            </MotionCard>
+            </Card.Root>
           ))}
         </VStack>
-      </MotionVStack>
+      </VStack>
     </Container>
   );
 }
