@@ -12,9 +12,9 @@ import {
 } from "@chakra-ui/react";
 import { Link, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { fetchLesson, fetchProgress, type Lesson } from "../services/api";
+import { fetchLesson, fetchProgress, fetchVocabularyStats, type Lesson, type VocabularyStats } from "../services/api";
 import ReactMarkdown from "react-markdown";
-import { LuCheck } from "react-icons/lu";
+import { LuCheck, LuBookOpen } from "react-icons/lu";
 
 const difficultyColors = {
   beginner: "green",
@@ -36,6 +36,7 @@ export function LessonDetail() {
   const [completedChallenges, setCompletedChallenges] = useState<Set<string>>(
     new Set()
   );
+  const [vocabularyStats, setVocabularyStats] = useState<VocabularyStats | null>(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -49,6 +50,11 @@ export function LessonDetail() {
           progressData.progress.map((p) => p.challengeId)
         );
         setCompletedChallenges(completed);
+
+        // Fetch vocabulary stats for this lesson
+        fetchVocabularyStats(lessonData.id)
+          .then(setVocabularyStats)
+          .catch(() => setVocabularyStats(null));
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -76,15 +82,15 @@ export function LessonDetail() {
         <Breadcrumb.Root>
           <Breadcrumb.List>
             <Breadcrumb.Item>
-              <Link to="/">
-                <Breadcrumb.Link color="gray.400">Home</Breadcrumb.Link>
-              </Link>
+              <Breadcrumb.Link asChild color="gray.400">
+                <Link to="/">Home</Link>
+              </Breadcrumb.Link>
             </Breadcrumb.Item>
             <Breadcrumb.Separator />
             <Breadcrumb.Item>
-              <Link to="/lessons">
-                <Breadcrumb.Link color="gray.400">Lessons</Breadcrumb.Link>
-              </Link>
+              <Breadcrumb.Link asChild color="gray.400">
+                <Link to="/lessons">Lessons</Link>
+              </Breadcrumb.Link>
             </Breadcrumb.Item>
             <Breadcrumb.Separator />
             <Breadcrumb.Item>
@@ -106,6 +112,65 @@ export function LessonDetail() {
             {lesson.description}
           </Text>
         </Box>
+
+        {/* Study Vocabulary Card */}
+        {vocabularyStats && vocabularyStats.total > 0 && (
+          <Link to={`/vocabulary/${lesson.slug}`}>
+            <Card.Root
+              bg="gray.900"
+              borderColor="gray.800"
+              _hover={{
+                borderColor: "cyan.700",
+                transform: "translateY(-2px)",
+              }}
+              transition="all 0.2s"
+              cursor="pointer"
+            >
+              <Card.Body>
+                <HStack justify="space-between">
+                  <HStack gap={4}>
+                    <Box p={3} bg="cyan.900" borderRadius="lg">
+                      <Icon boxSize={6} color="cyan.400">
+                        <LuBookOpen />
+                      </Icon>
+                    </Box>
+                    <VStack align="start" gap={1}>
+                      <Text color="white" fontWeight="medium" fontSize="lg">
+                        Study Vocabulary
+                      </Text>
+                      <HStack gap={3}>
+                        <Text color="gray.400" fontSize="sm">
+                          {vocabularyStats.total} terms
+                        </Text>
+                        {vocabularyStats.mastered > 0 && (
+                          <Badge colorPalette="green" variant="subtle">
+                            {vocabularyStats.mastered} mastered
+                          </Badge>
+                        )}
+                        {vocabularyStats.reviewing > 0 && (
+                          <Badge colorPalette="yellow" variant="subtle">
+                            {vocabularyStats.reviewing} reviewing
+                          </Badge>
+                        )}
+                      </HStack>
+                    </VStack>
+                  </HStack>
+                  <Box
+                    px={3}
+                    py={1.5}
+                    bg="cyan.600"
+                    color="white"
+                    borderRadius="md"
+                    fontSize="sm"
+                    fontWeight="medium"
+                  >
+                    Study →
+                  </Box>
+                </HStack>
+              </Card.Body>
+            </Card.Root>
+          </Link>
+        )}
 
         <VStack gap={8} align="stretch">
           {lesson.concepts.map((concept) => (

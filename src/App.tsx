@@ -6,6 +6,7 @@ import { LessonDetail } from "./pages/LessonDetail";
 import { ChallengePage } from "./pages/ChallengePage";
 import { Review } from "./pages/Review";
 import { ProgressPage } from "./pages/Progress";
+import { VocabularyPage } from "./pages/VocabularyPage";
 
 function App() {
   return (
@@ -18,6 +19,9 @@ function App() {
           <Route path="/challenges/:id" element={<ChallengePage />} />
           <Route path="/review" element={<Review />} />
           <Route path="/progress" element={<ProgressPage />} />
+          <Route path="/vocabulary/:lessonSlug" element={<VocabularyPage />} />
+          <Route path="/vocabulary/:lessonSlug/flashcards" element={<VocabularyPage mode="flashcards" />} />
+          <Route path="/vocabulary/:lessonSlug/quiz" element={<VocabularyPage mode="quiz" />} />
         </Route>
       </Routes>
     </BrowserRouter>
