@@ -2,6 +2,46 @@
 
 ## What Was Done
 
+### Session: Comprehensive Test Suite Implementation
+
+Implemented full test coverage across all application layers using Bun's built-in testing module (`bun:test`).
+
+**Test Infrastructure:**
+- `server/__tests__/fixtures/` - Test database setup, mock data, seeding helpers
+- `src/__tests__/setup/` - React testing utilities, DOM setup, mock utilities
+- `bunfig.toml` - Bun test configuration with DOM preload
+
+**Backend Tests (197 tests):**
+- Unit tests for SM-2 spaced repetition algorithm and code validator
+- Database integration tests for migrations, schema constraints, cascade deletes
+- API route integration tests for all endpoints (lessons, challenges, progress, vocabulary)
+- Edge case tests for boundary conditions and input validation
+
+**Frontend Tests (140 tests):**
+- Service tests for API client and Python validator helpers
+- React component tests for VocabularyFlashcard, VocabularyQuiz, TestResults
+- Uses @testing-library/react with happy-dom
+
+**Test Scripts Added:**
+```bash
+bun test              # All tests (337 total)
+bun test:backend      # Backend only (197)
+bun test:frontend     # Frontend only (140)
+bun test:unit         # Unit tests
+bun test:integration  # Integration tests
+bun test:components   # React components
+bun test:edge         # Edge cases
+bun test:coverage     # With coverage
+bun test:watch        # Watch mode
+```
+
+**Dependencies Added:**
+- @testing-library/react, @testing-library/user-event, @testing-library/jest-dom
+- happy-dom, @happy-dom/global-registrator
+
+**Files Modified:**
+- `src/services/pythonValidator.ts` - Exported helper functions (deepEqual, pythonToJS, jsToPythonLiteral) for testing
+
 ### Session: Routing Fix & Repository Setup
 
 **Vocabulary Routing Fix:**
@@ -238,6 +278,7 @@ The app has three challenge types:
 
 ## Don't Break
 
+- Test suite: 337 tests must pass (`bun test`) - run before committing
 - Git workflow: `development` → `feature/xyz` → PR → `main` (protected)
 - Pyodide Python execution (runs in browser)
 - Session-based progress tracking (localStorage sessionId)
