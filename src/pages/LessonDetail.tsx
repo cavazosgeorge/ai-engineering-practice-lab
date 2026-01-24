@@ -64,7 +64,8 @@ export function LessonDetail() {
 
   const { data: lesson, isLoading: lessonLoading } = useLesson(slug);
   const { data: progressData, isLoading: progressLoading } = useProgressStats();
-  const { data: vocabularyStats } = useVocabularyStats(lesson?.id);
+  // ✅ Use slug directly - no cascading dependency on lesson.id
+  const { data: vocabularyStats } = useVocabularyStats(slug);
 
   const completedChallenges = progressData?.completedChallenges ?? new Set<string>();
 

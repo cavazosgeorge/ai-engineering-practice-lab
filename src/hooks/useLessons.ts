@@ -1,5 +1,6 @@
 import { useQuery, type QueryClient } from "@tanstack/react-query";
-import { fetchLesson, type Lesson } from "../services/api";
+import { fetchLesson, fetchVocabularyStats, type Lesson } from "../services/api";
+import { vocabularyKeys } from "./useVocabulary";
 
 // Query keys
 export const lessonKeys = {
@@ -19,11 +20,17 @@ export function useLesson(slug: string | undefined) {
 }
 
 /**
- * ✅ Prefetch a lesson - call this to warm the cache before navigation
+ * ✅ Prefetch a lesson AND vocabulary stats - both use slug, so no cascading dependency
  */
 export function prefetchLesson(queryClient: QueryClient, slug: string) {
-  return queryClient.prefetchQuery({
-    queryKey: lessonKeys.detail(slug),
-    queryFn: () => fetchLesson(slug),
-  });
+  return Promise.all([
+    queryClient.prefetchQuery({
+      queryKey: lessonKeys.detail(slug),
+      queryFn: () => fetchLesson(slug),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: vocabularyKeys.stats(slug),
+      queryFn: () => fetchVocabularyStats(slug),
+    }),
+  ]);
 }

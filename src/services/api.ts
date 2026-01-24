@@ -239,10 +239,10 @@ export async function fetchVocabularyReviewQueue(lessonId?: string): Promise<Voc
   return data.queue || [];
 }
 
-export async function fetchVocabularyStats(lessonId?: string): Promise<VocabularyStats> {
+export async function fetchVocabularyStats(lessonIdOrSlug?: string): Promise<VocabularyStats> {
   const sessionId = getSessionId();
-  const url = lessonId
-    ? `${API_BASE}/vocabulary/${lessonId}/stats?sessionId=${sessionId}`
+  const url = lessonIdOrSlug
+    ? `${API_BASE}/vocabulary/${lessonIdOrSlug}/stats?sessionId=${sessionId}`
     : `${API_BASE}/vocabulary/stats?sessionId=${sessionId}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch vocabulary stats");

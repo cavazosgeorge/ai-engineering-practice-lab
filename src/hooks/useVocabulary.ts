@@ -59,12 +59,12 @@ export function useVocabularyTerms(lessonId: string) {
 }
 
 /**
- * Fetch vocabulary statistics
+ * Fetch vocabulary statistics (accepts lesson ID or slug)
  */
-export function useVocabularyStats(lessonId?: string) {
+export function useVocabularyStats(lessonIdOrSlug?: string) {
   return useQuery<VocabularyStats>({
-    queryKey: vocabularyKeys.stats(lessonId),
-    queryFn: () => fetchVocabularyStats(lessonId),
+    queryKey: vocabularyKeys.stats(lessonIdOrSlug),
+    queryFn: () => fetchVocabularyStats(lessonIdOrSlug),
   });
 }
 
