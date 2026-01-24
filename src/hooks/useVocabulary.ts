@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import {
   fetchVocabularyTerms,
   submitFlashcardReview,
@@ -12,14 +12,24 @@ import {
   type VocabularyStats,
 } from "../services/api";
 
-// Query keys
-const vocabularyKeys = {
+// Query keys - exported for prefetching
+export const vocabularyKeys = {
   all: ["vocabulary"] as const,
   terms: (lessonId: string) => [...vocabularyKeys.all, "terms", lessonId] as const,
   stats: (lessonId?: string) => [...vocabularyKeys.all, "stats", lessonId] as const,
   reviewQueue: (lessonId?: string) => [...vocabularyKeys.all, "review-queue", lessonId] as const,
   quizQuestion: (termId: string) => [...vocabularyKeys.all, "quiz", termId] as const,
 };
+
+/**
+ * ✅ Prefetch a quiz question - call this to warm the cache before the user needs it
+ */
+export function prefetchQuizQuestion(queryClient: QueryClient, termId: string) {
+  return queryClient.prefetchQuery({
+    queryKey: vocabularyKeys.quizQuestion(termId),
+    queryFn: () => fetchQuizQuestion(termId),
+  });
+}
 
 /**
  * Fetch vocabulary terms for a lesson with progress
@@ -65,8 +75,7 @@ export function useFlashcardReview() {
   >({
     mutationFn: ({ termId, quality }) => submitFlashcardReview(termId, quality),
     onSuccess: (_, variables) => {
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: vocabularyKeys.all });
+      // ✅ Only invalidate specific queries that changed, not all vocabulary queries
       if (variables.lessonId) {
         queryClient.invalidateQueries({
           queryKey: vocabularyKeys.terms(variables.lessonId),
@@ -75,6 +84,10 @@ export function useFlashcardReview() {
           queryKey: vocabularyKeys.stats(variables.lessonId),
         });
       }
+      // Also invalidate review queue since it depends on progress
+      queryClient.invalidateQueries({
+        queryKey: vocabularyKeys.reviewQueue(variables.lessonId),
+      });
     },
   });
 }
@@ -105,8 +118,7 @@ export function useQuizAnswer() {
     mutationFn: ({ termId, selectedOptionId, timeSpentMs }) =>
       submitQuizAnswer(termId, selectedOptionId, timeSpentMs),
     onSuccess: (_, variables) => {
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: vocabularyKeys.all });
+      // ✅ Only invalidate specific queries that changed, not all vocabulary queries
       if (variables.lessonId) {
         queryClient.invalidateQueries({
           queryKey: vocabularyKeys.terms(variables.lessonId),
@@ -115,6 +127,10 @@ export function useQuizAnswer() {
           queryKey: vocabularyKeys.stats(variables.lessonId),
         });
       }
+      // Also invalidate review queue since it depends on progress
+      queryClient.invalidateQueries({
+        queryKey: vocabularyKeys.reviewQueue(variables.lessonId),
+      });
     },
   });
 }

@@ -23,6 +23,7 @@ interface VocabularyDashboardProps {
   stats: VocabularyStats;
   onStartFlashcards: () => void;
   onStartQuiz: () => void;
+  onHoverQuiz?: () => void; // ✅ Optional prefetch trigger on hover
 }
 
 export function VocabularyDashboard({
@@ -30,6 +31,7 @@ export function VocabularyDashboard({
   stats,
   onStartFlashcards,
   onStartQuiz,
+  onHoverQuiz,
 }: VocabularyDashboardProps) {
   const overallProgress = stats.total > 0
     ? Math.round((stats.mastered / stats.total) * 100)
@@ -257,6 +259,7 @@ export function VocabularyDashboard({
           transition="all 0.2s"
           cursor="pointer"
           onClick={onStartQuiz}
+          onMouseEnter={onHoverQuiz}
         >
           <Card.Body p={6}>
             <VStack gap={4}>

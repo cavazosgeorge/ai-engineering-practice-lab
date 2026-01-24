@@ -16,7 +16,6 @@ import { useFlashcardReview } from "../../hooks/useVocabulary";
 import { type VocabularyTermWithProgress } from "../../services/api";
 
 interface SessionStats {
-  total: number;
   reviewed: number;
   knowIt: number;
   almost: number;
@@ -38,8 +37,8 @@ export function VocabularyFlashcardDeck({
 }: VocabularyFlashcardDeckProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  // ✅ Derive total from terms.length instead of storing in state
   const [sessionStats, setSessionStats] = useState<SessionStats>({
-    total: terms.length,
     reviewed: 0,
     knowIt: 0,
     almost: 0,
@@ -161,7 +160,7 @@ export function VocabularyFlashcardDeck({
             Session Complete!
           </Text>
           <Text color="gray.400">
-            You reviewed {sessionStats.reviewed} of {sessionStats.total} terms
+            You reviewed {sessionStats.reviewed} of {terms.length} terms
           </Text>
         </VStack>
 

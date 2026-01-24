@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback, startTransition } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Container,
   VStack,
@@ -16,8 +17,9 @@ import {
 import {
   useVocabularyTerms,
   useVocabularyStats,
+  prefetchQuizQuestion,
 } from "../hooks/useVocabulary";
-import { fetchLesson, type Lesson } from "../services/api";
+import { useLesson } from "../hooks/useLessons";
 
 type VocabularyMode = "dashboard" | "flashcards" | "quiz";
 
@@ -28,27 +30,14 @@ interface VocabularyPageProps {
 export function VocabularyPage({ mode: initialMode }: VocabularyPageProps) {
   const { lessonSlug } = useParams<{ lessonSlug: string }>();
   const navigate = useNavigate();
-  const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [lessonLoading, setLessonLoading] = useState(true);
-  const [mode, setMode] = useState<VocabularyMode>(initialMode || "dashboard");
+  const queryClient = useQueryClient();
 
-  // Fetch lesson data
-  useEffect(() => {
-    if (!lessonSlug) return;
+  // ✅ Use TanStack Query for lesson fetching (not useEffect)
+  const { data: lesson, isLoading: lessonLoading } = useLesson(lessonSlug);
 
-    setLessonLoading(true);
-    fetchLesson(lessonSlug)
-      .then(setLesson)
-      .catch(console.error)
-      .finally(() => setLessonLoading(false));
-  }, [lessonSlug]);
-
-  // Sync mode from props
-  useEffect(() => {
-    if (initialMode) {
-      setMode(initialMode);
-    }
-  }, [initialMode]);
+  // ✅ Derive initial mode from props, only use state for user-initiated changes
+  const [userMode, setUserMode] = useState<VocabularyMode | null>(null);
+  const mode = userMode ?? initialMode ?? "dashboard";
 
   const {
     data: terms,
@@ -61,25 +50,42 @@ export function VocabularyPage({ mode: initialMode }: VocabularyPageProps) {
     refetch: refetchStats,
   } = useVocabularyStats(lesson?.id);
 
-  const isLoading = lessonLoading || termsLoading || statsLoading;
+  // ✅ Only show loading spinner on initial load (no cached data), not refetches
+  const isInitialLoading = (!lesson && lessonLoading) || (!terms && termsLoading) || (!stats && statsLoading);
 
-  const handleStartFlashcards = () => {
-    setMode("flashcards");
+  // ✅ Stable callback references with useCallback
+  // ✅ Use startTransition to avoid showing loading spinners during mode changes
+  const handleStartFlashcards = useCallback(() => {
+    startTransition(() => {
+      setUserMode("flashcards");
+    });
     navigate(`/vocabulary/${lessonSlug}/flashcards`, { replace: true });
-  };
+  }, [navigate, lessonSlug]);
 
-  const handleStartQuiz = () => {
-    setMode("quiz");
+  const handleStartQuiz = useCallback(() => {
+    startTransition(() => {
+      setUserMode("quiz");
+    });
     navigate(`/vocabulary/${lessonSlug}/quiz`, { replace: true });
-  };
+  }, [navigate, lessonSlug]);
 
-  const handleBackToDashboard = () => {
-    setMode("dashboard");
+  const handleBackToDashboard = useCallback(() => {
+    startTransition(() => {
+      setUserMode("dashboard");
+    });
     refetchStats();
     navigate(`/vocabulary/${lessonSlug}`, { replace: true });
-  };
+  }, [navigate, lessonSlug, refetchStats]);
 
-  if (isLoading) {
+  // ✅ Prefetch first quiz question when user hovers over Quiz Mode card
+  const handleHoverQuiz = useCallback(() => {
+    if (terms && terms.length > 0) {
+      prefetchQuizQuestion(queryClient, terms[0].id);
+    }
+  }, [queryClient, terms]);
+
+  // ✅ Only show full-page spinner on initial load, not refetches
+  if (isInitialLoading) {
     return (
       <Container maxW="container.xl" py={12}>
         <VStack gap={4}>
@@ -162,6 +168,7 @@ export function VocabularyPage({ mode: initialMode }: VocabularyPageProps) {
               stats={stats}
               onStartFlashcards={handleStartFlashcards}
               onStartQuiz={handleStartQuiz}
+              onHoverQuiz={handleHoverQuiz}
             />
           )}
 

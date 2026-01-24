@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Box,
   Button,
@@ -11,13 +11,13 @@ import {
   HStack,
   Spinner,
 } from "@chakra-ui/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { LuCheck, LuRotateCcw } from "react-icons/lu";
 import { VocabularyQuiz } from "./VocabularyQuiz";
-import { useQuizQuestion, useQuizAnswer } from "../../hooks/useVocabulary";
+import { useQuizQuestion, useQuizAnswer, prefetchQuizQuestion } from "../../hooks/useVocabulary";
 import { type VocabularyTermWithProgress, type VocabularyProgress } from "../../services/api";
 
 interface SessionStats {
-  total: number;
   completed: number;
   correct: number;
   incorrect: number;
@@ -37,8 +37,8 @@ export function VocabularyQuizSession({
   onBack,
 }: VocabularyQuizSessionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  // ✅ Derive total from terms.length instead of storing in state
   const [sessionStats, setSessionStats] = useState<SessionStats>({
-    total: terms.length,
     completed: 0,
     correct: 0,
     incorrect: 0,
@@ -50,7 +50,9 @@ export function VocabularyQuizSession({
   } | null>(null);
   const [isSessionComplete, setIsSessionComplete] = useState(false);
 
+  const queryClient = useQueryClient();
   const currentTerm = terms[currentIndex];
+  const nextTerm = terms[currentIndex + 1];
 
   // Fetch quiz question for current term
   const {
@@ -60,6 +62,13 @@ export function VocabularyQuizSession({
   } = useQuizQuestion(currentTerm?.id, !!currentTerm && !isSessionComplete);
 
   const quizAnswer = useQuizAnswer();
+
+  // ✅ Prefetch the next question while user views current one
+  useEffect(() => {
+    if (nextTerm && !isSessionComplete) {
+      prefetchQuizQuestion(queryClient, nextTerm.id);
+    }
+  }, [queryClient, nextTerm, isSessionComplete]);
 
   const progress = ((currentIndex + 1) / terms.length) * 100;
 
@@ -108,8 +117,9 @@ export function VocabularyQuizSession({
 
   // Session complete view
   if (isSessionComplete) {
-    const accuracy = sessionStats.total > 0
-      ? Math.round((sessionStats.correct / sessionStats.total) * 100)
+    // ✅ Derive accuracy from terms.length instead of stored total
+    const accuracy = terms.length > 0
+      ? Math.round((sessionStats.correct / terms.length) * 100)
       : 0;
 
     return (
@@ -123,7 +133,7 @@ export function VocabularyQuizSession({
             Quiz Complete!
           </Text>
           <Text color="gray.400">
-            You scored {sessionStats.correct} out of {sessionStats.total}
+            You scored {sessionStats.correct} out of {terms.length}
           </Text>
         </VStack>
 
@@ -201,12 +211,23 @@ export function VocabularyQuizSession({
     );
   }
 
-  // Loading state
-  if (isLoadingQuestion || !question) {
+  // ✅ Only show spinner on initial load when there's no cached data
+  // Using both conditions: isLoading true AND no cached question data
+  if (!question && isLoadingQuestion) {
     return (
       <VStack gap={6} py={8}>
         <Spinner size="xl" color="cyan.400" />
         <Text color="gray.400">Loading question...</Text>
+      </VStack>
+    );
+  }
+
+  // Handle case where question failed to load
+  if (!question) {
+    return (
+      <VStack gap={6} py={8}>
+        <Text color="red.400">Failed to load question</Text>
+        <Button onClick={() => refetchQuestion()}>Retry</Button>
       </VStack>
     );
   }
