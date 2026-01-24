@@ -1,5 +1,5 @@
 import { Box, HStack, Text, VStack, Badge, Collapsible } from "@chakra-ui/react";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { TestResult } from "../../services/api";
 
 interface TestResultsProps {
@@ -9,7 +9,8 @@ interface TestResultsProps {
 export function TestResults({ results }: TestResultsProps) {
   const [expandedTests, setExpandedTests] = useState<Set<string>>(new Set());
 
-  const toggleTest = (testId: string) => {
+  // ✅ Stable callback reference
+  const toggleTest = useCallback((testId: string) => {
     setExpandedTests((prev) => {
       const next = new Set(prev);
       if (next.has(testId)) {
@@ -19,7 +20,7 @@ export function TestResults({ results }: TestResultsProps) {
       }
       return next;
     });
-  };
+  }, []);
 
   return (
     <VStack gap={2} align="stretch">

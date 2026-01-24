@@ -76,7 +76,8 @@ export function VocabularyFlashcardDeck({
         // Already reviewed, just move to next
         if (currentIndex < terms.length - 1) {
           goToNext();
-        } else if (sessionStats.reviewed === terms.length) {
+        } else if (reviewedCards.size === terms.length) {
+          // ✅ Use reviewedCards.size instead of sessionStats.reviewed to reduce dependencies
           setIsSessionComplete(true);
         }
         return;
@@ -107,7 +108,7 @@ export function VocabularyFlashcardDeck({
         }
       );
     },
-    [currentTerm, currentIndex, terms.length, reviewedCards, flashcardReview, lessonId, goToNext, sessionStats.reviewed]
+    [currentTerm, currentIndex, terms.length, reviewedCards, flashcardReview, lessonId, goToNext]
   );
 
   // Keyboard navigation

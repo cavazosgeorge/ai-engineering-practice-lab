@@ -36,6 +36,7 @@ export function VocabularyQuiz({
   }, [selectedId, feedback, isPending, startTime, onAnswer]);
 
   // Keyboard navigation
+  // Note: question.options dependency is fine - TanStack Query provides stable references
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (feedback) {
