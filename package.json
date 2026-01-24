@@ -10,7 +10,8 @@
     "start": "NODE_ENV=production bun run server/index.ts",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "bun test",
-    "db:seed": "bun run server/scripts/seed-lessons.ts"
+    "db:seed": "bun run server/scripts/seed-lessons.ts",
+    "db:seed-vocabulary": "bun run server/scripts/seed-vocabulary.ts"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.30.0",
