@@ -6,8 +6,11 @@ import {
   VStack,
   Text,
   Breadcrumb,
-  Spinner,
   Box,
+  Card,
+  Skeleton,
+  SimpleGrid,
+  HStack,
 } from "@chakra-ui/react";
 import {
   VocabularyDashboard,
@@ -39,16 +42,18 @@ export function VocabularyPage({ mode: initialMode }: VocabularyPageProps) {
   const [userMode, setUserMode] = useState<VocabularyMode | null>(null);
   const mode = userMode ?? initialMode ?? "dashboard";
 
+  // ✅ Use lessonSlug directly - no cascading dependency on lesson.id
+  // All three queries run in parallel instead of lesson → terms/stats waterfall
   const {
     data: terms,
     isLoading: termsLoading,
-  } = useVocabularyTerms(lesson?.id || "");
+  } = useVocabularyTerms(lessonSlug);
 
   const {
     data: stats,
     isLoading: statsLoading,
     refetch: refetchStats,
-  } = useVocabularyStats(lesson?.id);
+  } = useVocabularyStats(lessonSlug);
 
   // ✅ Only show loading spinner on initial load (no cached data), not refetches
   const isInitialLoading = (!lesson && lessonLoading) || (!terms && termsLoading) || (!stats && statsLoading);
@@ -84,13 +89,54 @@ export function VocabularyPage({ mode: initialMode }: VocabularyPageProps) {
     }
   }, [queryClient, terms]);
 
-  // ✅ Only show full-page spinner on initial load, not refetches
+  // ✅ Only show skeleton on initial load, not refetches
   if (isInitialLoading) {
     return (
-      <Container maxW="container.xl" py={12}>
-        <VStack gap={4}>
-          <Spinner size="xl" color="cyan.400" />
-          <Text color="gray.400">Loading vocabulary...</Text>
+      <Container
+        maxW="container.xl"
+        py={12}
+        opacity={0}
+        animation="fadeIn 0.2s ease-in 0.2s forwards"
+        css={{ "@keyframes fadeIn": { to: { opacity: 1 } } }}
+      >
+        <VStack gap={8} align="stretch">
+          {/* Breadcrumb skeleton */}
+          <Skeleton height="20px" width="300px" />
+
+          {/* Header skeleton */}
+          <Box>
+            <Skeleton height="40px" width="250px" mb={2} />
+            <Skeleton height="20px" width="150px" />
+          </Box>
+
+          {/* Stats skeleton */}
+          <SimpleGrid columns={{ base: 2, md: 4 }} gap={4}>
+            {[1, 2, 3, 4].map((i) => (
+              <Card.Root key={i} bg="gray.900" borderColor="gray.800">
+                <Card.Body>
+                  <Skeleton height="16px" width="60px" mb={2} />
+                  <Skeleton height="32px" width="40px" />
+                </Card.Body>
+              </Card.Root>
+            ))}
+          </SimpleGrid>
+
+          {/* Mode cards skeleton */}
+          <SimpleGrid columns={{ base: 1, md: 2 }} gap={6}>
+            {[1, 2].map((i) => (
+              <Card.Root key={i} bg="gray.900" borderColor="gray.800">
+                <Card.Body>
+                  <HStack gap={4}>
+                    <Skeleton height="48px" width="48px" borderRadius="lg" />
+                    <VStack align="start" gap={2} flex={1}>
+                      <Skeleton height="24px" width="120px" />
+                      <Skeleton height="16px" width="80%" />
+                    </VStack>
+                  </HStack>
+                </Card.Body>
+              </Card.Root>
+            ))}
+          </SimpleGrid>
         </VStack>
       </Container>
     );

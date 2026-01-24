@@ -1,5 +1,9 @@
+import { useCallback } from "react";
 import { Box, Container, Flex, Heading, HStack } from "@chakra-ui/react";
 import { Link as RouterLink, Outlet } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchLessons, fetchProgress } from "../../services/api";
+import { progressKeys } from "../../hooks/useProgress";
 
 function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
@@ -18,6 +22,26 @@ function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
 }
 
 export function AppShell() {
+  const queryClient = useQueryClient();
+
+  // Prefetch dashboard data on hover for instant navigation
+  const handleHomeHover = useCallback(() => {
+    queryClient.prefetchQuery({
+      queryKey: progressKeys.lessons(),
+      queryFn: fetchLessons,
+    });
+    queryClient.prefetchQuery({
+      queryKey: progressKeys.stats(),
+      queryFn: async () => {
+        const progressData = await fetchProgress();
+        const completedChallenges = new Set(
+          progressData.progress.map((p) => p.challengeId)
+        );
+        return { stats: progressData.stats, completedChallenges };
+      },
+    });
+  }, [queryClient]);
+
   return (
     <Box minH="100vh" bg="gray.950">
       <Box
@@ -31,7 +55,7 @@ export function AppShell() {
       >
         <Container maxW="container.xl" py={4}>
           <Flex justify="space-between" align="center">
-            <RouterLink to="/">
+            <RouterLink to="/" onMouseEnter={handleHomeHover}>
               <Heading
                 size="md"
                 bgGradient="to-r"

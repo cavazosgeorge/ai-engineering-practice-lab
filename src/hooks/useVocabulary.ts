@@ -48,13 +48,13 @@ export function prefetchVocabulary(queryClient: QueryClient, lessonId: string) {
 }
 
 /**
- * Fetch vocabulary terms for a lesson with progress
+ * Fetch vocabulary terms for a lesson with progress (accepts lesson ID or slug)
  */
-export function useVocabularyTerms(lessonId: string) {
+export function useVocabularyTerms(lessonIdOrSlug?: string) {
   return useQuery<VocabularyTermWithProgress[]>({
-    queryKey: vocabularyKeys.terms(lessonId),
-    queryFn: () => fetchVocabularyTerms(lessonId),
-    enabled: !!lessonId,
+    queryKey: vocabularyKeys.terms(lessonIdOrSlug || ""),
+    queryFn: () => fetchVocabularyTerms(lessonIdOrSlug!),
+    enabled: !!lessonIdOrSlug,
   });
 }
 

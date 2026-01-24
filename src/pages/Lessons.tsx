@@ -10,7 +10,8 @@ import {
   Card,
   SimpleGrid,
   Icon,
-  Spinner,
+  Skeleton,
+  SkeletonText,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -49,10 +50,37 @@ export function Lessons() {
 
   if (isInitialLoading) {
     return (
-      <Container maxW="container.xl" py={12}>
-        <VStack gap={4}>
-          <Spinner size="xl" color="cyan.400" />
-          <Text color="gray.400">Loading...</Text>
+      <Container
+        maxW="container.xl"
+        py={12}
+        opacity={0}
+        animation="fadeIn 0.2s ease-in 0.2s forwards"
+        css={{ "@keyframes fadeIn": { to: { opacity: 1 } } }}
+      >
+        <VStack gap={8} align="stretch">
+          <Heading size="2xl" color="white">
+            All Lessons
+          </Heading>
+          <SimpleGrid columns={{ base: 1, md: 2 }} gap={6}>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Card.Root key={i} bg="gray.900" borderColor="gray.800">
+                <Card.Body>
+                  <HStack justify="space-between" mb={3}>
+                    <Skeleton height="20px" width="80px" />
+                    <Skeleton height="16px" width="40px" />
+                  </HStack>
+                  <Skeleton height="28px" width="70%" mb={3} />
+                  <SkeletonText noOfLines={2} gap={2} mb={3} />
+                  <Skeleton height="4px" width="100%" mb={4} />
+                  <VStack gap={1} align="stretch">
+                    <Skeleton height="16px" width="60%" />
+                    <Skeleton height="16px" width="50%" />
+                    <Skeleton height="16px" width="55%" />
+                  </VStack>
+                </Card.Body>
+              </Card.Root>
+            ))}
+          </SimpleGrid>
         </VStack>
       </Container>
     );

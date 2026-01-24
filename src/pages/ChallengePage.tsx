@@ -12,6 +12,8 @@ import {
   Collapsible,
   Spinner,
   Textarea,
+  Skeleton,
+  SkeletonText,
 } from "@chakra-ui/react";
 import { Link, useParams } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
@@ -230,13 +232,59 @@ export function ChallengePage() {
     }
   }, [challenge]);
 
-  // ✅ Only show loading on initial load (no cached data)
+  // ✅ Only show skeleton on initial load (no cached data)
   if (!challenge && isLoading) {
     return (
-      <Container maxW="container.xl" py={12}>
-        <VStack gap={4}>
-          <Spinner size="xl" color="cyan.400" />
-          <Text color="gray.400">Loading...</Text>
+      <Container
+        maxW="container.xl"
+        py={12}
+        opacity={0}
+        animation="fadeIn 0.2s ease-in 0.2s forwards"
+        css={{ "@keyframes fadeIn": { to: { opacity: 1 } } }}
+      >
+        <VStack gap={8} align="stretch">
+          {/* Breadcrumb skeleton */}
+          <Skeleton height="20px" width="250px" />
+
+          {/* Header skeleton */}
+          <Box>
+            <HStack gap={2} mb={2}>
+              <Skeleton height="20px" width="80px" />
+              <Skeleton height="20px" width="60px" />
+            </HStack>
+            <Skeleton height="36px" width="60%" mb={4} />
+            <SkeletonText noOfLines={3} gap={3} />
+          </Box>
+
+          {/* Code editor skeleton */}
+          <Card.Root bg="gray.900" borderColor="gray.800">
+            <Card.Header>
+              <HStack justify="space-between">
+                <Skeleton height="24px" width="120px" />
+                <HStack gap={2}>
+                  <Skeleton height="32px" width="60px" />
+                  <Skeleton height="32px" width="90px" />
+                </HStack>
+              </HStack>
+            </Card.Header>
+            <Card.Body pt={0}>
+              <Skeleton height="300px" borderRadius="md" />
+            </Card.Body>
+          </Card.Root>
+
+          {/* Test cases skeleton */}
+          <Card.Root bg="gray.900" borderColor="gray.800">
+            <Card.Header>
+              <Skeleton height="24px" width="100px" />
+            </Card.Header>
+            <Card.Body pt={0}>
+              <VStack gap={2} align="stretch">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} height="80px" borderRadius="md" />
+                ))}
+              </VStack>
+            </Card.Body>
+          </Card.Root>
         </VStack>
       </Container>
     );

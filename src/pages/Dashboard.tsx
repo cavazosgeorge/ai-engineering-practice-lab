@@ -10,7 +10,8 @@ import {
   Badge,
   Card,
   Icon,
-  Spinner,
+  Skeleton,
+  SkeletonText,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -45,15 +46,74 @@ export function Dashboard() {
     return { total: totalChallenges, completed: completedCount };
   };
 
-  // ✅ Only show loading on initial load (no cached data)
+  // ✅ Only show skeleton on initial load (no cached data)
   const isInitialLoading = (!lessons && lessonsLoading) || (!progressData && progressLoading);
 
   if (isInitialLoading) {
+    // Skeleton only appears after 200ms delay - if data loads fast, user sees nothing
     return (
-      <Container maxW="container.xl" py={12}>
-        <VStack gap={4}>
-          <Spinner size="xl" color="cyan.400" />
-          <Text color="gray.400">Loading...</Text>
+      <Container
+        maxW="container.xl"
+        py={12}
+        opacity={0}
+        animation="fadeIn 0.2s ease-in 0.2s forwards"
+        css={{
+          "@keyframes fadeIn": {
+            to: { opacity: 1 },
+          },
+        }}
+      >
+        <VStack gap={12} align="stretch">
+          {/* Header - show actual content, it's static */}
+          <Box>
+            <Heading
+              size="2xl"
+              color="white"
+              mb={4}
+              fontFamily="'JetBrains Mono', monospace"
+            >
+              AI Engineering Practice Lab
+            </Heading>
+            <Text color="gray.400" fontSize="lg" maxW="2xl">
+              Master AI/ML fundamentals through hands-on coding challenges.
+              Implement tokenizers, build neural network components, and understand
+              language models from the ground up.
+            </Text>
+          </Box>
+
+          {/* Stats skeleton */}
+          <SimpleGrid columns={{ base: 2, md: 4 }} gap={4}>
+            {[1, 2, 3, 4].map((i) => (
+              <Card.Root key={i} bg="gray.900" borderColor="gray.800">
+                <Card.Body>
+                  <Skeleton height="14px" width="80px" mb={2} />
+                  <Skeleton height="32px" width="40px" />
+                </Card.Body>
+              </Card.Root>
+            ))}
+          </SimpleGrid>
+
+          {/* Lessons skeleton */}
+          <Box>
+            <Heading size="lg" color="white" mb={6}>
+              Lessons
+            </Heading>
+            <SimpleGrid columns={{ base: 1, md: 2 }} gap={6}>
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Card.Root key={i} bg="gray.900" borderColor="gray.800">
+                  <Card.Body>
+                    <HStack justify="space-between" mb={2}>
+                      <Skeleton height="20px" width="70px" />
+                      <Skeleton height="16px" width="30px" />
+                    </HStack>
+                    <Skeleton height="24px" width="60%" mb={2} />
+                    <SkeletonText noOfLines={2} gap={2} mb={3} />
+                    <Skeleton height="4px" width="100%" />
+                  </Card.Body>
+                </Card.Root>
+              ))}
+            </SimpleGrid>
+          </Box>
         </VStack>
       </Container>
     );

@@ -188,9 +188,9 @@ export interface VocabularyStats {
 // Vocabulary API Functions
 // ============================================================================
 
-export async function fetchVocabularyTerms(lessonId: string): Promise<VocabularyTermWithProgress[]> {
+export async function fetchVocabularyTerms(lessonIdOrSlug: string): Promise<VocabularyTermWithProgress[]> {
   const sessionId = getSessionId();
-  const res = await fetch(`${API_BASE}/vocabulary/${lessonId}/terms?sessionId=${sessionId}`);
+  const res = await fetch(`${API_BASE}/vocabulary/${lessonIdOrSlug}/terms?sessionId=${sessionId}`);
   if (!res.ok) throw new Error("Failed to fetch vocabulary terms");
   const data = await res.json();
   return data.terms || [];

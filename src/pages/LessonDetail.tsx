@@ -10,7 +10,8 @@ import {
   Card,
   Breadcrumb,
   Icon,
-  Spinner,
+  Skeleton,
+  SkeletonText,
 } from "@chakra-ui/react";
 import { Link, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -61,10 +62,39 @@ export function LessonDetail() {
 
   if (isInitialLoading) {
     return (
-      <Container maxW="container.xl" py={12}>
-        <VStack gap={4}>
-          <Spinner size="xl" color="cyan.400" />
-          <Text color="gray.400">Loading...</Text>
+      <Container
+        maxW="container.xl"
+        py={12}
+        opacity={0}
+        animation="fadeIn 0.2s ease-in 0.2s forwards"
+        css={{ "@keyframes fadeIn": { to: { opacity: 1 } } }}
+      >
+        <VStack gap={8} align="stretch">
+          {/* Breadcrumb skeleton */}
+          <Skeleton height="20px" width="200px" />
+
+          {/* Header skeleton */}
+          <Box>
+            <Skeleton height="20px" width="80px" mb={2} />
+            <Skeleton height="40px" width="300px" mb={4} />
+            <Skeleton height="24px" width="80%" />
+          </Box>
+
+          {/* Concept cards skeleton */}
+          {[1, 2].map((i) => (
+            <Card.Root key={i} bg="gray.900" borderColor="gray.800">
+              <Card.Body>
+                <Skeleton height="28px" width="200px" mb={4} />
+                <SkeletonText noOfLines={4} gap={3} mb={6} />
+                <Skeleton height="24px" width="100px" mb={4} />
+                <VStack gap={3} align="stretch">
+                  {[1, 2, 3].map((j) => (
+                    <Skeleton key={j} height="56px" borderRadius="lg" />
+                  ))}
+                </VStack>
+              </Card.Body>
+            </Card.Root>
+          ))}
         </VStack>
       </Container>
     );
