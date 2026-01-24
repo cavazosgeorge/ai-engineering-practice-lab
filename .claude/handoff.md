@@ -2,6 +2,43 @@
 
 ## What Was Done
 
+### Session: React Performance Optimization & UI Polish
+
+Applied comprehensive React performance patterns across the application, eliminating loading spinner flicker and improving perceived performance.
+
+**Performance Fixes:**
+- Converted all pages from `useEffect` data fetching to TanStack Query hooks
+- Changed loading states from `if (isLoading)` to `if (!data && isLoading)` pattern (spinner only on initial load)
+- Added `prefetchChallenge`, `prefetchLesson`, `prefetchVocabulary` helper functions
+- Implemented hover prefetching on:
+  - Lesson cards (Dashboard, Lessons pages)
+  - Study Vocabulary card (LessonDetail)
+  - Challenge links (LessonDetail)
+- Added `startTransition` for mode changes in VocabularyPage
+- Prefetch next quiz question while user views current
+
+**Component Optimizations:**
+- `ExecutionVisualizer.tsx` - Added `useMemo` for `detectCodePatterns()`
+- `TestResults.tsx` - Wrapped `toggleTest` in `useCallback`
+- `SoftmaxOperation.tsx` - Added `useMemo` for `calculateSoftmaxSteps()`
+- `VocabularyFlashcardDeck.tsx` - Reduced dependency array by using `reviewedCards.size`
+
+**Layout Shift Fix:**
+- Added framer-motion staggered entrance animations to LessonDetail page
+- Sections (breadcrumb → header → vocab card → concepts) animate in sequence
+- Masks timing differences from cascading query dependencies (vocabStats depends on lesson.id)
+
+**UI Polish:**
+- Removed redundant checkmark from completed challenges (kept green right border only)
+
+**react-performance Skill Updates:**
+- Added "Loading State Optimization" checklist for eliminating spinners
+- Added "Cascading Query Dependencies (Layout Shift)" section with solutions:
+  1. Entrance animations (recommended)
+  2. Reserve space with skeletons
+  3. Restructure API to avoid dependency
+- Updated Pattern Selection Guide and Anti-Pattern Detection
+
 ### Session: Vocabulary Challenge Feature (feature/vocabulary-challenges branch)
 
 Implemented a complete vocabulary challenge system with flashcard-style learning and multiple choice quizzes for AI/ML terminology.
@@ -129,6 +166,12 @@ The app has three challenge types:
 - Progress tracking per learning mode (flashcard vs quiz)
 - Integrated with lesson detail pages ("Study Vocabulary" button)
 
+**Performance:**
+- All pages use TanStack Query with `!data && isLoading` pattern
+- Hover prefetching on navigation elements for instant page transitions
+- Entrance animations on LessonDetail to mask cascading query timing
+- No loading spinner flicker on cached data or background refetches
+
 ## What's Next
 
 ### High Priority
@@ -153,3 +196,8 @@ The app has three challenge types:
 - Execution visualization for passed tests (uses framer-motion animations)
 - Vocabulary system with flashcard/quiz modes and SM-2 tracking
 - Vocabulary seed script (`bun run db:seed-vocabulary`)
+- Performance patterns:
+  - `!data && isLoading` for loading states (not just `isLoading`)
+  - Hover prefetch functions in hooks files
+  - Entrance animations in LessonDetail (framer-motion)
+  - TanStack Query for all data fetching (no useEffect fetching)
