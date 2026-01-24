@@ -19,7 +19,7 @@ import { useLesson } from "../hooks/useLessons";
 import { useProgressStats, prefetchChallenge } from "../hooks/useProgress";
 import { useVocabularyStats, prefetchVocabulary } from "../hooks/useVocabulary";
 import ReactMarkdown from "react-markdown";
-import { LuCheck, LuBookOpen } from "react-icons/lu";
+import { LuBookOpen } from "react-icons/lu";
 
 const MotionBox = motion.create(Box);
 const MotionVStack = motion.create(VStack);
@@ -280,16 +280,9 @@ export function LessonDetail() {
                                 {challenge.title}
                               </Text>
                             </HStack>
-                            <HStack gap={2}>
-                              {isCompleted && (
-                                <Icon color="green.400" boxSize={5}>
-                                  <LuCheck />
-                                </Icon>
-                              )}
-                              <Text color="gray.400" fontSize="sm">
-                                →
-                              </Text>
-                            </HStack>
+                            <Text color="gray.400" fontSize="sm">
+                              →
+                            </Text>
                           </HStack>
                         </Box>
                       </Link>
