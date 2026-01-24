@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type QueryClient } from "@tanstack/react-query";
 import { fetchLesson, type Lesson } from "../services/api";
 
 // Query keys
@@ -15,5 +15,15 @@ export function useLesson(slug: string | undefined) {
     queryKey: lessonKeys.detail(slug || ""),
     queryFn: () => fetchLesson(slug!),
     enabled: !!slug,
+  });
+}
+
+/**
+ * ✅ Prefetch a lesson - call this to warm the cache before navigation
+ */
+export function prefetchLesson(queryClient: QueryClient, slug: string) {
+  return queryClient.prefetchQuery({
+    queryKey: lessonKeys.detail(slug),
+    queryFn: () => fetchLesson(slug),
   });
 }

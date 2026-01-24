@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import {
   Box,
   Container,
@@ -12,16 +13,24 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLessons, useProgressStats } from "../hooks/useProgress";
+import { prefetchLesson } from "../hooks/useLessons";
 import { type Lesson } from "../services/api";
 import { LuCheck } from "react-icons/lu";
 
 export function Dashboard() {
+  const queryClient = useQueryClient();
   const { data: lessons, isLoading: lessonsLoading } = useLessons();
   const { data: progressData, isLoading: progressLoading } = useProgressStats();
 
   const stats = progressData?.stats;
   const completedChallenges = progressData?.completedChallenges ?? new Set<string>();
+
+  // ✅ Prefetch lesson on hover for instant navigation
+  const handleLessonHover = useCallback((slug: string) => {
+    prefetchLesson(queryClient, slug);
+  }, [queryClient]);
 
   // Calculate completion stats for a lesson
   const getLessonProgress = (lesson: Lesson) => {
@@ -135,6 +144,7 @@ export function Dashboard() {
                     }}
                     transition="all 0.2s"
                     cursor="pointer"
+                    onMouseEnter={() => handleLessonHover(lesson.slug)}
                   >
                     <Card.Body>
                       <HStack justify="space-between" mb={2}>
