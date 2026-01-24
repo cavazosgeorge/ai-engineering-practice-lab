@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Text,
@@ -152,8 +152,11 @@ export function ExecutionVisualizer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
 
-  // Detect patterns used in the solution code
-  const codePatterns = detectCodePatterns(solutionCode);
+  // ✅ Memoize pattern detection - only recalculate when solution code changes
+  const codePatterns = useMemo(
+    () => detectCodePatterns(solutionCode),
+    [solutionCode]
+  );
 
   const goToStep = useCallback((step: number) => {
     setCurrentStep(Math.max(0, Math.min(totalSteps - 1, step)));

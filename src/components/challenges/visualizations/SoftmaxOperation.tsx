@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Box, Text, HStack, VStack } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { CodePatterns } from "../ExecutionVisualizer";
@@ -65,7 +66,11 @@ export function SoftmaxOperation({
   solutionCode,
   challengeTitle,
 }: SoftmaxOperationProps) {
-  const { maxVal, shifted, exps, sumExps, probs } = calculateSoftmaxSteps(logits);
+  // ✅ Memoize calculations - only recalculate when logits change
+  const { maxVal, shifted, exps, sumExps, probs } = useMemo(
+    () => calculateSoftmaxSteps(logits),
+    [logits]
+  );
 
   // Steps:
   // 0: Show intro with code

@@ -128,3 +128,41 @@ export interface SubmissionRow {
   execution_time_ms: number | null;
   created_at: string;
 }
+
+export interface VocabularyTermRow {
+  id: string;
+  lesson_id: string;
+  concept_id: string | null;
+  term: string;
+  definition: string;
+  context: string | null;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  order_index: number;
+  created_at: string;
+}
+
+export interface VocabularyProgressRow {
+  id: string;
+  session_id: string;
+  term_id: string;
+  learning_mode: 'flashcard' | 'quiz';
+  repetitions: number;
+  ease_factor: number;
+  interval: number;
+  next_review_date: string | null;
+  last_review_date: string | null;
+  mastery_level: 'learning' | 'reviewing' | 'mastered';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VocabularySubmissionRow {
+  id: string;
+  session_id: string;
+  term_id: string;
+  submission_type: 'flashcard_review' | 'quiz_answer';
+  quality: number | null;
+  is_correct: number | null;
+  time_spent_ms: number | null;
+  created_at: string;
+}

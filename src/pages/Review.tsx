@@ -7,10 +7,10 @@ import {
   Badge,
   Card,
   Button,
+  Skeleton,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { fetchReviewQueue, type UserProgress } from "../services/api";
+import { useReviewQueue } from "../hooks/useProgress";
 import { formatDistanceToNow } from "date-fns";
 
 const masteryColors = {
@@ -20,23 +20,47 @@ const masteryColors = {
 };
 
 export function Review() {
-  const [queue, setQueue] = useState<UserProgress[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: queue, isLoading } = useReviewQueue();
 
-  useEffect(() => {
-    fetchReviewQueue()
-      .then(setQueue)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
+  // ✅ Only show skeleton on initial load (no cached data)
+  if (!queue && isLoading) {
     return (
-      <Container maxW="container.xl" py={12}>
-        <Text color="gray.400">Loading...</Text>
+      <Container
+        maxW="container.xl"
+        py={12}
+        opacity={0}
+        animation="fadeIn 0.2s ease-in 0.2s forwards"
+        css={{ "@keyframes fadeIn": { to: { opacity: 1 } } }}
+      >
+        <VStack gap={8} align="stretch">
+          <Heading size="2xl" color="white">
+            Review Queue
+          </Heading>
+          <VStack gap={4} align="stretch">
+            {[1, 2, 3, 4].map((i) => (
+              <Card.Root key={i} bg="gray.900" borderColor="gray.800">
+                <Card.Body>
+                  <HStack justify="space-between">
+                    <VStack align="start" gap={2}>
+                      <HStack gap={2}>
+                        <Skeleton height="20px" width="70px" />
+                        <Skeleton height="16px" width="60px" />
+                      </HStack>
+                      <Skeleton height="24px" width="200px" />
+                      <Skeleton height="16px" width="100px" />
+                    </VStack>
+                    <Skeleton height="32px" width="70px" />
+                  </HStack>
+                </Card.Body>
+              </Card.Root>
+            ))}
+          </VStack>
+        </VStack>
       </Container>
     );
   }
+
+  const reviewQueue = queue ?? [];
 
   return (
     <Container maxW="container.xl" py={12}>
@@ -45,7 +69,7 @@ export function Review() {
           Review Queue
         </Heading>
 
-        {queue.length === 0 ? (
+        {reviewQueue.length === 0 ? (
           <Card.Root bg="gray.900" borderColor="gray.800">
             <Card.Body textAlign="center" py={12}>
               <Text color="gray.400" fontSize="lg" mb={4}>
@@ -63,7 +87,7 @@ export function Review() {
           </Card.Root>
         ) : (
           <VStack gap={4} align="stretch">
-            {queue.map((item) => (
+            {reviewQueue.map((item) => (
               <Link key={item.id} to={`/challenges/${item.challengeId}`}>
                 <Card.Root
                   bg="gray.900"

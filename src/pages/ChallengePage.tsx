@@ -12,17 +12,18 @@ import {
   Collapsible,
   Spinner,
   Textarea,
+  Skeleton,
+  SkeletonText,
 } from "@chakra-ui/react";
 import { Link, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import { FaEye } from "react-icons/fa";
 import {
-  fetchChallenge,
   recordSubmission,
   resetChallengeProgress,
-  type Challenge,
 } from "../services/api";
+import { useChallenge } from "../hooks/useProgress";
 import { CodeEditor } from "../components/challenges/CodeEditor";
 import { TestResults } from "../components/challenges/TestResults";
 import { ExecutionVisualizer } from "../components/challenges/ExecutionVisualizer";
@@ -51,18 +52,20 @@ function getExplanationDraftKey(challengeId: string): string {
 
 export function ChallengePage() {
   const { id } = useParams<{ id: string }>();
-  const [challenge, setChallenge] = useState<Challenge | null>(null);
+
+  // ✅ Use TanStack Query for challenge fetching
+  const { data: challenge, isLoading } = useChallenge(id);
+
+  // User interaction state (kept local since it's user input)
   const [code, setCode] = useState("");
   const [result, setResult] = useState<ValidationResult | null>(null);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [hintsRevealed, setHintsRevealed] = useState(0);
-  // Explain challenge state
   const [explanation, setExplanation] = useState("");
   const [answerRevealed, setAnswerRevealed] = useState(false);
   const [selfAssessment, setSelfAssessment] = useState<"got_it" | "review" | null>(null);
-  // Visualization state
   const [showVisualization, setShowVisualization] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   const {
     isLoading: pyodideLoading,
@@ -71,38 +74,42 @@ export function ChallengePage() {
     runPython,
   } = usePyodide();
 
+  // Initialize local state from challenge data (only once when challenge loads)
   useEffect(() => {
-    if (!id) return;
-    fetchChallenge(id)
-      .then((data) => {
-        setChallenge(data);
-        // Use last submission if available, otherwise use starter code
-        setCode(data.lastSubmission?.code || data.starterCode || "");
-        // For explain challenges, load saved explanation and assessment state
-        if (data.type === "explain") {
-          if (data.lastSubmission) {
-            // Load from server submission
-            setExplanation(data.lastSubmission.code);
-            setAnswerRevealed(true);
-            setSelfAssessment(data.lastSubmission.passed ? "got_it" : "review");
-          } else {
-            // Load draft from localStorage if no submission
-            const draft = localStorage.getItem(getExplanationDraftKey(data.id));
-            if (draft) {
-              setExplanation(draft);
-            }
-          }
+    if (!challenge || initialized) return;
+
+    setCode(challenge.lastSubmission?.code || challenge.starterCode || "");
+
+    if (challenge.type === "explain") {
+      if (challenge.lastSubmission) {
+        setExplanation(challenge.lastSubmission.code);
+        setAnswerRevealed(true);
+        setSelfAssessment(challenge.lastSubmission.passed ? "got_it" : "review");
+      } else {
+        const draft = localStorage.getItem(getExplanationDraftKey(challenge.id));
+        if (draft) {
+          setExplanation(draft);
         }
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      }
+    }
+
+    setInitialized(true);
+  }, [challenge, initialized]);
+
+  // Reset initialized state when challenge ID changes
+  useEffect(() => {
+    setInitialized(false);
+    setResult(null);
+    setHintsRevealed(0);
+    setAnswerRevealed(false);
+    setSelfAssessment(null);
+    setShowVisualization(false);
   }, [id]);
 
   // Auto-save explanation draft to localStorage
   useEffect(() => {
     if (!challenge || challenge.type !== "explain" || selfAssessment) return;
 
-    // Save draft to localStorage (debounced by React's batching)
     if (explanation.trim()) {
       localStorage.setItem(getExplanationDraftKey(challenge.id), explanation);
     } else {
@@ -110,7 +117,8 @@ export function ChallengePage() {
     }
   }, [explanation, challenge, selfAssessment]);
 
-  const handleSubmit = async () => {
+  // ✅ Stable callback references with useCallback
+  const handleSubmit = useCallback(async () => {
     if (!challenge || !code.trim() || !pyodideReady) return;
 
     const functionName = extractFunctionName(code);
@@ -148,7 +156,6 @@ export function ChallengePage() {
       );
       setResult(validationResult);
 
-      // Record the submission to the server for progress tracking
       try {
         await recordSubmission(
           challenge.id,
@@ -176,25 +183,109 @@ export function ChallengePage() {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [challenge, code, pyodideReady, runPython, hintsRevealed]);
 
-  const handleReset = async () => {
+  const handleReset = useCallback(async () => {
     if (challenge) {
       setCode(challenge.starterCode || "");
       setResult(null);
-      // Also reset progress on the server
       try {
         await resetChallengeProgress(challenge.id);
       } catch (err) {
         console.error("Failed to reset progress:", err);
       }
     }
-  };
+  }, [challenge]);
 
-  if (loading) {
+  const handleGotIt = useCallback(async () => {
+    if (!challenge) return;
+    setSelfAssessment("got_it");
+    localStorage.removeItem(getExplanationDraftKey(challenge.id));
+    try {
+      await recordSubmission(challenge.id, explanation, true, hintsRevealed > 0);
+    } catch (err) {
+      console.error("Failed to record:", err);
+    }
+  }, [challenge, explanation, hintsRevealed]);
+
+  const handleNeedReview = useCallback(async () => {
+    if (!challenge) return;
+    setSelfAssessment("review");
+    localStorage.removeItem(getExplanationDraftKey(challenge.id));
+    try {
+      await recordSubmission(challenge.id, explanation, false, hintsRevealed > 0);
+    } catch (err) {
+      console.error("Failed to record:", err);
+    }
+  }, [challenge, explanation, hintsRevealed]);
+
+  const handleTryAgain = useCallback(async () => {
+    if (!challenge) return;
+    setExplanation("");
+    setAnswerRevealed(false);
+    setSelfAssessment(null);
+    localStorage.removeItem(getExplanationDraftKey(challenge.id));
+    try {
+      await resetChallengeProgress(challenge.id);
+    } catch (err) {
+      console.error("Failed to reset:", err);
+    }
+  }, [challenge]);
+
+  // ✅ Only show skeleton on initial load (no cached data)
+  if (!challenge && isLoading) {
     return (
-      <Container maxW="container.xl" py={12}>
-        <Text color="gray.400">Loading...</Text>
+      <Container
+        maxW="container.xl"
+        py={12}
+        opacity={0}
+        animation="fadeIn 0.2s ease-in 0.2s forwards"
+        css={{ "@keyframes fadeIn": { to: { opacity: 1 } } }}
+      >
+        <VStack gap={8} align="stretch">
+          {/* Breadcrumb skeleton */}
+          <Skeleton height="20px" width="250px" />
+
+          {/* Header skeleton */}
+          <Box>
+            <HStack gap={2} mb={2}>
+              <Skeleton height="20px" width="80px" />
+              <Skeleton height="20px" width="60px" />
+            </HStack>
+            <Skeleton height="36px" width="60%" mb={4} />
+            <SkeletonText noOfLines={3} gap={3} />
+          </Box>
+
+          {/* Code editor skeleton */}
+          <Card.Root bg="gray.900" borderColor="gray.800">
+            <Card.Header>
+              <HStack justify="space-between">
+                <Skeleton height="24px" width="120px" />
+                <HStack gap={2}>
+                  <Skeleton height="32px" width="60px" />
+                  <Skeleton height="32px" width="90px" />
+                </HStack>
+              </HStack>
+            </Card.Header>
+            <Card.Body pt={0}>
+              <Skeleton height="300px" borderRadius="md" />
+            </Card.Body>
+          </Card.Root>
+
+          {/* Test cases skeleton */}
+          <Card.Root bg="gray.900" borderColor="gray.800">
+            <Card.Header>
+              <Skeleton height="24px" width="100px" />
+            </Card.Header>
+            <Card.Body pt={0}>
+              <VStack gap={2} align="stretch">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} height="80px" borderRadius="md" />
+                ))}
+              </VStack>
+            </Card.Body>
+          </Card.Root>
+        </VStack>
       </Container>
     );
   }
@@ -215,19 +306,17 @@ export function ChallengePage() {
         <Breadcrumb.Root>
           <Breadcrumb.List>
             <Breadcrumb.Item>
-              <Link to="/">
-                <Breadcrumb.Link color="gray.400">Home</Breadcrumb.Link>
-              </Link>
+              <Breadcrumb.Link asChild color="gray.400">
+                <Link to="/">Home</Link>
+              </Breadcrumb.Link>
             </Breadcrumb.Item>
             <Breadcrumb.Separator />
             {lesson && (
               <>
                 <Breadcrumb.Item>
-                  <Link to={`/lessons/${lesson.slug}`}>
-                    <Breadcrumb.Link color="gray.400">
-                      {lesson.title}
-                    </Breadcrumb.Link>
-                  </Link>
+                  <Breadcrumb.Link asChild color="gray.400">
+                    <Link to={`/lessons/${lesson.slug}`}>{lesson.title}</Link>
+                  </Breadcrumb.Link>
                 </Breadcrumb.Item>
                 <Breadcrumb.Separator />
               </>
@@ -370,7 +459,6 @@ export function ChallengePage() {
               </Card.Root>
             )}
 
-            {/* Execution Visualizer Modal */}
             {showVisualization && challenge.testCases && challenge.testCases.length > 0 && (
               <ExecutionVisualizer
                 testCase={challenge.testCases[0]}
@@ -571,32 +659,13 @@ export function ChallengePage() {
                     the key points?
                   </Text>
                   <HStack gap={4}>
-                    <Button
-                      colorPalette="green"
-                      onClick={async () => {
-                        setSelfAssessment("got_it");
-                        localStorage.removeItem(getExplanationDraftKey(challenge.id));
-                        try {
-                          await recordSubmission(challenge.id, explanation, true, hintsRevealed > 0);
-                        } catch (err) {
-                          console.error("Failed to record:", err);
-                        }
-                      }}
-                    >
+                    <Button colorPalette="green" onClick={handleGotIt}>
                       Got it!
                     </Button>
                     <Button
                       colorPalette="orange"
                       variant="subtle"
-                      onClick={async () => {
-                        setSelfAssessment("review");
-                        localStorage.removeItem(getExplanationDraftKey(challenge.id));
-                        try {
-                          await recordSubmission(challenge.id, explanation, false, hintsRevealed > 0);
-                        } catch (err) {
-                          console.error("Failed to record:", err);
-                        }
-                      }}
+                      onClick={handleNeedReview}
                     >
                       Need to Review
                     </Button>
@@ -622,17 +691,7 @@ export function ChallengePage() {
                       variant="ghost"
                       color="gray.300"
                       _hover={{ bg: "gray.700", color: "white" }}
-                      onClick={async () => {
-                        setExplanation("");
-                        setAnswerRevealed(false);
-                        setSelfAssessment(null);
-                        localStorage.removeItem(getExplanationDraftKey(challenge.id));
-                        try {
-                          await resetChallengeProgress(challenge.id);
-                        } catch (err) {
-                          console.error("Failed to reset:", err);
-                        }
-                      }}
+                      onClick={handleTryAgain}
                     >
                       Try Again
                     </Button>

@@ -8,14 +8,10 @@ import {
   Card,
   SimpleGrid,
   Progress,
+  Skeleton,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import {
-  fetchProgress,
-  type UserProgress,
-  type ProgressStats,
-} from "../services/api";
+import { useFullProgress } from "../hooks/useProgress";
 
 const masteryColors = {
   learning: "blue",
@@ -24,28 +20,74 @@ const masteryColors = {
 };
 
 export function ProgressPage() {
-  const [progress, setProgress] = useState<UserProgress[]>([]);
-  const [stats, setStats] = useState<ProgressStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useFullProgress();
 
-  useEffect(() => {
-    fetchProgress()
-      .then((data) => {
-        setProgress(data.progress);
-        setStats(data.stats);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+  const progress = data?.progress ?? [];
+  const stats = data?.stats;
 
-  if (loading) {
+  // ✅ Only show skeleton on initial load (no cached data)
+  if (!data && isLoading) {
     return (
-      <Container maxW="container.xl" py={12}>
-        <Text color="gray.400">Loading...</Text>
+      <Container
+        maxW="container.xl"
+        py={12}
+        opacity={0}
+        animation="fadeIn 0.2s ease-in 0.2s forwards"
+        css={{ "@keyframes fadeIn": { to: { opacity: 1 } } }}
+      >
+        <VStack gap={8} align="stretch">
+          <Heading size="2xl" color="white">
+            Your Progress
+          </Heading>
+
+          {/* Progress bar skeleton */}
+          <Card.Root bg="gray.900" borderColor="gray.800">
+            <Card.Body>
+              <VStack gap={4} align="stretch">
+                <HStack justify="space-between">
+                  <Skeleton height="20px" width="120px" />
+                  <Skeleton height="20px" width="40px" />
+                </HStack>
+                <Skeleton height="8px" width="100%" />
+              </VStack>
+            </Card.Body>
+          </Card.Root>
+
+          {/* Stats cards skeleton */}
+          <SimpleGrid columns={{ base: 2, md: 4 }} gap={4}>
+            {[1, 2, 3, 4].map((i) => (
+              <Card.Root key={i} bg="gray.900" borderColor="gray.800">
+                <Card.Body>
+                  <Skeleton height="14px" width="80px" mb={2} />
+                  <Skeleton height="32px" width="40px" />
+                </Card.Body>
+              </Card.Root>
+            ))}
+          </SimpleGrid>
+
+          {/* Challenges list skeleton */}
+          <Skeleton height="28px" width="200px" />
+          <VStack gap={3} align="stretch">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Card.Root key={i} bg="gray.900" borderColor="gray.800">
+                <Card.Body py={3}>
+                  <HStack justify="space-between">
+                    <HStack gap={3}>
+                      <Skeleton height="20px" width="70px" />
+                      <Skeleton height="20px" width="150px" />
+                    </HStack>
+                    <Skeleton height="16px" width="60px" />
+                  </HStack>
+                </Card.Body>
+              </Card.Root>
+            ))}
+          </VStack>
+        </VStack>
       </Container>
     );
   }
 
+  // ✅ Derive percentage directly (no state needed)
   const masteredPct = stats
     ? Math.round((stats.mastered / Math.max(stats.total, 1)) * 100)
     : 0;

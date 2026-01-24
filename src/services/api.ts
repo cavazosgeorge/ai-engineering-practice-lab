@@ -140,3 +140,111 @@ export async function resetChallengeProgress(challengeId: string): Promise<void>
   );
   if (!res.ok) throw new Error("Failed to reset progress");
 }
+
+// ============================================================================
+// Vocabulary Types
+// ============================================================================
+
+export interface VocabularyTerm {
+  id: string;
+  lessonId: string;
+  term: string;
+  definition: string;
+  context: string | null;
+  difficulty: "beginner" | "intermediate" | "advanced";
+  orderIndex: number;
+}
+
+export interface VocabularyProgress {
+  termId: string;
+  learningMode: "flashcard" | "quiz";
+  masteryLevel: "learning" | "reviewing" | "mastered";
+  nextReviewDate: string | null;
+  repetitions: number;
+}
+
+export interface VocabularyTermWithProgress extends VocabularyTerm {
+  flashcardProgress?: VocabularyProgress;
+  quizProgress?: VocabularyProgress;
+}
+
+export interface QuizQuestion {
+  termId: string;
+  questionText: string;
+  options: { id: string; text: string }[];
+  correctOptionId: string;
+}
+
+export interface VocabularyStats {
+  total: number;
+  mastered: number;
+  reviewing: number;
+  learning: number;
+  flashcard: { total: number; mastered: number; reviewing: number; learning: number };
+  quiz: { total: number; mastered: number; reviewing: number; learning: number };
+}
+
+// ============================================================================
+// Vocabulary API Functions
+// ============================================================================
+
+export async function fetchVocabularyTerms(lessonIdOrSlug: string): Promise<VocabularyTermWithProgress[]> {
+  const sessionId = getSessionId();
+  const res = await fetch(`${API_BASE}/vocabulary/${lessonIdOrSlug}/terms?sessionId=${sessionId}`);
+  if (!res.ok) throw new Error("Failed to fetch vocabulary terms");
+  const data = await res.json();
+  return data.terms || [];
+}
+
+export async function submitFlashcardReview(termId: string, quality: number): Promise<VocabularyProgress> {
+  const sessionId = getSessionId();
+  const res = await fetch(`${API_BASE}/vocabulary/flashcard/${termId}/review`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ quality, sessionId }),
+  });
+  if (!res.ok) throw new Error("Failed to submit flashcard review");
+  return res.json();
+}
+
+export async function fetchQuizQuestion(termId: string): Promise<QuizQuestion> {
+  const res = await fetch(`${API_BASE}/vocabulary/quiz/${termId}/question`);
+  if (!res.ok) throw new Error("Failed to fetch quiz question");
+  return res.json();
+}
+
+export async function submitQuizAnswer(
+  termId: string,
+  selectedOptionId: string,
+  timeSpentMs: number
+): Promise<{ correct: boolean; progress: VocabularyProgress }> {
+  const sessionId = getSessionId();
+  const res = await fetch(`${API_BASE}/vocabulary/quiz/${termId}/answer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ selectedOptionId, timeSpentMs, sessionId }),
+  });
+  if (!res.ok) throw new Error("Failed to submit quiz answer");
+  return res.json();
+}
+
+export async function fetchVocabularyReviewQueue(lessonId?: string): Promise<VocabularyTermWithProgress[]> {
+  const sessionId = getSessionId();
+  const url = lessonId
+    ? `${API_BASE}/vocabulary/review-queue?sessionId=${sessionId}&lessonId=${lessonId}`
+    : `${API_BASE}/vocabulary/review-queue?sessionId=${sessionId}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to fetch vocabulary review queue");
+  const data = await res.json();
+  return data.queue || [];
+}
+
+export async function fetchVocabularyStats(lessonIdOrSlug?: string): Promise<VocabularyStats> {
+  const sessionId = getSessionId();
+  const url = lessonIdOrSlug
+    ? `${API_BASE}/vocabulary/${lessonIdOrSlug}/stats?sessionId=${sessionId}`
+    : `${API_BASE}/vocabulary/stats?sessionId=${sessionId}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to fetch vocabulary stats");
+  return res.json();
+}

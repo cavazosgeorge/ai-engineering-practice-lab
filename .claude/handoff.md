@@ -2,6 +2,103 @@
 
 ## What Was Done
 
+### Session: Delayed Skeletons & Query Parallelization
+
+Applied delayed skeleton pattern and fixed cascading query dependencies for optimal loading UX.
+
+**Delayed Skeleton Pattern (all pages):**
+- Replaced loading spinners with skeleton loaders that have 200ms CSS animation delay
+- Prevents skeleton "flash" on fast loads - only appears if data takes >200ms
+- Applied to: Dashboard, Lessons, LessonDetail, ChallengePage, VocabularyPage, Progress, Review
+- Pattern: `opacity={0}` + `animation="fadeIn 0.2s ease-in 0.2s forwards"`
+
+**Dashboard Prefetching:**
+- Added prefetch on "AI Practice Lab" header link hover
+- Warms cache for lessons and progress data before navigation
+- Eliminates loading state when navigating back to dashboard
+
+**Cascading Query Fix (VocabularyPage):**
+- Changed `useVocabularyTerms(lesson?.id)` to `useVocabularyTerms(lessonSlug)`
+- Updated hook and API function to accept `lessonIdOrSlug`
+- All three queries (lesson, terms, stats) now run in parallel instead of waterfall
+
+**react-performance Skill Updates:**
+- Added "Delayed Skeleton Pattern" section to data-fetching.md
+- Added skeleton flash anti-pattern to SKILL.md Pattern Selection Guide
+- Added to Quick Wins Checklist
+
+### Session: React Performance Optimization & UI Polish
+
+Applied comprehensive React performance patterns across the application, eliminating loading spinner flicker and improving perceived performance.
+
+**Performance Fixes:**
+- Converted all pages from `useEffect` data fetching to TanStack Query hooks
+- Changed loading states from `if (isLoading)` to `if (!data && isLoading)` pattern (spinner only on initial load)
+- Added `prefetchChallenge`, `prefetchLesson`, `prefetchVocabulary` helper functions
+- Implemented hover prefetching on:
+  - Lesson cards (Dashboard, Lessons pages)
+  - Study Vocabulary card (LessonDetail)
+  - Challenge links (LessonDetail)
+- Added `startTransition` for mode changes in VocabularyPage
+- Prefetch next quiz question while user views current
+
+**Component Optimizations:**
+- `ExecutionVisualizer.tsx` - Added `useMemo` for `detectCodePatterns()`
+- `TestResults.tsx` - Wrapped `toggleTest` in `useCallback`
+- `SoftmaxOperation.tsx` - Added `useMemo` for `calculateSoftmaxSteps()`
+- `VocabularyFlashcardDeck.tsx` - Reduced dependency array by using `reviewedCards.size`
+
+**Layout Shift Fix:**
+- Added framer-motion staggered entrance animations to LessonDetail page
+- Sections (breadcrumb → header → vocab card → concepts) animate in sequence
+- Masks timing differences from cascading query dependencies (vocabStats depends on lesson.id)
+
+**UI Polish:**
+- Removed redundant checkmark from completed challenges (kept green right border only)
+
+**react-performance Skill Updates:**
+- Added "Loading State Optimization" checklist for eliminating spinners
+- Added "Cascading Query Dependencies (Layout Shift)" section with solutions:
+  1. Entrance animations (recommended)
+  2. Reserve space with skeletons
+  3. Restructure API to avoid dependency
+- Updated Pattern Selection Guide and Anti-Pattern Detection
+
+### Session: Vocabulary Challenge Feature (feature/vocabulary-challenges branch)
+
+Implemented a complete vocabulary challenge system with flashcard-style learning and multiple choice quizzes for AI/ML terminology.
+
+**Backend (server/):**
+- `db/migrations/002_vocabulary_schema.sql` - New tables: vocabulary_terms, vocabulary_progress, vocabulary_submissions
+- `services/vocabulary-service.ts` - Core business logic with SM-2 spaced repetition
+- `routes/vocabulary.ts` - REST API endpoints for terms, flashcards, quizzes, stats
+- `scripts/seed-vocabulary.ts` - Seeds 42 vocabulary terms across 5 lessons
+
+**Frontend (src/):**
+- `components/vocabulary/` - 6 new components:
+  - `VocabularyFlashcard.tsx` - 3D flip animation flashcard
+  - `VocabularyFlashcardDeck.tsx` - Session manager with keyboard controls
+  - `VocabularyQuiz.tsx` - Multiple choice with immediate feedback
+  - `VocabularyQuizSession.tsx` - Quiz session with scoring
+  - `VocabularyDashboard.tsx` - Lesson vocabulary overview with stats
+- `hooks/useVocabulary.ts` - TanStack Query hooks for data fetching
+- `pages/VocabularyPage.tsx` - Main vocabulary page with mode switching
+
+**API Endpoints:**
+- `GET /api/vocabulary/:lessonSlug/terms` - Get terms (supports ID or slug)
+- `GET /api/vocabulary/:lessonSlug/stats` - Get progress stats
+- `POST /api/vocabulary/flashcard/:termId/review` - Submit flashcard review
+- `GET /api/vocabulary/quiz/:termId/question` - Get quiz question
+- `POST /api/vocabulary/quiz/:termId/answer` - Submit quiz answer
+- `GET /api/vocabulary/review-queue` - Get due vocabulary items
+
+**Routes Added:**
+- `/vocabulary/:lessonSlug` - Dashboard
+- `/vocabulary/:lessonSlug/flashcards` - Flashcard mode
+- `/vocabulary/:lessonSlug/quiz` - Quiz mode
+
+**Seed Command:** `bun run db:seed-vocabulary`
+
 ### Session: Code Execution Visualization
 - Added animated step-by-step visualization for passed challenges
 - Created visualization components:
@@ -87,12 +184,29 @@ The app has three challenge types:
 2. **explain** - Now has self-assessment UI with model answer reveal
 3. **compare** / **multiple_choice** - Not yet implemented
 
+**Vocabulary System:**
+- Flashcard and quiz modes with spaced repetition (SM-2)
+- 42 AI/ML vocabulary terms seeded across 5 lessons
+- Keyboard navigation (Space to flip, 1-4 for options, Arrow keys)
+- Progress tracking per learning mode (flashcard vs quiz)
+- Integrated with lesson detail pages ("Study Vocabulary" button)
+
+**Performance:**
+- All pages use TanStack Query with `!data && isLoading` pattern
+- Delayed skeleton loaders (200ms CSS delay) prevent flash on fast loads
+- Hover prefetching on navigation elements for instant page transitions
+- Dashboard prefetching on header link hover
+- VocabularyPage queries run in parallel (no cascading dependency)
+- Entrance animations on LessonDetail to mask any remaining timing gaps
+- No loading spinner flicker on cached data or background refetches
+
 ## What's Next
 
 ### High Priority
 - [ ] Add model answers to explain challenges in seed data (`solution_code` field)
 - [ ] Implement "compare" challenge type UI
 - [ ] Implement "multiple_choice" challenge type UI
+- [ ] Add vocabulary terms to remaining lessons if needed
 
 ### Future Enhancements
 - [ ] **AI-Graded Explanations (Option 3)**: Use an LLM to evaluate user explanations against key points. Would provide:
@@ -108,3 +222,13 @@ The app has three challenge types:
 - Spaced repetition system for mastery tracking
 - Test case validation for implement challenges
 - Execution visualization for passed tests (uses framer-motion animations)
+- Vocabulary system with flashcard/quiz modes and SM-2 tracking
+- Vocabulary seed script (`bun run db:seed-vocabulary`)
+- Performance patterns:
+  - `!data && isLoading` for loading states (not just `isLoading`)
+  - Delayed skeleton pattern: `opacity={0}` + `animation="fadeIn 0.2s ease-in 0.2s forwards"`
+  - Hover prefetch functions in hooks files
+  - Dashboard prefetch on header link (AppShell.tsx)
+  - VocabularyPage uses slug for all queries (parallel, no waterfall)
+  - Entrance animations in LessonDetail (framer-motion)
+  - TanStack Query for all data fetching (no useEffect fetching)

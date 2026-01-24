@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import {
   Box,
   Container,
@@ -9,12 +10,16 @@ import {
   Card,
   Breadcrumb,
   Icon,
+  Skeleton,
+  SkeletonText,
 } from "@chakra-ui/react";
 import { Link, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { fetchLesson, fetchProgress, type Lesson } from "../services/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { useLesson } from "../hooks/useLessons";
+import { useProgressStats, prefetchChallenge } from "../hooks/useProgress";
+import { useVocabularyStats, prefetchVocabulary } from "../hooks/useVocabulary";
 import ReactMarkdown from "react-markdown";
-import { LuCheck } from "react-icons/lu";
+import { LuBookOpen } from "react-icons/lu";
 
 const difficultyColors = {
   beginner: "green",
@@ -31,33 +36,66 @@ const typeLabels = {
 
 export function LessonDetail() {
   const { slug } = useParams<{ slug: string }>();
-  const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [completedChallenges, setCompletedChallenges] = useState<Set<string>>(
-    new Set()
-  );
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!slug) return;
+  const { data: lesson, isLoading: lessonLoading } = useLesson(slug);
+  const { data: progressData, isLoading: progressLoading } = useProgressStats();
+  // ✅ Use slug directly - no cascading dependency on lesson.id
+  const { data: vocabularyStats } = useVocabularyStats(slug);
 
-    // Fetch lesson and progress in parallel
-    Promise.all([fetchLesson(slug), fetchProgress()])
-      .then(([lessonData, progressData]) => {
-        setLesson(lessonData);
-        // Build set of completed challenge IDs
-        const completed = new Set(
-          progressData.progress.map((p) => p.challengeId)
-        );
-        setCompletedChallenges(completed);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [slug]);
+  const completedChallenges = progressData?.completedChallenges ?? new Set<string>();
 
-  if (loading) {
+  // ✅ Prefetch vocabulary on hover for instant navigation
+  const handleVocabularyHover = useCallback(() => {
+    if (lesson?.id) {
+      prefetchVocabulary(queryClient, lesson.id);
+    }
+  }, [queryClient, lesson?.id]);
+
+  // ✅ Prefetch challenge on hover for instant navigation
+  const handleChallengeHover = useCallback((challengeId: string) => {
+    prefetchChallenge(queryClient, challengeId);
+  }, [queryClient]);
+
+  // ✅ Only show loading on initial load (no cached data)
+  const isInitialLoading = (!lesson && lessonLoading) || (!progressData && progressLoading);
+
+  if (isInitialLoading) {
     return (
-      <Container maxW="container.xl" py={12}>
-        <Text color="gray.400">Loading...</Text>
+      <Container
+        maxW="container.xl"
+        py={12}
+        opacity={0}
+        animation="fadeIn 0.2s ease-in 0.2s forwards"
+        css={{ "@keyframes fadeIn": { to: { opacity: 1 } } }}
+      >
+        <VStack gap={8} align="stretch">
+          {/* Breadcrumb skeleton */}
+          <Skeleton height="20px" width="200px" />
+
+          {/* Header skeleton */}
+          <Box>
+            <Skeleton height="20px" width="80px" mb={2} />
+            <Skeleton height="40px" width="300px" mb={4} />
+            <Skeleton height="24px" width="80%" />
+          </Box>
+
+          {/* Concept cards skeleton */}
+          {[1, 2].map((i) => (
+            <Card.Root key={i} bg="gray.900" borderColor="gray.800">
+              <Card.Body>
+                <Skeleton height="28px" width="200px" mb={4} />
+                <SkeletonText noOfLines={4} gap={3} mb={6} />
+                <Skeleton height="24px" width="100px" mb={4} />
+                <VStack gap={3} align="stretch">
+                  {[1, 2, 3].map((j) => (
+                    <Skeleton key={j} height="56px" borderRadius="lg" />
+                  ))}
+                </VStack>
+              </Card.Body>
+            </Card.Root>
+          ))}
+        </VStack>
       </Container>
     );
   }
@@ -76,15 +114,15 @@ export function LessonDetail() {
         <Breadcrumb.Root>
           <Breadcrumb.List>
             <Breadcrumb.Item>
-              <Link to="/">
-                <Breadcrumb.Link color="gray.400">Home</Breadcrumb.Link>
-              </Link>
+              <Breadcrumb.Link asChild color="gray.400">
+                <Link to="/">Home</Link>
+              </Breadcrumb.Link>
             </Breadcrumb.Item>
             <Breadcrumb.Separator />
             <Breadcrumb.Item>
-              <Link to="/lessons">
-                <Breadcrumb.Link color="gray.400">Lessons</Breadcrumb.Link>
-              </Link>
+              <Breadcrumb.Link asChild color="gray.400">
+                <Link to="/lessons">Lessons</Link>
+              </Breadcrumb.Link>
             </Breadcrumb.Item>
             <Breadcrumb.Separator />
             <Breadcrumb.Item>
@@ -106,6 +144,66 @@ export function LessonDetail() {
             {lesson.description}
           </Text>
         </Box>
+
+        {/* Study Vocabulary Card */}
+        {vocabularyStats && vocabularyStats.total > 0 && (
+          <Link to={`/vocabulary/${lesson.slug}`}>
+              <Card.Root
+                bg="gray.900"
+                borderColor="gray.800"
+                _hover={{
+                  borderColor: "cyan.700",
+                  transform: "translateY(-2px)",
+                }}
+                transition="all 0.2s"
+                cursor="pointer"
+                onMouseEnter={handleVocabularyHover}
+              >
+              <Card.Body>
+                <HStack justify="space-between">
+                  <HStack gap={4}>
+                    <Box p={3} bg="cyan.900" borderRadius="lg">
+                      <Icon boxSize={6} color="cyan.400">
+                        <LuBookOpen />
+                      </Icon>
+                    </Box>
+                    <VStack align="start" gap={1}>
+                      <Text color="white" fontWeight="medium" fontSize="lg">
+                        Study Vocabulary
+                      </Text>
+                      <HStack gap={3}>
+                        <Text color="gray.400" fontSize="sm">
+                          {vocabularyStats.total} terms
+                        </Text>
+                        {vocabularyStats.mastered > 0 && (
+                          <Badge colorPalette="green" variant="subtle">
+                            {vocabularyStats.mastered} mastered
+                          </Badge>
+                        )}
+                        {vocabularyStats.reviewing > 0 && (
+                          <Badge colorPalette="yellow" variant="subtle">
+                            {vocabularyStats.reviewing} reviewing
+                          </Badge>
+                        )}
+                      </HStack>
+                    </VStack>
+                  </HStack>
+                  <Box
+                    px={3}
+                    py={1.5}
+                    bg="cyan.600"
+                    color="white"
+                    borderRadius="md"
+                    fontSize="sm"
+                    fontWeight="medium"
+                  >
+                    Study →
+                  </Box>
+                </HStack>
+              </Card.Body>
+            </Card.Root>
+          </Link>
+        )}
 
         <VStack gap={8} align="stretch">
           {lesson.concepts.map((concept) => (
@@ -156,6 +254,7 @@ export function LessonDetail() {
                           transition="background 0.2s"
                           borderRight={isCompleted ? "3px solid" : "none"}
                           borderRightColor="green.500"
+                          onMouseEnter={() => handleChallengeHover(challenge.id)}
                         >
                           <HStack justify="space-between">
                             <HStack gap={3}>
@@ -172,16 +271,9 @@ export function LessonDetail() {
                                 {challenge.title}
                               </Text>
                             </HStack>
-                            <HStack gap={2}>
-                              {isCompleted && (
-                                <Icon color="green.400" boxSize={5}>
-                                  <LuCheck />
-                                </Icon>
-                              )}
-                              <Text color="gray.400" fontSize="sm">
-                                →
-                              </Text>
-                            </HStack>
+                            <Text color="gray.400" fontSize="sm">
+                              →
+                            </Text>
                           </HStack>
                         </Box>
                       </Link>
