@@ -9,10 +9,12 @@ import {
   Card,
   Breadcrumb,
   Icon,
+  Spinner,
 } from "@chakra-ui/react";
 import { Link, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { fetchLesson, fetchProgress, fetchVocabularyStats, type Lesson, type VocabularyStats } from "../services/api";
+import { useLesson } from "../hooks/useLessons";
+import { useProgressStats } from "../hooks/useProgress";
+import { useVocabularyStats } from "../hooks/useVocabulary";
 import ReactMarkdown from "react-markdown";
 import { LuCheck, LuBookOpen } from "react-icons/lu";
 
@@ -31,39 +33,23 @@ const typeLabels = {
 
 export function LessonDetail() {
   const { slug } = useParams<{ slug: string }>();
-  const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [completedChallenges, setCompletedChallenges] = useState<Set<string>>(
-    new Set()
-  );
-  const [vocabularyStats, setVocabularyStats] = useState<VocabularyStats | null>(null);
 
-  useEffect(() => {
-    if (!slug) return;
+  const { data: lesson, isLoading: lessonLoading } = useLesson(slug);
+  const { data: progressData, isLoading: progressLoading } = useProgressStats();
+  const { data: vocabularyStats } = useVocabularyStats(lesson?.id);
 
-    // Fetch lesson and progress in parallel
-    Promise.all([fetchLesson(slug), fetchProgress()])
-      .then(([lessonData, progressData]) => {
-        setLesson(lessonData);
-        // Build set of completed challenge IDs
-        const completed = new Set(
-          progressData.progress.map((p) => p.challengeId)
-        );
-        setCompletedChallenges(completed);
+  const completedChallenges = progressData?.completedChallenges ?? new Set<string>();
 
-        // Fetch vocabulary stats for this lesson
-        fetchVocabularyStats(lessonData.id)
-          .then(setVocabularyStats)
-          .catch(() => setVocabularyStats(null));
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [slug]);
+  // ✅ Only show loading on initial load (no cached data)
+  const isInitialLoading = (!lesson && lessonLoading) || (!progressData && progressLoading);
 
-  if (loading) {
+  if (isInitialLoading) {
     return (
       <Container maxW="container.xl" py={12}>
-        <Text color="gray.400">Loading...</Text>
+        <VStack gap={4}>
+          <Spinner size="xl" color="cyan.400" />
+          <Text color="gray.400">Loading...</Text>
+        </VStack>
       </Container>
     );
   }

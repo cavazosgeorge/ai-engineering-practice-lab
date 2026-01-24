@@ -8,14 +8,10 @@ import {
   Card,
   SimpleGrid,
   Progress,
+  Spinner,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import {
-  fetchProgress,
-  type UserProgress,
-  type ProgressStats,
-} from "../services/api";
+import { useFullProgress } from "../hooks/useProgress";
 
 const masteryColors = {
   learning: "blue",
@@ -24,28 +20,24 @@ const masteryColors = {
 };
 
 export function ProgressPage() {
-  const [progress, setProgress] = useState<UserProgress[]>([]);
-  const [stats, setStats] = useState<ProgressStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useFullProgress();
 
-  useEffect(() => {
-    fetchProgress()
-      .then((data) => {
-        setProgress(data.progress);
-        setStats(data.stats);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+  const progress = data?.progress ?? [];
+  const stats = data?.stats;
 
-  if (loading) {
+  // ✅ Only show loading on initial load (no cached data)
+  if (!data && isLoading) {
     return (
       <Container maxW="container.xl" py={12}>
-        <Text color="gray.400">Loading...</Text>
+        <VStack gap={4}>
+          <Spinner size="xl" color="cyan.400" />
+          <Text color="gray.400">Loading...</Text>
+        </VStack>
       </Container>
     );
   }
 
+  // ✅ Derive percentage directly (no state needed)
   const masteredPct = stats
     ? Math.round((stats.mastered / Math.max(stats.total, 1)) * 100)
     : 0;

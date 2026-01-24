@@ -9,30 +9,18 @@ import {
   Card,
   SimpleGrid,
   Icon,
+  Spinner,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { fetchLessons, fetchProgress, type Lesson } from "../services/api";
+import { useLessons, useProgressStats } from "../hooks/useProgress";
+import { type Lesson } from "../services/api";
 import { LuCheck } from "react-icons/lu";
 
 export function Lessons() {
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [completedChallenges, setCompletedChallenges] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
+  const { data: lessons, isLoading: lessonsLoading } = useLessons();
+  const { data: progressData, isLoading: progressLoading } = useProgressStats();
 
-  useEffect(() => {
-    Promise.all([fetchLessons(), fetchProgress()])
-      .then(([lessonsData, progressData]) => {
-        setLessons(lessonsData);
-        // Build set of completed challenge IDs
-        const completed = new Set(
-          progressData.progress.map((p) => p.challengeId)
-        );
-        setCompletedChallenges(completed);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+  const completedChallenges = progressData?.completedChallenges ?? new Set<string>();
 
   // Calculate completion stats for a lesson
   const getLessonProgress = (lesson: Lesson) => {
@@ -47,10 +35,16 @@ export function Lessons() {
     return { total: totalChallenges, completed: completedCount };
   };
 
-  if (loading) {
+  // ✅ Only show loading on initial load (no cached data)
+  const isInitialLoading = (!lessons && lessonsLoading) || (!progressData && progressLoading);
+
+  if (isInitialLoading) {
     return (
       <Container maxW="container.xl" py={12}>
-        <Text color="gray.400">Loading...</Text>
+        <VStack gap={4}>
+          <Spinner size="xl" color="cyan.400" />
+          <Text color="gray.400">Loading...</Text>
+        </VStack>
       </Container>
     );
   }
@@ -63,7 +57,7 @@ export function Lessons() {
         </Heading>
 
         <SimpleGrid columns={{ base: 1, md: 2 }} gap={6}>
-          {lessons.map((lesson) => {
+          {(lessons ?? []).map((lesson) => {
             const progress = getLessonProgress(lesson);
             const isComplete = progress.completed === progress.total && progress.total > 0;
             const progressPercent = progress.total > 0 ? (progress.completed / progress.total) * 100 : 0;
@@ -148,7 +142,7 @@ export function Lessons() {
           })}
         </SimpleGrid>
 
-        {lessons.length === 0 && (
+        {lessons && lessons.length === 0 && (
           <Card.Root bg="gray.900" borderColor="gray.800">
             <Card.Body textAlign="center" py={12}>
               <Text color="gray.400">
