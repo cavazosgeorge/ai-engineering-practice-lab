@@ -2,6 +2,41 @@
 
 ## What Was Done
 
+### Session: Vocabulary Challenge Feature (feature/vocabulary-challenges branch)
+
+Implemented a complete vocabulary challenge system with flashcard-style learning and multiple choice quizzes for AI/ML terminology.
+
+**Backend (server/):**
+- `db/migrations/002_vocabulary_schema.sql` - New tables: vocabulary_terms, vocabulary_progress, vocabulary_submissions
+- `services/vocabulary-service.ts` - Core business logic with SM-2 spaced repetition
+- `routes/vocabulary.ts` - REST API endpoints for terms, flashcards, quizzes, stats
+- `scripts/seed-vocabulary.ts` - Seeds 42 vocabulary terms across 5 lessons
+
+**Frontend (src/):**
+- `components/vocabulary/` - 6 new components:
+  - `VocabularyFlashcard.tsx` - 3D flip animation flashcard
+  - `VocabularyFlashcardDeck.tsx` - Session manager with keyboard controls
+  - `VocabularyQuiz.tsx` - Multiple choice with immediate feedback
+  - `VocabularyQuizSession.tsx` - Quiz session with scoring
+  - `VocabularyDashboard.tsx` - Lesson vocabulary overview with stats
+- `hooks/useVocabulary.ts` - TanStack Query hooks for data fetching
+- `pages/VocabularyPage.tsx` - Main vocabulary page with mode switching
+
+**API Endpoints:**
+- `GET /api/vocabulary/:lessonSlug/terms` - Get terms (supports ID or slug)
+- `GET /api/vocabulary/:lessonSlug/stats` - Get progress stats
+- `POST /api/vocabulary/flashcard/:termId/review` - Submit flashcard review
+- `GET /api/vocabulary/quiz/:termId/question` - Get quiz question
+- `POST /api/vocabulary/quiz/:termId/answer` - Submit quiz answer
+- `GET /api/vocabulary/review-queue` - Get due vocabulary items
+
+**Routes Added:**
+- `/vocabulary/:lessonSlug` - Dashboard
+- `/vocabulary/:lessonSlug/flashcards` - Flashcard mode
+- `/vocabulary/:lessonSlug/quiz` - Quiz mode
+
+**Seed Command:** `bun run db:seed-vocabulary`
+
 ### Session: Code Execution Visualization
 - Added animated step-by-step visualization for passed challenges
 - Created visualization components:
@@ -87,12 +122,20 @@ The app has three challenge types:
 2. **explain** - Now has self-assessment UI with model answer reveal
 3. **compare** / **multiple_choice** - Not yet implemented
 
+**Vocabulary System:**
+- Flashcard and quiz modes with spaced repetition (SM-2)
+- 42 AI/ML vocabulary terms seeded across 5 lessons
+- Keyboard navigation (Space to flip, 1-4 for options, Arrow keys)
+- Progress tracking per learning mode (flashcard vs quiz)
+- Integrated with lesson detail pages ("Study Vocabulary" button)
+
 ## What's Next
 
 ### High Priority
 - [ ] Add model answers to explain challenges in seed data (`solution_code` field)
 - [ ] Implement "compare" challenge type UI
 - [ ] Implement "multiple_choice" challenge type UI
+- [ ] Add vocabulary terms to remaining lessons if needed
 
 ### Future Enhancements
 - [ ] **AI-Graded Explanations (Option 3)**: Use an LLM to evaluate user explanations against key points. Would provide:
@@ -108,3 +151,5 @@ The app has three challenge types:
 - Spaced repetition system for mastery tracking
 - Test case validation for implement challenges
 - Execution visualization for passed tests (uses framer-motion animations)
+- Vocabulary system with flashcard/quiz modes and SM-2 tracking
+- Vocabulary seed script (`bun run db:seed-vocabulary`)
