@@ -1630,10 +1630,1220 @@ def generate_step(logits, vocab, temperature):
     );
   }
 
+  // ============================================
+  // LESSON 6: RETRIEVAL-AUGMENTED GENERATION (RAG)
+  // ============================================
+  const lesson6Id = nanoid();
+  db.run(
+    `INSERT INTO lessons (id, title, slug, description, order_index, is_published)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      lesson6Id,
+      "Retrieval-Augmented Generation (RAG)",
+      "rag",
+      "Learn how to build RAG systems that combine document retrieval with language model generation. Covers text chunking, embeddings, similarity search, and context-augmented prompting.",
+      6,
+      1,
+    ]
+  );
+
+  // Concept 6.1: Text Chunking
+  const concept6_1Id = nanoid();
+  db.run(
+    `INSERT INTO concepts (id, lesson_id, title, explanation, order_index)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      concept6_1Id,
+      lesson6Id,
+      "Text Chunking",
+      `# Text Chunking
+
+Text chunking splits large documents into smaller, manageable pieces for retrieval and processing. This is a critical preprocessing step in any RAG system.
+
+## Why Chunk?
+- LLMs have limited context windows — you can't feed an entire document at once
+- Smaller chunks improve retrieval precision — the model gets focused, relevant passages
+- Embedding models work best on paragraph-length text, not entire documents
+
+## Chunking Strategies
+
+### Fixed-Size Chunking
+Split text into equal-sized pieces by character count. Simple but may break mid-sentence.
+
+### Overlapping Chunks
+Add overlap between consecutive chunks so context at boundaries isn't lost:
+\`\`\`
+Chunk 1: [===overlap===]
+Chunk 2:    [===overlap===]
+Chunk 3:       [===overlap===]
+\`\`\`
+
+### Recursive/Semantic Chunking
+Split on natural boundaries (paragraphs, sentences) then further split if still too large. Libraries like LangChain's \`RecursiveCharacterTextSplitter\` use this approach.
+
+## Common Parameters
+| Parameter | Typical Value | Effect |
+|-----------|--------------|--------|
+| \`chunk_size\` | 300-1000 chars | Larger = more context per chunk |
+| \`chunk_overlap\` | 50-200 chars | Larger = more continuity between chunks |
+
+## Trade-offs
+- **Small chunks**: Better retrieval precision, but may lack context
+- **Large chunks**: More context, but noisier retrieval results
+- **More overlap**: Better continuity, but more redundant storage`,
+      1,
+    ]
+  );
+
+  // Challenge 6.1.1: Fixed-size text chunking
+  const challenge6_1_1Id = nanoid();
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      challenge6_1_1Id,
+      concept6_1Id,
+      "implement",
+      "Implement fixed-size text chunking",
+      `Create a \`chunk_text\` function that splits a string into non-overlapping chunks of a given size.
+
+The function should:
+- Split the text into pieces of exactly \`chunk_size\` characters
+- The last chunk may be shorter if the text doesn't divide evenly
+- Return a list of chunk strings
+
+**Example:**
+\`\`\`python
+chunk_text("abcdefghij", 3)  # => ["abc", "def", "ghi", "j"]
+\`\`\``,
+      `def chunk_text(text, chunk_size):
+    # text: the input string to chunk
+    # chunk_size: maximum characters per chunk
+    # Return: list of chunk strings
+    pass`,
+      `def chunk_text(text, chunk_size):
+    return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]`,
+      JSON.stringify([
+        "Use range(0, len(text), chunk_size) to get the starting index of each chunk",
+        "Slice the text with text[i:i + chunk_size] for each start position",
+        "Python slicing handles the last chunk gracefully — it won't go past the end",
+      ]),
+      "beginner",
+      1,
+    ]
+  );
+
+  for (const tc of [
+    {
+      input: ["abcdefghij", 3],
+      expected: ["abc", "def", "ghi", "j"],
+      desc: "Uneven split with remainder",
+      order: 1,
+    },
+    {
+      input: ["hello", 10],
+      expected: ["hello"],
+      desc: "Text shorter than chunk size",
+      order: 2,
+    },
+    {
+      input: ["abcdef", 2],
+      expected: ["ab", "cd", "ef"],
+      desc: "Exact division",
+      order: 3,
+    },
+  ]) {
+    db.run(
+      `INSERT INTO test_cases (id, challenge_id, input, expected_output, description, order_index)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        nanoid(),
+        challenge6_1_1Id,
+        JSON.stringify(tc.input),
+        JSON.stringify(tc.expected),
+        tc.desc,
+        tc.order,
+      ]
+    );
+  }
+
+  // Challenge 6.1.2: Overlapping text chunking
+  const challenge6_1_2Id = nanoid();
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      challenge6_1_2Id,
+      concept6_1Id,
+      "implement",
+      "Implement overlapping text chunking",
+      `Create a \`chunk_text_overlap\` function that splits text into chunks with overlap between consecutive chunks.
+
+The function should:
+- Create chunks of \`chunk_size\` characters
+- Each new chunk starts \`chunk_size - overlap\` characters after the previous one
+- The last chunk may be shorter than \`chunk_size\`
+- Return a list of chunk strings
+
+**Example:**
+\`\`\`python
+chunk_text_overlap("abcdefghij", 5, 2)
+# => ["abcde", "defgh", "ghij"]
+# Chunk 1 starts at 0: "abcde"
+# Chunk 2 starts at 3: "defgh" (overlap of "de")
+# Chunk 3 starts at 6: "ghij"  (overlap of "gh")
+\`\`\``,
+      `def chunk_text_overlap(text, chunk_size, overlap):
+    # text: the input string
+    # chunk_size: maximum characters per chunk
+    # overlap: number of overlapping characters between chunks
+    # Return: list of chunk strings
+    pass`,
+      `def chunk_text_overlap(text, chunk_size, overlap):
+    chunks = []
+    step = chunk_size - overlap
+    for i in range(0, len(text), step):
+        chunk = text[i:i + chunk_size]
+        if chunk:
+            chunks.append(chunk)
+    return chunks`,
+      JSON.stringify([
+        "The step size between chunk starts is chunk_size - overlap",
+        "Use range(0, len(text), step) to iterate through start positions",
+        "Slice with text[i:i + chunk_size] — Python handles end-of-string gracefully",
+      ]),
+      "intermediate",
+      2,
+    ]
+  );
+
+  for (const tc of [
+    {
+      input: ["abcdefghij", 5, 2],
+      expected: ["abcde", "defgh", "ghij"],
+      desc: "Basic overlap of 2 characters",
+      order: 1,
+    },
+    {
+      input: ["abcdefgh", 4, 1],
+      expected: ["abcd", "defg", "fgh"],
+      desc: "Overlap of 1 character",
+      order: 2,
+    },
+    {
+      input: ["abc", 5, 2],
+      expected: ["abc"],
+      desc: "Text shorter than chunk size",
+      order: 3,
+    },
+  ]) {
+    db.run(
+      `INSERT INTO test_cases (id, challenge_id, input, expected_output, description, order_index)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        nanoid(),
+        challenge6_1_2Id,
+        JSON.stringify(tc.input),
+        JSON.stringify(tc.expected),
+        tc.desc,
+        tc.order,
+      ]
+    );
+  }
+
+  // Challenge 6.1.3: Explain why chunking is needed
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      nanoid(),
+      concept6_1Id,
+      "explain",
+      "Why is text chunking necessary for RAG?",
+      `Explain why text chunking is a critical preprocessing step in Retrieval-Augmented Generation systems.
+
+Consider these aspects in your answer:
+1. **Context window limits** — Why can't we just pass entire documents to the LLM?
+2. **Retrieval precision** — How does chunk size affect the quality of retrieved results?
+3. **Overlap** — Why do we add overlap between chunks? What happens without it?
+4. **Trade-offs** — What are the consequences of chunks that are too small vs. too large?
+
+Write a clear explanation (3-5 paragraphs).`,
+      null,
+      `## Context Window Limits
+
+Large Language Models have a fixed context window — the maximum amount of text they can read at once. Even modern models with 128K+ token windows can't efficiently process entire document collections. In a RAG system, we need to select only the most relevant passages to include in the prompt, which means documents must be broken into pieces small enough to selectively retrieve and fit within the context window alongside the user's question and system instructions.
+
+## Retrieval Precision
+
+Chunk size directly affects retrieval quality. When chunks are small (e.g., individual sentences), the embedding captures very specific meaning, making it easier to match a precise query. However, small chunks may lack the surrounding context needed to fully answer a question. When chunks are large (e.g., entire pages), they contain more information but the embedding becomes a blurry average of many topics, making precise matching harder. Most RAG systems use chunks of 300-1000 characters as a practical sweet spot.
+
+## The Role of Overlap
+
+Overlap between consecutive chunks ensures that information at chunk boundaries isn't lost. Without overlap, a key fact that spans two chunks would be split across them, and neither chunk alone would contain the complete information. For example, if a sentence starts at the end of chunk 1 and finishes at the beginning of chunk 2, overlap ensures at least one chunk contains the full sentence. Typical overlap values are 10-20% of the chunk size.
+
+## Trade-offs
+
+Too-small chunks produce many highly specific pieces but may lack context — answering "What is the refund policy?" might require information spread across several tiny chunks. Too-large chunks are self-contained but produce noisy embeddings that match many queries imprecisely. The ideal chunk size depends on the use case: FAQ-style questions work well with small chunks, while complex analytical questions benefit from larger chunks. This is often tuned experimentally by evaluating retrieval quality on representative queries.`,
+      JSON.stringify([
+        "Think about what happens when a document is 50 pages but the model can only read 4 pages at a time",
+        "Consider: if a chunk contains a whole chapter, its embedding represents many topics at once — is that good for precise matching?",
+        "What happens if a sentence starts at the end of one chunk and finishes at the start of the next?",
+      ]),
+      "intermediate",
+      3,
+    ]
+  );
+
+  // Concept 6.2: Vector Embeddings and Similarity
+  const concept6_2Id = nanoid();
+  db.run(
+    `INSERT INTO concepts (id, lesson_id, title, explanation, order_index)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      concept6_2Id,
+      lesson6Id,
+      "Embeddings & Similarity",
+      `# Vector Embeddings and Similarity
+
+Embeddings are dense numerical vectors that capture the semantic meaning of text. In RAG, both document chunks and user queries are converted to embeddings so we can find relevant documents using mathematical similarity.
+
+## What Are Embeddings?
+An embedding model converts text into a fixed-length vector of numbers (e.g., 384 dimensions for \`gte-small\`, 1536 for OpenAI's \`text-embedding-3-small\`). Similar meanings produce vectors that point in similar directions.
+
+\`\`\`python
+# Conceptually:
+embed("king") ≈ [0.2, 0.8, 0.1, ...]  # 384 numbers
+embed("queen") ≈ [0.2, 0.7, 0.2, ...]  # nearby in vector space
+embed("pizza") ≈ [0.9, 0.1, 0.3, ...]  # far away
+\`\`\`
+
+## Measuring Similarity
+
+### Dot Product
+The simplest similarity measure — multiply corresponding elements and sum:
+\`\`\`
+dot(a, b) = a₁b₁ + a₂b₂ + ... + aₙbₙ
+\`\`\`
+
+### Cosine Similarity
+Measures the angle between two vectors, ignoring magnitude:
+\`\`\`
+cosine(a, b) = dot(a, b) / (||a|| × ||b||)
+\`\`\`
+- **1.0** = identical direction (most similar)
+- **0.0** = perpendicular (unrelated)
+- **-1.0** = opposite direction (most dissimilar)
+
+## Why Cosine Similarity?
+Cosine similarity is preferred because it's **magnitude-invariant**. A long document and a short document can have different embedding magnitudes, but cosine similarity compares their semantic direction, not their length.
+
+## Embedding Models
+| Model | Dimensions | Quality | Speed |
+|-------|-----------|---------|-------|
+| \`gte-small\` | 384 | Good | Fast |
+| \`text-embedding-3-small\` | 1536 | Better | API call |
+| \`text-embedding-3-large\` | 3072 | Best | API call |`,
+      2,
+    ]
+  );
+
+  // Challenge 6.2.1: Implement dot product
+  const challenge6_2_1Id = nanoid();
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      challenge6_2_1Id,
+      concept6_2Id,
+      "implement",
+      "Implement the dot product",
+      `Create a \`dot_product\` function that computes the dot product of two vectors.
+
+The dot product is the sum of element-wise products:
+\`\`\`
+dot(a, b) = a₁×b₁ + a₂×b₂ + ... + aₙ×bₙ
+\`\`\`
+
+**Example:**
+\`\`\`python
+dot_product([1, 2, 3], [4, 5, 6])  # => 32
+# 1×4 + 2×5 + 3×6 = 4 + 10 + 18 = 32
+\`\`\``,
+      `def dot_product(vec_a, vec_b):
+    # vec_a: first vector (list of numbers)
+    # vec_b: second vector (list of numbers)
+    # Return: the dot product (a single number)
+    pass`,
+      `def dot_product(vec_a, vec_b):
+    return sum(a * b for a, b in zip(vec_a, vec_b))`,
+      JSON.stringify([
+        "Use zip(vec_a, vec_b) to pair up corresponding elements",
+        "Multiply each pair together: a * b",
+        "Sum all the products with sum()",
+      ]),
+      "beginner",
+      1,
+    ]
+  );
+
+  for (const tc of [
+    {
+      input: [[1, 2, 3], [4, 5, 6]],
+      expected: 32,
+      desc: "Basic dot product",
+      order: 1,
+    },
+    {
+      input: [[1, 0], [0, 1]],
+      expected: 0,
+      desc: "Orthogonal vectors",
+      order: 2,
+    },
+    {
+      input: [[2, 3], [2, 3]],
+      expected: 13,
+      desc: "Self dot product",
+      order: 3,
+    },
+  ]) {
+    db.run(
+      `INSERT INTO test_cases (id, challenge_id, input, expected_output, description, order_index)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        nanoid(),
+        challenge6_2_1Id,
+        JSON.stringify(tc.input),
+        JSON.stringify(tc.expected),
+        tc.desc,
+        tc.order,
+      ]
+    );
+  }
+
+  // Challenge 6.2.2: Implement cosine similarity
+  const challenge6_2_2Id = nanoid();
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      challenge6_2_2Id,
+      concept6_2Id,
+      "implement",
+      "Implement cosine similarity",
+      `Create a \`cosine_similarity\` function that computes the cosine similarity between two vectors.
+
+The formula is:
+\`\`\`
+cosine_sim(a, b) = dot(a, b) / (||a|| × ||b||)
+\`\`\`
+
+Where \`||a||\` is the magnitude (Euclidean norm) of vector a:
+\`\`\`
+||a|| = sqrt(a₁² + a₂² + ... + aₙ²)
+\`\`\`
+
+**Example:**
+\`\`\`python
+cosine_similarity([1, 0], [0, 1])  # => 0.0 (perpendicular)
+cosine_similarity([1, 2], [1, 2])  # => 1.0 (identical)
+\`\`\``,
+      `import math
+
+def cosine_similarity(vec_a, vec_b):
+    # vec_a: first vector (list of numbers)
+    # vec_b: second vector (list of numbers)
+    # Return: cosine similarity (float between -1 and 1)
+    pass`,
+      `import math
+
+def cosine_similarity(vec_a, vec_b):
+    dot = sum(a * b for a, b in zip(vec_a, vec_b))
+    mag_a = math.sqrt(sum(a * a for a in vec_a))
+    mag_b = math.sqrt(sum(b * b for b in vec_b))
+    return dot / (mag_a * mag_b)`,
+      JSON.stringify([
+        "First compute the dot product: sum(a * b for a, b in zip(vec_a, vec_b))",
+        "Then compute each magnitude: math.sqrt(sum(x * x for x in vec))",
+        "Divide the dot product by the product of magnitudes",
+      ]),
+      "intermediate",
+      2,
+    ]
+  );
+
+  for (const tc of [
+    {
+      input: [[1, 0], [0, 1]],
+      expected: 0.0,
+      desc: "Perpendicular vectors",
+      order: 1,
+    },
+    {
+      input: [[1, 2, 3], [1, 2, 3]],
+      expected: 1.0,
+      desc: "Identical vectors",
+      order: 2,
+    },
+    {
+      input: [[1, 0], [1, 1]],
+      expected: 0.7071067811865475,
+      desc: "45-degree angle",
+      order: 3,
+    },
+  ]) {
+    db.run(
+      `INSERT INTO test_cases (id, challenge_id, input, expected_output, description, order_index)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        nanoid(),
+        challenge6_2_2Id,
+        JSON.stringify(tc.input),
+        JSON.stringify(tc.expected),
+        tc.desc,
+        tc.order,
+      ]
+    );
+  }
+
+  // Challenge 6.2.3: Explain cosine similarity for text
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      nanoid(),
+      concept6_2Id,
+      "explain",
+      "Why is cosine similarity preferred for text embeddings?",
+      `Explain why cosine similarity is the standard similarity metric for comparing text embeddings, rather than Euclidean distance or raw dot product.
+
+Consider these aspects:
+1. **Magnitude invariance** — Why does ignoring vector length matter for text?
+2. **Document length** — How do short vs. long documents affect embeddings?
+3. **Range and interpretation** — What do cosine similarity values mean?
+4. **Comparison with alternatives** — When might Euclidean distance or dot product be better?
+
+Write a clear explanation (3-4 paragraphs).`,
+      null,
+      `## Magnitude Invariance
+
+The key advantage of cosine similarity is that it measures the *direction* of vectors, not their *length*. When embedding models process text, longer documents tend to produce embeddings with larger magnitudes simply because more text contributes to the vector values. Two documents about the same topic — one a brief summary and one a detailed article — would have embeddings pointing in similar directions but with different magnitudes. Cosine similarity correctly identifies them as semantically similar, while Euclidean distance would penalize the magnitude difference and rank them as less similar.
+
+## Document Length Effects
+
+In a RAG system, document chunks can vary significantly in length even with chunking strategies. A 100-word chunk and a 500-word chunk about the same topic should be considered equally relevant to a matching query. Cosine similarity normalizes for this by dividing by the product of magnitudes (effectively comparing unit vectors). This means retrieval quality doesn't degrade when your knowledge base contains chunks of varying sizes — the retriever focuses purely on semantic relevance.
+
+## Range and Interpretation
+
+Cosine similarity produces values between -1 and 1, which are intuitive to interpret: 1.0 means identical semantic direction, 0.0 means completely unrelated, and -1.0 means opposite meaning. This bounded range makes it easy to set meaningful similarity thresholds (e.g., "only retrieve chunks with cosine similarity > 0.7"). Euclidean distance has no upper bound, making threshold-setting less intuitive, and raw dot product conflates similarity with magnitude.
+
+## When to Use Alternatives
+
+Dot product is preferred when embeddings are already normalized (unit length), which is the case for some models like OpenAI's. In this case, dot product and cosine similarity produce identical rankings but dot product is computationally cheaper (no magnitude calculation needed). Euclidean distance can be better for tasks where magnitude carries meaningful information, such as comparing feature vectors in recommendation systems. However, for general text retrieval in RAG, cosine similarity remains the most robust default choice.`,
+      JSON.stringify([
+        "Think about two documents on the same topic — one is 100 words, the other is 1000 words",
+        "Cosine measures angle between vectors; Euclidean measures straight-line distance",
+        "What's easier to interpret: a similarity of 0.85 or a distance of 12.7?",
+      ]),
+      "intermediate",
+      3,
+    ]
+  );
+
+  // Concept 6.3: Nearest Neighbor Retrieval
+  const concept6_3Id = nanoid();
+  db.run(
+    `INSERT INTO concepts (id, lesson_id, title, explanation, order_index)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      concept6_3Id,
+      lesson6Id,
+      "Nearest Neighbor Retrieval",
+      `# Nearest Neighbor Retrieval
+
+The retrieval step in RAG finds the k most relevant document chunks for a given query. This is done by comparing the query's embedding against all stored document embeddings and returning the closest matches.
+
+## How It Works
+1. Convert the user's query into an embedding vector
+2. Compare that vector against every document embedding in the index
+3. Return the top-k most similar documents
+
+\`\`\`python
+# Conceptual flow:
+query_vec = embed("What is your return policy?")
+# Compare against all document embeddings
+similarities = [cosine_sim(query_vec, doc_vec) for doc_vec in index]
+# Return top-k most similar
+top_k_docs = sorted(similarities, reverse=True)[:k]
+\`\`\`
+
+## The k Parameter
+- **Small k** (1-3): Few, highly relevant chunks — may miss information
+- **Large k** (8-20): More context — but includes less relevant chunks
+- Common default: k=4 to k=8
+
+## Brute Force vs. Approximate Search
+
+### Brute Force
+Compare query against every document. Exact results but slow for large collections.
+- Time: O(n × d) where n = documents, d = dimensions
+- Fine for < 100K documents
+
+### Approximate Nearest Neighbors (ANN)
+Trade small accuracy loss for massive speed gains:
+- **IVF (Inverted File Index)**: Clusters vectors, only searches nearby clusters
+- **HNSW (Hierarchical Navigable Small World)**: Graph-based approach, very fast
+- **Product Quantization**: Compresses vectors to reduce memory
+
+## Vector Databases
+Production systems use specialized databases:
+| Database | Type | Key Feature |
+|----------|------|-------------|
+| **FAISS** | Library | Meta's fast similarity search |
+| **Pinecone** | Managed | Fully hosted, scales automatically |
+| **ChromaDB** | Open-source | Simple API, good for prototyping |
+| **Weaviate** | Open-source | Schema-aware, hybrid search |`,
+      3,
+    ]
+  );
+
+  // Challenge 6.3.1: Implement k-nearest neighbors
+  const challenge6_3_1Id = nanoid();
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      challenge6_3_1Id,
+      concept6_3Id,
+      "implement",
+      "Implement k-nearest neighbors retrieval",
+      `Create a \`find_nearest\` function that retrieves the k most similar documents to a query vector using cosine similarity.
+
+The function should:
+- Compute cosine similarity between the query and each document vector
+- Return the doc_ids of the k most similar documents
+- Results should be sorted by similarity (most similar first)
+
+**Example:**
+\`\`\`python
+query = [1, 0]
+docs = [("a", [1, 0]), ("b", [0, 1]), ("c", [1, 1])]
+find_nearest(query, docs, 2)  # => ["a", "c"]
+# "a" has cosine_sim = 1.0 (identical)
+# "c" has cosine_sim ≈ 0.71 (45 degrees)
+# "b" has cosine_sim = 0.0 (perpendicular)
+\`\`\``,
+      `import math
+
+def find_nearest(query_vec, document_vecs, k):
+    # query_vec: the query embedding (list of floats)
+    # document_vecs: list of (doc_id, embedding) tuples
+    # k: number of nearest neighbors to return
+    # Return: list of doc_ids, most similar first
+    pass`,
+      `import math
+
+def find_nearest(query_vec, document_vecs, k):
+    def cosine_sim(a, b):
+        dot = sum(x * y for x, y in zip(a, b))
+        mag_a = math.sqrt(sum(x * x for x in a))
+        mag_b = math.sqrt(sum(x * x for x in b))
+        if mag_a == 0 or mag_b == 0:
+            return 0.0
+        return dot / (mag_a * mag_b)
+
+    scored = [(doc_id, cosine_sim(query_vec, vec)) for doc_id, vec in document_vecs]
+    scored.sort(key=lambda x: x[1], reverse=True)
+    return [doc_id for doc_id, _ in scored[:k]]`,
+      JSON.stringify([
+        "First implement a cosine similarity helper inside the function",
+        "Compute similarity for each document: (doc_id, similarity) pairs",
+        "Sort by similarity descending and take the first k doc_ids",
+      ]),
+      "intermediate",
+      1,
+    ]
+  );
+
+  for (const tc of [
+    {
+      input: [[1, 0], [["a", [1, 0]], ["b", [0, 1]], ["c", [1, 1]]], 2],
+      expected: ["a", "c"],
+      desc: "Retrieve 2 nearest from 3 documents",
+      order: 1,
+    },
+    {
+      input: [[0, 1], [["x", [0, 1]], ["y", [1, 0]], ["z", [1, 1]]], 1],
+      expected: ["x"],
+      desc: "Retrieve single nearest neighbor",
+      order: 2,
+    },
+    {
+      input: [[1, 1], [["p", [1, 0]], ["q", [0, 1]], ["r", [-1, -1]]], 2],
+      expected: ["p", "q"],
+      desc: "Exclude opposite-direction vector",
+      order: 3,
+    },
+  ]) {
+    db.run(
+      `INSERT INTO test_cases (id, challenge_id, input, expected_output, description, order_index)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        nanoid(),
+        challenge6_3_1Id,
+        JSON.stringify(tc.input),
+        JSON.stringify(tc.expected),
+        tc.desc,
+        tc.order,
+      ]
+    );
+  }
+
+  // Challenge 6.3.2: Explain vector database scaling
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      nanoid(),
+      concept6_3Id,
+      "explain",
+      "How do vector databases scale similarity search?",
+      `Explain how vector databases like FAISS handle similarity search at scale, and why brute-force search becomes impractical.
+
+Consider these aspects:
+1. **Brute-force limitations** — What happens when you have millions of documents?
+2. **Approximate Nearest Neighbors (ANN)** — How do ANN algorithms trade accuracy for speed?
+3. **Indexing strategies** — What do IVF and HNSW do at a high level?
+4. **Production trade-offs** — How do teams choose between FAISS, Pinecone, ChromaDB, etc.?
+
+Write a clear explanation (3-4 paragraphs).`,
+      null,
+      `## Brute-Force Limitations
+
+Brute-force nearest-neighbor search compares the query vector against every single document vector in the index. For a collection of n documents with d-dimensional embeddings, this requires n × d multiplications per query. At small scale (thousands of documents), this is fast enough. But at production scale — millions or billions of documents — brute force becomes prohibitively slow. A single query against 10 million 768-dimensional vectors requires ~7.7 billion floating-point operations, making sub-second response times impossible without optimization.
+
+## Approximate Nearest Neighbors
+
+ANN algorithms accept a small accuracy trade-off (typically 95-99% recall) for orders-of-magnitude speed improvements. Instead of checking every vector, they use data structures that quickly narrow the search space. The key insight is that in high-dimensional spaces, vectors that are close together tend to share structural properties that can be indexed. This allows the search to skip most of the database and only examine a small fraction of vectors that are likely to be relevant.
+
+## Indexing Strategies
+
+**IVF (Inverted File Index)** partitions all vectors into clusters using k-means. At query time, only the nearest few clusters are searched instead of the entire database — reducing the search space by 10-100x. **HNSW (Hierarchical Navigable Small World)** builds a multi-layer graph where each layer is a progressively coarser approximation. Queries navigate from the top (coarse) layer down to the bottom (fine) layer, quickly zeroing in on the nearest neighbors. **Product Quantization** compresses vectors from 768 floats (3KB) to ~64 bytes, enabling the entire index to fit in RAM.
+
+## Production Trade-offs
+
+**FAISS** (by Meta) is a library, not a database — it's extremely fast and flexible but requires you to manage persistence, scaling, and updates yourself. It's ideal for batch processing or applications where the index doesn't change frequently. **Pinecone** is a fully managed cloud service — no infrastructure to maintain, automatic scaling, but vendor lock-in and ongoing costs. **ChromaDB** offers a simple Python API similar to a dictionary, making it great for prototyping and small-scale applications. **Weaviate** supports hybrid search (combining vector and keyword search) and schema-aware indexing. Teams typically start with ChromaDB or FAISS for development, then migrate to Pinecone or Weaviate for production workloads that require high availability and automatic scaling.`,
+      JSON.stringify([
+        "Think about searching 10 million vectors one by one — how long would that take?",
+        "ANN algorithms trade perfect accuracy for much faster search — like using an index in a book instead of reading every page",
+        "Different vector DBs optimize for different use cases: managed vs self-hosted, scale vs simplicity",
+      ]),
+      "advanced",
+      2,
+    ]
+  );
+
+  // Concept 6.4: RAG Prompt Engineering
+  const concept6_4Id = nanoid();
+  db.run(
+    `INSERT INTO concepts (id, lesson_id, title, explanation, order_index)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      concept6_4Id,
+      lesson6Id,
+      "RAG Prompt Engineering",
+      `# RAG Prompt Engineering
+
+The generation step in RAG constructs a prompt that includes retrieved context and the user's question, then sends it to the LLM. How you format this prompt directly impacts answer quality.
+
+## The Basic Pattern
+\`\`\`
+[System Instructions]
+[Retrieved Context]
+[User Question]
+[Answer Prefix]
+\`\`\`
+
+## Example RAG Prompt
+\`\`\`
+Answer the question based only on the following context:
+
+Context:
+Our return policy allows returns within 30 days of purchase.
+Items must be in original condition with tags attached.
+---
+Refunds are processed within 5-7 business days.
+
+Question: How long do I have to return an item?
+
+Answer:
+\`\`\`
+
+## Key Principles
+
+### 1. Ground the LLM
+Tell the model to use ONLY the provided context. This reduces hallucination:
+\`\`\`
+"Use ONLY the provided context to answer."
+"If the answer is not in the context, say 'I don't know.'"
+\`\`\`
+
+### 2. Separate Chunks Clearly
+Use delimiters (\`---\`, numbered sections, or XML tags) between chunks so the LLM can distinguish sources.
+
+### 3. Handle Missing Information
+Always include a fallback instruction for when the context doesn't contain the answer.
+
+### 4. Conversational Context
+For multi-turn conversations, include chat history so the LLM can resolve references like "it" or "that":
+\`\`\`
+Chat History:
+User: What is your return policy?
+Assistant: You can return items within 30 days.
+
+Question: Does that apply to sale items?
+\`\`\`
+
+## Common Mistakes
+- **No grounding instruction**: Model invents answers not in context
+- **No fallback**: Model guesses instead of admitting uncertainty
+- **No chunk separation**: Model conflates information from different sources`,
+      4,
+    ]
+  );
+
+  // Challenge 6.4.1: Build a RAG prompt
+  const challenge6_4_1Id = nanoid();
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      challenge6_4_1Id,
+      concept6_4Id,
+      "implement",
+      "Build a RAG prompt with retrieved context",
+      `Create a \`build_rag_prompt\` function that assembles a RAG prompt from a question and retrieved context chunks.
+
+The output format should be:
+\`\`\`
+Answer the question based only on the following context:
+
+Context:
+[chunk 1]
+---
+[chunk 2]
+---
+[chunk 3]
+
+Question: [question]
+
+Answer:
+\`\`\`
+
+**Rules:**
+- Chunks are separated by \`---\` on its own line
+- There is no \`---\` after the last chunk
+- The prompt ends with \`Answer:\` (so the LLM continues from there)
+
+**Example:**
+\`\`\`python
+build_rag_prompt("What is Python?", ["Python is a language.", "Python was created by Guido."])
+\`\`\``,
+      `def build_rag_prompt(question, context_chunks):
+    # question: the user's question (string)
+    # context_chunks: list of retrieved text chunks (list of strings)
+    # Return: the formatted RAG prompt (string)
+    pass`,
+      `def build_rag_prompt(question, context_chunks):
+    context = "\\n---\\n".join(context_chunks)
+    return f"""Answer the question based only on the following context:
+
+Context:
+{context}
+
+Question: {question}
+
+Answer:"""`,
+      JSON.stringify([
+        "Join the chunks with '\\n---\\n' as separator between them",
+        "Use an f-string or string concatenation to build the full template",
+        "The format is: instruction + Context: + chunks + Question: + question + Answer:",
+      ]),
+      "intermediate",
+      1,
+    ]
+  );
+
+  for (const tc of [
+    {
+      input: ["What is Python?", ["Python is a language.", "Python was created by Guido."]],
+      expected: "Answer the question based only on the following context:\n\nContext:\nPython is a language.\n---\nPython was created by Guido.\n\nQuestion: What is Python?\n\nAnswer:",
+      desc: "Two context chunks",
+      order: 1,
+    },
+    {
+      input: ["Hi?", ["One chunk."]],
+      expected: "Answer the question based only on the following context:\n\nContext:\nOne chunk.\n\nQuestion: Hi?\n\nAnswer:",
+      desc: "Single context chunk",
+      order: 2,
+    },
+    {
+      input: ["Tell me about returns.", ["Returns within 30 days.", "Must have receipt.", "Refund in 5 days."]],
+      expected: "Answer the question based only on the following context:\n\nContext:\nReturns within 30 days.\n---\nMust have receipt.\n---\nRefund in 5 days.\n\nQuestion: Tell me about returns.\n\nAnswer:",
+      desc: "Three context chunks",
+      order: 3,
+    },
+  ]) {
+    db.run(
+      `INSERT INTO test_cases (id, challenge_id, input, expected_output, description, order_index)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        nanoid(),
+        challenge6_4_1Id,
+        JSON.stringify(tc.input),
+        JSON.stringify(tc.expected),
+        tc.desc,
+        tc.order,
+      ]
+    );
+  }
+
+  // Challenge 6.4.2: Build conversational RAG prompt
+  const challenge6_4_2Id = nanoid();
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      challenge6_4_2Id,
+      concept6_4Id,
+      "implement",
+      "Build a conversational RAG prompt with chat history",
+      `Create a \`build_chat_rag_prompt\` function that includes chat history for multi-turn RAG conversations.
+
+The output format should be:
+\`\`\`
+Answer the question based only on the following context:
+
+Context:
+[chunks joined by ---]
+
+Chat History:
+User: [message]
+Assistant: [message]
+...
+
+Question: [question]
+
+Answer:
+\`\`\`
+
+If chat_history is empty, omit the Chat History section entirely.
+
+**Example:**
+\`\`\`python
+history = [("What is your policy?", "Returns within 30 days.")]
+build_chat_rag_prompt("Does that apply to sale items?", ["Sale items are final sale."], history)
+\`\`\``,
+      `def build_chat_rag_prompt(question, context_chunks, chat_history):
+    # question: the user's question (string)
+    # context_chunks: list of retrieved text chunks
+    # chat_history: list of (user_msg, assistant_msg) tuples
+    # Return: formatted prompt string
+    pass`,
+      `def build_chat_rag_prompt(question, context_chunks, chat_history):
+    context = "\\n---\\n".join(context_chunks)
+    parts = ["Answer the question based only on the following context:", "", "Context:", context]
+    if chat_history:
+        parts.append("")
+        parts.append("Chat History:")
+        for user_msg, asst_msg in chat_history:
+            parts.append(f"User: {user_msg}")
+            parts.append(f"Assistant: {asst_msg}")
+    parts.append("")
+    parts.append(f"Question: {question}")
+    parts.append("")
+    parts.append("Answer:")
+    return "\\n".join(parts)`,
+      JSON.stringify([
+        "Start with the same base template as build_rag_prompt",
+        "If chat_history is not empty, add a Chat History section with User:/Assistant: lines",
+        "Use '\\n'.join(parts) to assemble the final string from a list of lines",
+      ]),
+      "advanced",
+      2,
+    ]
+  );
+
+  for (const tc of [
+    {
+      input: [
+        "Does that apply to sale items?",
+        ["Sale items are final sale."],
+        [["What is your policy?", "Returns within 30 days."]],
+      ],
+      expected: "Answer the question based only on the following context:\n\nContext:\nSale items are final sale.\n\nChat History:\nUser: What is your policy?\nAssistant: Returns within 30 days.\n\nQuestion: Does that apply to sale items?\n\nAnswer:",
+      desc: "With one chat history exchange",
+      order: 1,
+    },
+    {
+      input: [
+        "What is your policy?",
+        ["Returns within 30 days.", "Must have receipt."],
+        [],
+      ],
+      expected: "Answer the question based only on the following context:\n\nContext:\nReturns within 30 days.\n---\nMust have receipt.\n\nQuestion: What is your policy?\n\nAnswer:",
+      desc: "Empty chat history omits section",
+      order: 2,
+    },
+  ]) {
+    db.run(
+      `INSERT INTO test_cases (id, challenge_id, input, expected_output, description, order_index)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        nanoid(),
+        challenge6_4_2Id,
+        JSON.stringify(tc.input),
+        JSON.stringify(tc.expected),
+        tc.desc,
+        tc.order,
+      ]
+    );
+  }
+
+  // Concept 6.5: The RAG Pipeline
+  const concept6_5Id = nanoid();
+  db.run(
+    `INSERT INTO concepts (id, lesson_id, title, explanation, order_index)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      concept6_5Id,
+      lesson6Id,
+      "The RAG Pipeline",
+      `# The Complete RAG Pipeline
+
+A RAG system connects all the pieces into one pipeline: chunk documents, embed them, store in a vector index, retrieve relevant chunks for a query, inject them into a prompt, and send to the LLM.
+
+## The Flow
+\`\`\`
+Knowledge Base (PDFs, web pages, docs)
+    |
+Chunking (split into passages)
+    |
+Embedding (text → vectors)
+    |
+Vector Store (index for fast search)
+    |
+--- at query time ---
+    |
+User Query → Embed Query
+    |
+Retrieve top-k similar chunks
+    |
+Build prompt (context + question)
+    |
+LLM generates answer
+    |
+Response to user
+\`\`\`
+
+## Offline vs. Online Steps
+| Phase | Steps | When |
+|-------|-------|------|
+| **Indexing** (offline) | Chunk → Embed → Store | Once, when documents change |
+| **Retrieval** (online) | Embed query → Search → Build prompt → Generate | Every user query |
+
+## Why RAG?
+
+### vs. Using LLM Alone
+- LLMs have a knowledge cutoff date — RAG provides fresh information
+- LLMs hallucinate — RAG grounds answers in actual documents
+- LLMs can't cite sources — RAG knows which documents were used
+
+### vs. Fine-Tuning
+- No retraining needed when documents update
+- Works with any LLM (swap models freely)
+- Cheaper and faster to set up
+- Better for factual, domain-specific Q&A
+
+### When Fine-Tuning Is Better
+- Changing model behavior/style (not just knowledge)
+- Tasks requiring deep reasoning over the full domain
+- Latency-critical applications (no retrieval step)
+
+## Real-World RAG Stack
+\`\`\`
+Documents → LangChain Loaders → Splitter → Embeddings → FAISS/Pinecone
+                                                              |
+User Query → Embed → Retrieve → PromptTemplate → LLM → Answer
+\`\`\`
+
+This is exactly what project_2's chatbot implements using LangChain, FAISS, and Ollama.`,
+      5,
+    ]
+  );
+
+  // Challenge 6.5.1: Simplified RAG pipeline
+  const challenge6_5_1Id = nanoid();
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      challenge6_5_1Id,
+      concept6_5Id,
+      "implement",
+      "Implement a simplified RAG retrieval pipeline",
+      `Create a \`rag_retrieve\` function that simulates the retrieval side of a RAG pipeline.
+
+Given a query, pre-computed embeddings, and document texts, it should:
+1. Find the k nearest document embeddings to the query embedding (using cosine similarity)
+2. Look up the corresponding document texts
+3. Build and return a RAG prompt with the retrieved context
+
+**Example:**
+\`\`\`python
+docs = {"d1": "Returns within 30 days.", "d2": "Free shipping over $50.", "d3": "Contact us at help@store.com."}
+embeddings = [("d1", [1, 0]), ("d2", [0, 1]), ("d3", [0.5, 0.5])]
+query_vec = [1, 0.1]  # Most similar to d1
+
+rag_retrieve("What is the return policy?", query_vec, docs, embeddings, 2)
+# Returns a formatted RAG prompt with d1 and d3 as context
+\`\`\``,
+      `import math
+
+def rag_retrieve(query, query_vec, documents, doc_embeddings, k):
+    # query: the user's question (string)
+    # query_vec: the query's embedding vector
+    # documents: dict mapping doc_id -> text
+    # doc_embeddings: list of (doc_id, vector) tuples
+    # k: number of documents to retrieve
+    # Return: formatted RAG prompt string
+    pass`,
+      `import math
+
+def rag_retrieve(query, query_vec, documents, doc_embeddings, k):
+    def cosine_sim(a, b):
+        dot = sum(x * y for x, y in zip(a, b))
+        mag_a = math.sqrt(sum(x * x for x in a))
+        mag_b = math.sqrt(sum(x * x for x in b))
+        if mag_a == 0 or mag_b == 0:
+            return 0.0
+        return dot / (mag_a * mag_b)
+
+    scored = [(doc_id, cosine_sim(query_vec, vec)) for doc_id, vec in doc_embeddings]
+    scored.sort(key=lambda x: x[1], reverse=True)
+    top_ids = [doc_id for doc_id, _ in scored[:k]]
+    chunks = [documents[doc_id] for doc_id in top_ids]
+    context = "\\n---\\n".join(chunks)
+    return f"""Answer the question based only on the following context:
+
+Context:
+{context}
+
+Question: {query}
+
+Answer:"""`,
+      JSON.stringify([
+        "Reuse the cosine similarity and nearest-neighbor logic from earlier challenges",
+        "Look up each retrieved doc_id in the documents dictionary to get the text",
+        "Format using the same RAG prompt template: instruction + context + question + answer prefix",
+      ]),
+      "advanced",
+      1,
+    ]
+  );
+
+  for (const tc of [
+    {
+      input: [
+        "What is the return policy?",
+        [1, 0],
+        { d1: "Returns within 30 days.", d2: "Free shipping over $50." },
+        [["d1", [1, 0]], ["d2", [0, 1]]],
+        1,
+      ],
+      expected: "Answer the question based only on the following context:\n\nContext:\nReturns within 30 days.\n\nQuestion: What is the return policy?\n\nAnswer:",
+      desc: "Retrieve single most relevant document",
+      order: 1,
+    },
+    {
+      input: [
+        "Tell me about shipping.",
+        [0, 1],
+        { a: "Ships in 2 days.", b: "Returns OK.", c: "Express available." },
+        [["a", [0, 1]], ["b", [1, 0]], ["c", [0.1, 0.9]]],
+        2,
+      ],
+      expected: "Answer the question based only on the following context:\n\nContext:\nShips in 2 days.\n---\nExpress available.\n\nQuestion: Tell me about shipping.\n\nAnswer:",
+      desc: "Retrieve two most relevant documents",
+      order: 2,
+    },
+  ]) {
+    db.run(
+      `INSERT INTO test_cases (id, challenge_id, input, expected_output, description, order_index)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        nanoid(),
+        challenge6_5_1Id,
+        JSON.stringify(tc.input),
+        JSON.stringify(tc.expected),
+        tc.desc,
+        tc.order,
+      ]
+    );
+  }
+
+  // Challenge 6.5.2: Explain RAG vs fine-tuning
+  db.run(
+    `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      nanoid(),
+      concept6_5Id,
+      "explain",
+      "When should you use RAG vs fine-tuning?",
+      `Explain when to use Retrieval-Augmented Generation vs fine-tuning to customize an LLM for a specific domain.
+
+Consider these aspects:
+1. **Data freshness** — How often does the knowledge need to update?
+2. **Cost and complexity** — What's the setup and maintenance burden?
+3. **Accuracy and grounding** — Which approach is more factually reliable?
+4. **Use cases** — Give specific examples of when each approach is better.
+
+Write a clear comparison (3-5 paragraphs).`,
+      null,
+      `## Data Freshness
+
+RAG's biggest advantage is that updating knowledge requires no model retraining. When a company changes its return policy, you update the document in the knowledge base and the RAG system immediately reflects the change. Fine-tuning bakes knowledge into the model's weights during training, so updating information requires a new fine-tuning run — which means collecting new training data, running the training job, evaluating the result, and deploying the updated model. For domains where information changes frequently (support docs, product catalogs, policies), RAG is clearly superior.
+
+## Cost and Complexity
+
+RAG requires setting up a document ingestion pipeline, embedding model, vector store, and retrieval logic, but no GPU-intensive training. A basic RAG system can be built in a day with LangChain and FAISS. Fine-tuning requires curated training data (often hundreds to thousands of examples), GPU compute for training, and careful evaluation to avoid catastrophic forgetting or overfitting. However, once fine-tuned, the model runs without the retrieval overhead, making inference simpler and faster.
+
+## Accuracy and Grounding
+
+RAG produces answers grounded in actual documents, which means you can trace every answer back to its source — crucial for applications where accuracy and auditability matter (legal, medical, financial). Fine-tuned models generate from their learned weights, making it impossible to pinpoint where a specific answer came from. However, fine-tuned models can develop deeper understanding of domain-specific patterns, terminology, and reasoning, which RAG alone may miss if the right document isn't retrieved.
+
+## When to Use Each
+
+**Choose RAG** for: customer support bots (grounded in policy docs), internal knowledge bases, research assistants, any application where you need citations, and domains where information updates frequently.
+
+**Choose fine-tuning** for: changing the model's style or tone (e.g., writing like a specific brand), teaching new skills or reasoning patterns (e.g., code review, medical diagnosis), reducing latency (no retrieval step), and tasks where the full domain context is needed rather than specific document passages.
+
+**Combine both** for the best results: fine-tune a model for your domain's style and reasoning, then use RAG to provide it with specific, up-to-date facts. This hybrid approach is increasingly common in production systems.`,
+      JSON.stringify([
+        "Think about what happens when your company updates its refund policy — which approach handles that more easily?",
+        "Fine-tuning trains knowledge into weights; RAG looks it up at query time",
+        "Can you always find the right document with retrieval? What if the answer requires reasoning across many documents?",
+      ]),
+      "advanced",
+      2,
+    ]
+  );
+
   console.log("Database seeded successfully!");
-  console.log("- 5 lessons");
-  console.log("- 12 concepts");
-  console.log("- 14 challenges (now in Python!)");
+  console.log("- 6 lessons");
+  console.log("- 17 concepts");
+  console.log("- 26 challenges");
 }
 
 seed();
