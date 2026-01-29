@@ -11,7 +11,7 @@ import {
 
 export interface AdminDashboardStats {
   lessonCount: number;
-  vocabularyTermCount: number;
+  vocabularyCount: number;
   challengeCount: number;
 }
 
@@ -20,7 +20,7 @@ export function getAdminDashboardStats(): AdminDashboardStats {
     .query<{ count: number }, []>("SELECT COUNT(*) as count FROM lessons")
     .get()?.count ?? 0;
 
-  const vocabularyTermCount = db
+  const vocabularyCount = db
     .query<{ count: number }, []>("SELECT COUNT(*) as count FROM vocabulary_terms")
     .get()?.count ?? 0;
 
@@ -30,7 +30,7 @@ export function getAdminDashboardStats(): AdminDashboardStats {
 
   return {
     lessonCount,
-    vocabularyTermCount,
+    vocabularyCount,
     challengeCount,
   };
 }
