@@ -107,7 +107,7 @@ function DeleteConfirmation({
 
 export function VocabularyListPage() {
   const { data: terms, isLoading: termsLoading, error: termsError } = useAdminVocabularyTerms();
-  const { data: lessons, isLoading: lessonsLoading } = useAdminLessons();
+  const { data: lessons } = useAdminLessons();
   const deleteMutation = useDeleteVocabularyTerm();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -147,11 +147,14 @@ export function VocabularyListPage() {
     }
   };
 
-  const isLoading = termsLoading || lessonsLoading;
-
-  if (isLoading) {
+  if (!terms && termsLoading) {
     return (
-      <Box minH="60vh">
+      <Box
+        minH="60vh"
+        opacity={0}
+        animation="fadeIn 0.2s ease-in 0.2s forwards"
+        css={{ "@keyframes fadeIn": { to: { opacity: 1 } } }}
+      >
         <Center h="60vh">
           <Spinner size="xl" color="cyan.400" />
         </Center>
@@ -241,7 +244,7 @@ export function VocabularyListPage() {
                 </Box>
 
                 {/* Lesson Filter */}
-                <Box minW="180px">
+                <Box w="220px">
                   <NativeSelect.Root>
                     <NativeSelect.Field
                       value={lessonFilter}
@@ -312,7 +315,7 @@ export function VocabularyListPage() {
             </Card.Root>
           ) : (
             <Card.Root bg="gray.900" borderColor="gray.800" borderWidth="1px" overflow="hidden">
-              <Table.Root size="sm">
+              <Table.Root size="sm" variant="outline" bg="gray.900">
                 <Table.Header>
                   <Table.Row bg="gray.800">
                     <Table.ColumnHeader color="gray.400" py={3}>

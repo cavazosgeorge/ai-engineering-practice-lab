@@ -9,10 +9,13 @@ export const adminKeys = {
   vocabularyTerm: (id: string) => [...adminKeys.all, "vocabulary-terms", id] as const,
 };
 
+const ADMIN_STALE_TIME = 30_000; // 30s — admin data changes infrequently
+
 export function useAdminStats() {
   return useQuery({
     queryKey: adminKeys.stats(),
     queryFn: adminApi.fetchAdminStats,
+    staleTime: ADMIN_STALE_TIME,
   });
 }
 
@@ -20,6 +23,7 @@ export function useAdminLessons() {
   return useQuery({
     queryKey: adminKeys.lessons(),
     queryFn: adminApi.fetchAdminLessons,
+    staleTime: ADMIN_STALE_TIME,
   });
 }
 
@@ -27,6 +31,7 @@ export function useAdminVocabularyTerms() {
   return useQuery({
     queryKey: adminKeys.vocabularyTerms(),
     queryFn: adminApi.fetchAdminVocabularyTerms,
+    staleTime: ADMIN_STALE_TIME,
   });
 }
 
@@ -35,6 +40,7 @@ export function useAdminVocabularyTerm(id: string) {
     queryKey: adminKeys.vocabularyTerm(id),
     queryFn: () => adminApi.fetchAdminVocabularyTerm(id),
     enabled: !!id,
+    staleTime: ADMIN_STALE_TIME,
   });
 }
 
@@ -65,7 +71,23 @@ export function useDeleteVocabularyTerm() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: adminApi.deleteVocabularyTerm,
-    onSuccess: () => {
+    onMutate: async (deletedId) => {
+      await queryClient.cancelQueries({ queryKey: adminKeys.vocabularyTerms() });
+      const previous = queryClient.getQueryData<adminApi.AdminVocabularyTerm[]>(
+        adminKeys.vocabularyTerms()
+      );
+      queryClient.setQueryData<adminApi.AdminVocabularyTerm[]>(
+        adminKeys.vocabularyTerms(),
+        (old) => old?.filter((t) => t.id !== deletedId)
+      );
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(adminKeys.vocabularyTerms(), context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.vocabularyTerms() });
       queryClient.invalidateQueries({ queryKey: adminKeys.stats() });
     },

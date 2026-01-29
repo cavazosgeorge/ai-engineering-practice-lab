@@ -7,7 +7,13 @@ export function ProtectedRoute() {
 
   if (isPending) {
     return (
-      <Box minH="100vh" bg="gray.950">
+      <Box
+        minH="100vh"
+        bg="gray.950"
+        opacity={0}
+        animation="fadeIn 0.2s ease-in 0.2s forwards"
+        css={{ "@keyframes fadeIn": { to: { opacity: 1 } } }}
+      >
         <Center h="100vh">
           <Spinner size="xl" color="cyan.400" />
         </Center>
