@@ -23,6 +23,7 @@ import {
   useCreateVocabularyTerm,
   useUpdateVocabularyTerm,
 } from "../../hooks/useAdmin";
+import type { AdminLesson, AdminVocabularyTerm } from "../../services/admin-api";
 
 interface FormData {
   lesson_id: string;
@@ -38,15 +39,55 @@ interface FormErrors {
   definition?: string;
 }
 
+// ============================================
+// Outer component: handles data loading
+// ============================================
+
 export function VocabularyFormPage() {
   const { termId } = useParams<{ termId: string }>();
-  const navigate = useNavigate();
   const isEditMode = !!termId;
 
   const { data: lessons, isLoading: lessonsLoading } = useAdminLessons();
-  const { data: existingTerm } = useAdminVocabularyTerm(
-    termId || ""
+  const { data: existingTerm } = useAdminVocabularyTerm(termId || "");
+
+  if ((!lessons && lessonsLoading) || (isEditMode && !existingTerm)) {
+    return (
+      <Box
+        minH="60vh"
+        opacity={0}
+        animation="fadeIn 0.2s ease-in 0.2s forwards"
+        css={{ "@keyframes fadeIn": { to: { opacity: 1 } } }}
+      >
+        <Center h="60vh">
+          <Spinner size="xl" color="cyan.400" />
+        </Center>
+      </Box>
+    );
+  }
+
+  return (
+    <VocabularyForm
+      lessons={lessons ?? []}
+      existingTerm={existingTerm}
+      isEditMode={isEditMode}
+      termId={termId}
+    />
   );
+}
+
+// ============================================
+// Inner component: form with guaranteed data
+// ============================================
+
+interface VocabularyFormProps {
+  lessons: AdminLesson[];
+  existingTerm?: AdminVocabularyTerm;
+  isEditMode: boolean;
+  termId?: string;
+}
+
+function VocabularyForm({ lessons, existingTerm, isEditMode, termId }: VocabularyFormProps) {
+  const navigate = useNavigate();
   const createMutation = useCreateVocabularyTerm();
   const updateMutation = useUpdateVocabularyTerm();
 
@@ -137,28 +178,13 @@ export function VocabularyFormPage() {
           difficulty: formData.difficulty,
         });
       }
-      navigate("/admin/dashboard");
+      navigate("/admin/dashboard?tab=vocabulary");
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "An error occurred");
     }
   };
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
-
-  if (!lessons && lessonsLoading) {
-    return (
-      <Box
-        minH="60vh"
-        opacity={0}
-        animation="fadeIn 0.2s ease-in 0.2s forwards"
-        css={{ "@keyframes fadeIn": { to: { opacity: 1 } } }}
-      >
-        <Center h="60vh">
-          <Spinner size="xl" color="cyan.400" />
-        </Center>
-      </Box>
-    );
-  }
 
   return (
     <Container maxW="container.md" py={12}>
@@ -221,7 +247,7 @@ export function VocabularyFormPage() {
                       color="white"
                     >
                       <option value="">Select a lesson</option>
-                      {(lessons ?? []).map((lesson) => (
+                      {lessons.map((lesson) => (
                         <option key={lesson.id} value={lesson.id}>
                           {lesson.title}
                         </option>
@@ -319,7 +345,6 @@ export function VocabularyFormPage() {
                           <Box
                             key={level}
                             as="button"
-                            type="button"
                             px={4}
                             py={2}
                             borderRadius="lg"
@@ -332,9 +357,10 @@ export function VocabularyFormPage() {
                             cursor="pointer"
                             transition="all 0.2s"
                             _hover={{ bg: "gray.700", borderColor: "gray.600" }}
-                            onClick={() =>
-                              setFormData((prev) => ({ ...prev, difficulty: level }))
-                            }
+                            onClick={(e: React.MouseEvent) => {
+                              e.preventDefault();
+                              setFormData((prev) => ({ ...prev, difficulty: level }));
+                            }}
                           >
                             {level.charAt(0).toUpperCase() + level.slice(1)}
                           </Box>
@@ -351,7 +377,7 @@ export function VocabularyFormPage() {
                     variant="ghost"
                     color="gray.400"
                     _hover={{ color: "white", bg: "gray.800" }}
-                    onClick={() => navigate("/admin/dashboard")}
+                    onClick={() => navigate("/admin/dashboard?tab=vocabulary")}
                     disabled={isSaving}
                   >
                     Cancel

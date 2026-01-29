@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import {
   Box,
   Container,
@@ -9,10 +9,8 @@ import {
   HStack,
   SimpleGrid,
   Card,
-  Table,
   Input,
   Button,
-  Badge,
   Spinner,
   Center,
   NativeSelect,
@@ -135,12 +133,6 @@ function DashboardTab() {
 // ============================================
 // Vocabulary Tab
 // ============================================
-
-const DIFFICULTY_COLORS: Record<string, string> = {
-  beginner: "green",
-  intermediate: "yellow",
-  advanced: "red",
-};
 
 interface DeleteConfirmationProps {
   term: AdminVocabularyTerm;
@@ -388,67 +380,196 @@ function VocabularyTab() {
             </Card.Body>
           </Card.Root>
         ) : (
-          <Card.Root bg="gray.900" borderColor="gray.800" borderWidth="1px" overflow="hidden">
-            <Table.Root size="sm" variant="outline" bg="gray.900">
-              <Table.Header>
-                <Table.Row bg="gray.800">
-                  <Table.ColumnHeader color="gray.400" py={3}>Term</Table.ColumnHeader>
-                  <Table.ColumnHeader color="gray.400" py={3}>Definition</Table.ColumnHeader>
-                  <Table.ColumnHeader color="gray.400" py={3}>Lesson</Table.ColumnHeader>
-                  <Table.ColumnHeader color="gray.400" py={3}>Difficulty</Table.ColumnHeader>
-                  <Table.ColumnHeader color="gray.400" py={3} textAlign="right">Actions</Table.ColumnHeader>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {filteredTerms.map((term) => (
-                  <Table.Row
-                    key={term.id}
-                    _hover={{ bg: "gray.800/50" }}
-                    borderBottom="1px solid"
-                    borderColor="gray.800"
+          <Box
+            bg="gray.900"
+            borderRadius="lg"
+            border="1px solid"
+            borderColor="gray.800"
+            overflow="hidden"
+          >
+            {/* Table header */}
+            <Box
+              px={5}
+              py={3}
+              bg="gray.800/60"
+              borderBottom="1px solid"
+              borderColor="gray.800"
+            >
+              <HStack>
+                <Box flex="1.2">
+                  <Text
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    color="gray.500"
+                    letterSpacing="0.08em"
+                    textTransform="uppercase"
+                    fontFamily="'JetBrains Mono', monospace"
                   >
-                    <Table.Cell py={3}>
-                      <Text color="white" fontWeight="medium">{term.term}</Text>
-                    </Table.Cell>
-                    <Table.Cell py={3} maxW="300px">
-                      <Text color="gray.400" lineClamp={2}>{term.definition}</Text>
-                    </Table.Cell>
-                    <Table.Cell py={3}>
-                      <Badge colorPalette="cyan" variant="subtle">{term.lesson_title}</Badge>
-                    </Table.Cell>
-                    <Table.Cell py={3}>
-                      <Badge colorPalette={DIFFICULTY_COLORS[term.difficulty]} variant="subtle">
+                    Term
+                  </Text>
+                </Box>
+                <Box flex="2">
+                  <Text
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    color="gray.500"
+                    letterSpacing="0.08em"
+                    textTransform="uppercase"
+                    fontFamily="'JetBrains Mono', monospace"
+                  >
+                    Definition
+                  </Text>
+                </Box>
+                <Box flex="1">
+                  <Text
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    color="gray.500"
+                    letterSpacing="0.08em"
+                    textTransform="uppercase"
+                    fontFamily="'JetBrains Mono', monospace"
+                  >
+                    Lesson
+                  </Text>
+                </Box>
+                <Box w="110px">
+                  <Text
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    color="gray.500"
+                    letterSpacing="0.08em"
+                    textTransform="uppercase"
+                    fontFamily="'JetBrains Mono', monospace"
+                  >
+                    Level
+                  </Text>
+                </Box>
+                <Box w="80px" textAlign="right">
+                  <Text
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    color="gray.500"
+                    letterSpacing="0.08em"
+                    textTransform="uppercase"
+                    fontFamily="'JetBrains Mono', monospace"
+                  >
+                    Actions
+                  </Text>
+                </Box>
+              </HStack>
+            </Box>
+
+            {/* Table rows */}
+            {filteredTerms.map((term, index) => (
+              <Box
+                key={term.id}
+                px={5}
+                py={3.5}
+                borderBottom={index < filteredTerms.length - 1 ? "1px solid" : "none"}
+                borderColor="gray.800/60"
+                transition="all 0.15s ease"
+                cursor="default"
+                position="relative"
+                _hover={{
+                  bg: "gray.800/40",
+                }}
+                css={{
+                  "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: "2px",
+                    bg: "transparent",
+                    transition: "background 0.15s ease",
+                  },
+                  "&:hover::before": {
+                    background: "var(--chakra-colors-cyan-500)",
+                  },
+                }}
+              >
+                <HStack align="center">
+                  <Box flex="1.2">
+                    <Text
+                      color="cyan.300"
+                      fontWeight="medium"
+                      fontSize="sm"
+                      fontFamily="'JetBrains Mono', monospace"
+                    >
+                      {term.term}
+                    </Text>
+                  </Box>
+                  <Box flex="2">
+                    <Text color="gray.400" fontSize="sm" lineClamp={1}>
+                      {term.definition}
+                    </Text>
+                  </Box>
+                  <Box flex="1">
+                    <Text
+                      color="gray.500"
+                      fontSize="xs"
+                      fontFamily="'JetBrains Mono', monospace"
+                    >
+                      {term.lesson_title}
+                    </Text>
+                  </Box>
+                  <Box w="110px">
+                    <HStack gap={2}>
+                      <Box
+                        w="6px"
+                        h="6px"
+                        borderRadius="full"
+                        bg={
+                          term.difficulty === "beginner"
+                            ? "green.400"
+                            : term.difficulty === "intermediate"
+                            ? "yellow.400"
+                            : "red.400"
+                        }
+                        flexShrink={0}
+                      />
+                      <Text
+                        color="gray.500"
+                        fontSize="xs"
+                        fontFamily="'JetBrains Mono', monospace"
+                        textTransform="capitalize"
+                      >
                         {term.difficulty}
-                      </Badge>
-                    </Table.Cell>
-                    <Table.Cell py={3}>
-                      <HStack gap={2} justify="flex-end">
-                        <RouterLink to={`/admin/vocabulary/${term.id}/edit`}>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            color="gray.400"
-                            _hover={{ color: "white", bg: "gray.700" }}
-                          >
-                            <Box fontSize="16px"><LuPencil /></Box>
-                          </Button>
-                        </RouterLink>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          color="gray.400"
-                          _hover={{ color: "red.400", bg: "gray.700" }}
-                          onClick={() => setTermToDelete(term)}
+                      </Text>
+                    </HStack>
+                  </Box>
+                  <Box w="80px">
+                    <HStack gap={1} justify="flex-end">
+                      <RouterLink to={`/admin/vocabulary/${term.id}/edit`}>
+                        <Box
+                          as="button"
+                          p={1.5}
+                          borderRadius="md"
+                          color="gray.600"
+                          transition="all 0.15s ease"
+                          _hover={{ color: "cyan.400", bg: "gray.800" }}
                         >
-                          <Box fontSize="16px"><LuTrash2 /></Box>
-                        </Button>
-                      </HStack>
-                    </Table.Cell>
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table.Root>
-          </Card.Root>
+                          <Box fontSize="14px"><LuPencil /></Box>
+                        </Box>
+                      </RouterLink>
+                      <Box
+                        as="button"
+                        p={1.5}
+                        borderRadius="md"
+                        color="gray.600"
+                        transition="all 0.15s ease"
+                        _hover={{ color: "red.400", bg: "gray.800" }}
+                        onClick={() => setTermToDelete(term)}
+                      >
+                        <Box fontSize="14px"><LuTrash2 /></Box>
+                      </Box>
+                    </HStack>
+                  </Box>
+                </HStack>
+              </Box>
+            ))}
+          </Box>
         )}
       </VStack>
     </>
@@ -460,6 +581,13 @@ function VocabularyTab() {
 // ============================================
 
 export function AdminDashboardPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "dashboard";
+
+  const handleTabChange = (details: { value: string }) => {
+    setSearchParams(details.value === "dashboard" ? {} : { tab: details.value }, { replace: true });
+  };
+
   return (
     <Container maxW="container.xl" py={12}>
       <VStack gap={8} align="stretch">
@@ -477,7 +605,7 @@ export function AdminDashboardPage() {
           </Text>
         </Box>
 
-        <Tabs.Root defaultValue="dashboard" variant="line">
+        <Tabs.Root value={activeTab} onValueChange={handleTabChange} variant="line">
           <Tabs.List borderColor="gray.800">
             <Tabs.Trigger
               value="dashboard"
