@@ -296,6 +296,27 @@ This approach ensures visualizations are educationally valuable by mapping direc
   - State persistence (loads saved explanation on return)
 - Model answers stored in `solution_code` field and returned via API for explain challenges
 
+### Session: Project 2 RAG Lesson Content
+
+Added Lesson 6 (Retrieval-Augmented Generation) based on bytebyteai cohort project_2 (RAG chatbot). Content extracted from the project_2 Jupyter notebook which teaches building a customer-support chatbot with document ingestion, chunking, embeddings, FAISS vector search, and LangChain RAG pipeline.
+
+**Lesson Content (server/scripts/seed-lessons.ts):**
+- Lesson 6: "Retrieval-Augmented Generation (RAG)", slug: `rag`, order_index: 6
+- Concept 6.1: Text Chunking (3 challenges: fixed-size chunking, overlapping chunking, explain why chunking matters)
+- Concept 6.2: Embeddings & Similarity (3 challenges: dot product, cosine similarity, explain cosine for text)
+- Concept 6.3: Nearest Neighbor Retrieval (2 challenges: k-NN search, explain vector DB scaling)
+- Concept 6.4: RAG Prompt Engineering (2 challenges: RAG prompt builder, conversational RAG prompt with history)
+- Concept 6.5: The RAG Pipeline (2 challenges: simplified RAG pipeline, explain RAG vs fine-tuning)
+- Totals: 5 concepts, 12 challenges (8 implement + 4 explain)
+
+**Vocabulary (server/scripts/seed-vocabulary.ts):**
+- 10 new RAG terms: RAG, text chunking, chunk overlap, text embedding, vector store, cosine similarity, semantic search, retriever, grounding, hallucination
+- Total vocabulary: 52 terms across 6 lessons
+
+**All challenges are pure Python** (Pyodide-compatible, only `import math`). Challenges teach the algorithms behind RAG, not library usage.
+
+**Branch:** feature/project_2 (from development)
+
 ### Previous Sessions
 - Migrated code challenges from JavaScript to Python (Pyodide)
 - Added expandable test results (click to see passed test details)
@@ -323,7 +344,7 @@ The app has three challenge types:
 
 **Vocabulary System:**
 - Flashcard and quiz modes with spaced repetition (SM-2)
-- 42 AI/ML vocabulary terms seeded across 5 lessons
+- 52 AI/ML vocabulary terms seeded across 6 lessons
 - Keyboard navigation (Space to flip, 1-4 for options, Arrow keys)
 - Progress tracking per learning mode (flashcard vs quiz)
 - Integrated with lesson detail pages ("Study Vocabulary" button)

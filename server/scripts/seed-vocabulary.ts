@@ -382,6 +382,95 @@ function seedVocabulary() {
         },
       ],
     },
+
+    // ============================================
+    // LESSON 6: RETRIEVAL-AUGMENTED GENERATION (RAG)
+    // ============================================
+    {
+      slug: "rag",
+      terms: [
+        {
+          term: "RAG",
+          definition:
+            "Retrieval-Augmented Generation, a technique that combines document retrieval with LLM generation to produce grounded answers",
+          context:
+            "RAG systems retrieve relevant documents from a knowledge base and inject them into the LLM's prompt, reducing hallucination.",
+          difficulty: "beginner",
+        },
+        {
+          term: "text chunking",
+          definition:
+            "Splitting large documents into smaller, overlapping pieces for embedding and retrieval",
+          context:
+            "A typical RAG system chunks documents into 300-1000 character pieces with 50-200 character overlap.",
+          difficulty: "beginner",
+        },
+        {
+          term: "chunk overlap",
+          definition:
+            "Shared characters between consecutive chunks to preserve context at boundaries",
+          context:
+            "Without overlap, a sentence split across two chunks would be incomplete in both, hurting retrieval quality.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "text embedding",
+          definition:
+            "A dense vector representation of text that captures its semantic meaning",
+          context:
+            "Models like gte-small produce 384-dimensional vectors where similar texts are close together in vector space.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "vector store",
+          definition:
+            "A database optimized for storing and searching vector embeddings using similarity metrics",
+          context:
+            "FAISS, Pinecone, and ChromaDB are popular vector stores used in RAG systems for fast nearest-neighbor search.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "cosine similarity",
+          definition:
+            "A similarity metric that measures the angle between two vectors, ignoring their magnitude",
+          context:
+            "Cosine similarity of 1.0 means identical direction (most similar), 0.0 means perpendicular (unrelated).",
+          difficulty: "intermediate",
+        },
+        {
+          term: "semantic search",
+          definition:
+            "Finding documents by meaning rather than exact keyword matching",
+          context:
+            "A semantic search for 'refund policy' would also match 'return guidelines' because the meanings are similar.",
+          difficulty: "beginner",
+        },
+        {
+          term: "retriever",
+          definition:
+            "A component that takes a query and returns the most relevant documents from a knowledge base",
+          context:
+            "In LangChain, a retriever wraps a vector store and returns the top-k most similar documents for a given query.",
+          difficulty: "beginner",
+        },
+        {
+          term: "grounding",
+          definition:
+            "Constraining an LLM's responses to information from provided source documents",
+          context:
+            "RAG prompts include instructions like 'Answer only from the provided context' to ground the LLM in retrieved facts.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "hallucination",
+          definition:
+            "When an LLM generates plausible-sounding but factually incorrect information",
+          context:
+            "RAG reduces hallucination by providing the LLM with actual source documents instead of relying solely on trained knowledge.",
+          difficulty: "beginner",
+        },
+      ],
+    },
   ];
 
   // Insert terms for each lesson
