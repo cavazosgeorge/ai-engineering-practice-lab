@@ -2,54 +2,70 @@
 
 ## What Was Done
 
-### Session: Admin CRM Implementation
+### Session: Admin CRM Implementation & Polish
 
-Implemented a complete Admin CRM for managing vocabulary terms with better-auth authentication.
+Implemented a complete Admin CRM for managing vocabulary terms with better-auth authentication, then iterated on UI polish, performance, and bug fixes across multiple rounds.
 
 **Backend (server/):**
-- `server/auth.ts` - better-auth configuration with database adapter
-- `server/middleware/auth.ts` - requireAuth + requireAdmin middleware functions
-- `server/services/admin-service.ts` - Vocabulary CRUD functions (create, read, update, delete)
-- `server/routes/admin.ts` - Admin API routes (protected with role check)
-- `server/scripts/seed-admin.ts` - Admin user seed script
+- `server/auth.ts` - better-auth configuration with SQLite adapter, basePath `/api/auth`
+- `server/middleware/auth.ts` - requireAuth + requireAdmin Hono middleware
+- `server/services/admin-service.ts` - Vocabulary CRUD + dashboard stats
+- `server/routes/admin.ts` - Admin API routes (protected with role check, returns arrays directly)
+- `server/scripts/seed-admin.ts` - Idempotent admin user seed script
 - `server/db/migrations/003_auth_schema.sql` - Auth tables (user, session, account, verification)
-- `server/index.ts` - Updated with auth handler + admin routes
+- `server/index.ts` - Updated with auth handler (GET/POST/OPTIONS on `/api/auth/*`) + admin routes
 
 **Frontend (src/):**
-- `src/lib/auth-client.ts` - better-auth client
-- `src/services/admin-api.ts` - Admin API functions
-- `src/hooks/useAdmin.ts` - TanStack Query hooks for admin data
-- `src/components/admin/ProtectedRoute.tsx` - Route guard (redirects to login if not admin)
-- `src/components/admin/AdminLayout.tsx` - Admin shell with sidebar navigation
-- `src/pages/admin/AdminLoginPage.tsx` - Login page
-- `src/pages/admin/AdminDashboardPage.tsx` - Dashboard with stats
-- `src/pages/admin/VocabularyListPage.tsx` - Vocabulary term list with search/filter
-- `src/pages/admin/VocabularyFormPage.tsx` - Create/edit form for vocabulary terms
-- `src/App.tsx` - Updated with admin routes
+- `src/lib/auth-client.ts` - better-auth React client with admin plugin
+- `src/services/admin-api.ts` - Admin API functions with `credentials: "include"`
+- `src/hooks/useAdmin.ts` - TanStack Query hooks with 30s staleTime, optimistic delete with rollback
+- `src/components/admin/ProtectedRoute.tsx` - Route guard with delayed spinner
+- `src/components/admin/AdminLayout.tsx` - Simplified navbar (gradient branding, Back to App, Logout)
+- `src/pages/admin/AdminLoginPage.tsx` - Standalone login page
+- `src/pages/admin/AdminDashboardPage.tsx` - Dashboard + Vocabulary tabs with terminal-styled data table
+- `src/pages/admin/VocabularyFormPage.tsx` - Split into loader + form components for correct data initialization
+- `src/pages/admin/VocabularyListPage.tsx` - Standalone vocabulary list (unused, content in dashboard tabs)
+- `src/App.tsx` - Admin routes with VocabularyFormEdit key-reset wrapper
 
 **Admin Routes:**
-- `/admin` - Login page
-- `/admin/dashboard` - Admin dashboard (protected)
-- `/admin/vocabulary` - Vocabulary list (protected)
+- `/admin` - Login page (standalone, no layout)
+- `/admin/dashboard` - Admin dashboard with tabs (protected)
+- `/admin/dashboard?tab=vocabulary` - Vocabulary tab (URL-persisted)
 - `/admin/vocabulary/new` - Create term (protected)
 - `/admin/vocabulary/:termId/edit` - Edit term (protected)
 
 **API Endpoints:**
-- `POST/GET /api/auth/**` - better-auth authentication endpoints
-- `GET /api/admin/vocabulary` - List all vocabulary terms
-- `GET /api/admin/vocabulary/:id` - Get single term
-- `POST /api/admin/vocabulary` - Create term
-- `PUT /api/admin/vocabulary/:id` - Update term
-- `DELETE /api/admin/vocabulary/:id` - Delete term
+- `GET/POST/OPTIONS /api/auth/*` - better-auth authentication endpoints
+- `GET /api/admin/vocabulary/terms` - List all vocabulary terms
+- `GET /api/admin/vocabulary/terms/:id` - Get single term
+- `POST /api/admin/vocabulary/terms` - Create term
+- `PUT /api/admin/vocabulary/terms/:id` - Update term
+- `DELETE /api/admin/vocabulary/terms/:id` - Delete term
 - `GET /api/admin/stats` - Dashboard statistics
+- `GET /api/admin/lessons` - List lessons for dropdowns
 
 **Admin Credentials:** admin@admin.com / admin123 (created via `bun run db:seed-admin`)
 
-**Verification Results:**
-- TypeScript: Passes (`bunx tsc --noEmit`)
-- Build: Passes (`bun run build`)
-- Tests: All 337 tests pass (`bun test`)
-- Note: ESLint not configured in project (no eslint.config.js)
+**Key Bug Fixes:**
+- Auth 404s: Added `basePath`, wildcard `*`, OPTIONS method, async handler
+- Icon ref warnings: Replaced Chakra `<Icon>` with `<Box>` wrapper for react-icons
+- `terms.filter` crash: Backend returns arrays directly, not wrapped objects
+- Empty edit form: Split VocabularyFormPage into loader + form so useState initializer sees data
+- Tab persistence: URL search params (`?tab=vocabulary`) instead of ephemeral location.state
+- Dropdown layout shift: Fixed width (`w="220px"`) on async-populated selects
+
+**Performance:**
+- 30s staleTime on all admin queries
+- Optimistic delete with rollback for vocabulary terms
+- Initial-load-only spinners (`!data && isLoading`)
+- Delayed skeleton pattern (200ms CSS animation delay)
+
+**UI Design:**
+- Terminal-styled vocabulary table: monospace headers, cyan term names, colored dot difficulty indicators, hover left-edge cyan accent
+- Difficulty selector uses Box-as-button pattern matching quiz answer style
+- Tabs for Dashboard/Vocabulary navigation (replaced header nav links)
+
+**Merged:** PR #6 → main
 
 ### Session: Comprehensive Test Suite Implementation
 
@@ -295,9 +311,13 @@ The app has three challenge types:
 3. **compare** / **multiple_choice** - Not yet implemented
 
 **Admin CRM:**
-- Admin authentication via better-auth
-- Vocabulary term management (CRUD)
-- Protected routes with role-based access
+- Admin authentication via better-auth (email/password, cookie sessions)
+- Vocabulary term CRUD with search, filter, delete confirmation
+- Terminal-styled data table with monospace headers and colored dot difficulty indicators
+- Dashboard + Vocabulary tabs with URL-persisted tab state (`?tab=vocabulary`)
+- Split form component pattern: loader waits for async data, form mounts with data ready
+- Optimistic delete with rollback, 30s staleTime on queries
+- Protected routes with role-based access (requireAdmin middleware)
 - Admin user: admin@admin.com / admin123
 - Seed command: `bun run db:seed-admin`
 
@@ -343,9 +363,13 @@ The app has three challenge types:
 - Execution visualization for passed tests (uses framer-motion animations)
 - Vocabulary system with flashcard/quiz modes and SM-2 tracking
 - Vocabulary seed script (`bun run db:seed-vocabulary`)
-- Admin CRM with better-auth authentication
+- Admin CRM with better-auth authentication (`basePath: "/api/auth"` is critical)
 - Admin seed script (`bun run db:seed-admin`)
 - Admin routes under /admin/* require authentication
+- Admin tab state persisted via URL search params (not location.state)
+- VocabularyFormPage uses loader/form split pattern (don't merge back into one component)
+- Admin API routes return arrays directly (not wrapped in objects)
+- Use `<Box>` wrapper for react-icons, NOT Chakra `<Icon>` (causes ref warnings)
 - Performance patterns:
   - `!data && isLoading` for loading states (not just `isLoading`)
   - Delayed skeleton pattern: `opacity={0}` + `animation="fadeIn 0.2s ease-in 0.2s forwards"`
