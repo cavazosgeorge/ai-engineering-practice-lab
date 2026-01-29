@@ -2,6 +2,95 @@
 
 ## What Was Done
 
+### Session: Admin CRM Implementation
+
+Implemented a complete Admin CRM for managing vocabulary terms with better-auth authentication.
+
+**Backend (server/):**
+- `server/auth.ts` - better-auth configuration with database adapter
+- `server/middleware/auth.ts` - requireAuth + requireAdmin middleware functions
+- `server/services/admin-service.ts` - Vocabulary CRUD functions (create, read, update, delete)
+- `server/routes/admin.ts` - Admin API routes (protected with role check)
+- `server/scripts/seed-admin.ts` - Admin user seed script
+- `server/db/migrations/003_auth_schema.sql` - Auth tables (user, session, account, verification)
+- `server/index.ts` - Updated with auth handler + admin routes
+
+**Frontend (src/):**
+- `src/lib/auth-client.ts` - better-auth client
+- `src/services/admin-api.ts` - Admin API functions
+- `src/hooks/useAdmin.ts` - TanStack Query hooks for admin data
+- `src/components/admin/ProtectedRoute.tsx` - Route guard (redirects to login if not admin)
+- `src/components/admin/AdminLayout.tsx` - Admin shell with sidebar navigation
+- `src/pages/admin/AdminLoginPage.tsx` - Login page
+- `src/pages/admin/AdminDashboardPage.tsx` - Dashboard with stats
+- `src/pages/admin/VocabularyListPage.tsx` - Vocabulary term list with search/filter
+- `src/pages/admin/VocabularyFormPage.tsx` - Create/edit form for vocabulary terms
+- `src/App.tsx` - Updated with admin routes
+
+**Admin Routes:**
+- `/admin` - Login page
+- `/admin/dashboard` - Admin dashboard (protected)
+- `/admin/vocabulary` - Vocabulary list (protected)
+- `/admin/vocabulary/new` - Create term (protected)
+- `/admin/vocabulary/:termId/edit` - Edit term (protected)
+
+**API Endpoints:**
+- `POST/GET /api/auth/**` - better-auth authentication endpoints
+- `GET /api/admin/vocabulary` - List all vocabulary terms
+- `GET /api/admin/vocabulary/:id` - Get single term
+- `POST /api/admin/vocabulary` - Create term
+- `PUT /api/admin/vocabulary/:id` - Update term
+- `DELETE /api/admin/vocabulary/:id` - Delete term
+- `GET /api/admin/stats` - Dashboard statistics
+
+**Admin Credentials:** admin@admin.com / admin123 (created via `bun run db:seed-admin`)
+
+**Verification Results:**
+- TypeScript: Passes (`bunx tsc --noEmit`)
+- Build: Passes (`bun run build`)
+- Tests: All 337 tests pass (`bun test`)
+- Note: ESLint not configured in project (no eslint.config.js)
+
+### Session: Comprehensive Test Suite Implementation
+
+Implemented full test coverage across all application layers using Bun's built-in testing module (`bun:test`).
+
+**Test Infrastructure:**
+- `server/__tests__/fixtures/` - Test database setup, mock data, seeding helpers
+- `src/__tests__/setup/` - React testing utilities, DOM setup, mock utilities
+- `bunfig.toml` - Bun test configuration with DOM preload
+
+**Backend Tests (197 tests):**
+- Unit tests for SM-2 spaced repetition algorithm and code validator
+- Database integration tests for migrations, schema constraints, cascade deletes
+- API route integration tests for all endpoints (lessons, challenges, progress, vocabulary)
+- Edge case tests for boundary conditions and input validation
+
+**Frontend Tests (140 tests):**
+- Service tests for API client and Python validator helpers
+- React component tests for VocabularyFlashcard, VocabularyQuiz, TestResults
+- Uses @testing-library/react with happy-dom
+
+**Test Scripts Added:**
+```bash
+bun test              # All tests (337 total)
+bun test:backend      # Backend only (197)
+bun test:frontend     # Frontend only (140)
+bun test:unit         # Unit tests
+bun test:integration  # Integration tests
+bun test:components   # React components
+bun test:edge         # Edge cases
+bun test:coverage     # With coverage
+bun test:watch        # Watch mode
+```
+
+**Dependencies Added:**
+- @testing-library/react, @testing-library/user-event, @testing-library/jest-dom
+- happy-dom, @happy-dom/global-registrator
+
+**Files Modified:**
+- `src/services/pythonValidator.ts` - Exported helper functions (deepEqual, pythonToJS, jsToPythonLiteral) for testing
+
 ### Session: Routing Fix & Repository Setup
 
 **Vocabulary Routing Fix:**
@@ -205,6 +294,13 @@ The app has three challenge types:
 2. **explain** - Now has self-assessment UI with model answer reveal
 3. **compare** / **multiple_choice** - Not yet implemented
 
+**Admin CRM:**
+- Admin authentication via better-auth
+- Vocabulary term management (CRUD)
+- Protected routes with role-based access
+- Admin user: admin@admin.com / admin123
+- Seed command: `bun run db:seed-admin`
+
 **Vocabulary System:**
 - Flashcard and quiz modes with spaced repetition (SM-2)
 - 42 AI/ML vocabulary terms seeded across 5 lessons
@@ -238,6 +334,7 @@ The app has three challenge types:
 
 ## Don't Break
 
+- Test suite: 337 tests must pass (`bun test`) - run before committing
 - Git workflow: `development` → `feature/xyz` → PR → `main` (protected)
 - Pyodide Python execution (runs in browser)
 - Session-based progress tracking (localStorage sessionId)
@@ -246,6 +343,9 @@ The app has three challenge types:
 - Execution visualization for passed tests (uses framer-motion animations)
 - Vocabulary system with flashcard/quiz modes and SM-2 tracking
 - Vocabulary seed script (`bun run db:seed-vocabulary`)
+- Admin CRM with better-auth authentication
+- Admin seed script (`bun run db:seed-admin`)
+- Admin routes under /admin/* require authentication
 - Performance patterns:
   - `!data && isLoading` for loading states (not just `isLoading`)
   - Delayed skeleton pattern: `opacity={0}` + `animation="fadeIn 0.2s ease-in 0.2s forwards"`

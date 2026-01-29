@@ -4,10 +4,12 @@ import { logger } from "hono/logger";
 import { serveStatic } from "hono/bun";
 
 import { runMigrations } from "./db";
+import { auth } from "./auth";
 import lessonsRoutes from "./routes/lessons";
 import challengesRoutes from "./routes/challenges";
 import progressRoutes from "./routes/progress";
 import vocabularyRoutes from "./routes/vocabulary";
+import adminRoutes from "./routes/admin";
 
 // Run migrations on startup
 runMigrations();
@@ -27,11 +29,18 @@ app.use(
 // Health check
 app.get("/health", (c) => c.json({ status: "ok" }));
 
+// Auth handler - better-auth handles all auth routes
+app.on(["GET", "POST", "OPTIONS"], "/api/auth/*", async (c) => {
+  const response = await auth.handler(c.req.raw);
+  return response;
+});
+
 // API routes
 app.route("/api/lessons", lessonsRoutes);
 app.route("/api/challenges", challengesRoutes);
 app.route("/api/progress", progressRoutes);
 app.route("/api/vocabulary", vocabularyRoutes);
+app.route("/api/admin", adminRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === "production") {
