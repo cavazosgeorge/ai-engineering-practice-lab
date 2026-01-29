@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -44,35 +44,22 @@ export function VocabularyFormPage() {
   const isEditMode = !!termId;
 
   const { data: lessons, isLoading: lessonsLoading } = useAdminLessons();
-  const { data: existingTerm, isLoading: termLoading } = useAdminVocabularyTerm(
+  const { data: existingTerm } = useAdminVocabularyTerm(
     termId || ""
   );
   const createMutation = useCreateVocabularyTerm();
   const updateMutation = useUpdateVocabularyTerm();
 
-  const [formData, setFormData] = useState<FormData>({
-    lesson_id: "",
-    term: "",
-    definition: "",
-    context: "",
-    difficulty: "beginner",
-  });
+  const [formData, setFormData] = useState<FormData>(() => ({
+    lesson_id: existingTerm?.lesson_id ?? "",
+    term: existingTerm?.term ?? "",
+    definition: existingTerm?.definition ?? "",
+    context: existingTerm?.context ?? "",
+    difficulty: existingTerm?.difficulty ?? "beginner",
+  }));
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitError, setSubmitError] = useState("");
-
-  // Populate form when editing
-  useEffect(() => {
-    if (existingTerm) {
-      setFormData({
-        lesson_id: existingTerm.lesson_id,
-        term: existingTerm.term,
-        definition: existingTerm.definition,
-        context: existingTerm.context || "",
-        difficulty: existingTerm.difficulty,
-      });
-    }
-  }, [existingTerm]);
 
   const validateField = (name: keyof FormData, value: string): string | undefined => {
     switch (name) {
@@ -150,18 +137,22 @@ export function VocabularyFormPage() {
           difficulty: formData.difficulty,
         });
       }
-      navigate("/admin/vocabulary");
+      navigate("/admin/dashboard");
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "An error occurred");
     }
   };
 
-  const isLoading = lessonsLoading || (isEditMode && termLoading);
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
-  if (isLoading) {
+  if (!lessons && lessonsLoading) {
     return (
-      <Box minH="60vh">
+      <Box
+        minH="60vh"
+        opacity={0}
+        animation="fadeIn 0.2s ease-in 0.2s forwards"
+        css={{ "@keyframes fadeIn": { to: { opacity: 1 } } }}
+      >
         <Center h="60vh">
           <Spinner size="xl" color="cyan.400" />
         </Center>
@@ -320,28 +311,35 @@ export function VocabularyFormPage() {
                   <Field.Label color="gray.300" fontSize="sm">
                     Difficulty
                   </Field.Label>
-                  <HStack gap={4}>
+                  <HStack gap={3}>
                     {(["beginner", "intermediate", "advanced"] as const).map(
-                      (level) => (
-                        <Button
-                          key={level}
-                          type="button"
-                          size="sm"
-                          variant={formData.difficulty === level ? "solid" : "outline"}
-                          colorPalette={
-                            level === "beginner"
-                              ? "green"
-                              : level === "intermediate"
-                              ? "yellow"
-                              : "red"
-                          }
-                          onClick={() =>
-                            setFormData((prev) => ({ ...prev, difficulty: level }))
-                          }
-                        >
-                          {level.charAt(0).toUpperCase() + level.slice(1)}
-                        </Button>
-                      )
+                      (level) => {
+                        const isSelected = formData.difficulty === level;
+                        return (
+                          <Box
+                            key={level}
+                            as="button"
+                            type="button"
+                            px={4}
+                            py={2}
+                            borderRadius="lg"
+                            border="1px solid"
+                            borderColor={isSelected ? "cyan.500" : "gray.700"}
+                            bg={isSelected ? "gray.700" : "gray.800"}
+                            color="white"
+                            fontSize="sm"
+                            fontWeight="medium"
+                            cursor="pointer"
+                            transition="all 0.2s"
+                            _hover={{ bg: "gray.700", borderColor: "gray.600" }}
+                            onClick={() =>
+                              setFormData((prev) => ({ ...prev, difficulty: level }))
+                            }
+                          >
+                            {level.charAt(0).toUpperCase() + level.slice(1)}
+                          </Box>
+                        );
+                      }
                     )}
                   </HStack>
                 </Field.Root>
@@ -353,7 +351,7 @@ export function VocabularyFormPage() {
                     variant="ghost"
                     color="gray.400"
                     _hover={{ color: "white", bg: "gray.800" }}
-                    onClick={() => navigate("/admin/vocabulary")}
+                    onClick={() => navigate("/admin/dashboard")}
                     disabled={isSaving}
                   >
                     Cancel

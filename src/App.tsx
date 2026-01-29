@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useParams } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import { Dashboard } from "./pages/Dashboard";
 import { Lessons } from "./pages/Lessons";
@@ -13,8 +13,12 @@ import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { AdminLoginPage } from "./pages/admin/AdminLoginPage";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
-import { VocabularyListPage } from "./pages/admin/VocabularyListPage";
 import { VocabularyFormPage } from "./pages/admin/VocabularyFormPage";
+
+function VocabularyFormEdit() {
+  const { termId } = useParams();
+  return <VocabularyFormPage key={termId} />;
+}
 
 function App() {
   return (
@@ -40,9 +44,8 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AdminLayout />}>
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-            <Route path="/admin/vocabulary" element={<VocabularyListPage />} />
             <Route path="/admin/vocabulary/new" element={<VocabularyFormPage />} />
-            <Route path="/admin/vocabulary/:termId/edit" element={<VocabularyFormPage />} />
+            <Route path="/admin/vocabulary/:termId/edit" element={<VocabularyFormEdit />} />
           </Route>
         </Route>
       </Routes>
