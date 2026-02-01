@@ -245,6 +245,7 @@ function VocabularyForm({ lessons, existingTerm, isEditMode, termId }: Vocabular
                       bg="gray.800"
                       borderColor={errors.lesson_id && touched.lesson_id ? "red.500" : "gray.700"}
                       color="white"
+                      _focusVisible={{ outline: "none", boxShadow: "none", borderColor: "cyan.500" }}
                     >
                       <option value="">Select a lesson</option>
                       {lessons.map((lesson) => (
@@ -277,6 +278,7 @@ function VocabularyForm({ lessons, existingTerm, isEditMode, termId }: Vocabular
                     color="white"
                     _placeholder={{ color: "gray.500" }}
                     _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
+                    _focusVisible={{ outline: "none", boxShadow: "none" }}
                   />
                   {errors.term && touched.term && (
                     <Field.ErrorText color="red.400" fontSize="xs">
@@ -302,6 +304,7 @@ function VocabularyForm({ lessons, existingTerm, isEditMode, termId }: Vocabular
                     color="white"
                     _placeholder={{ color: "gray.500" }}
                     _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
+                    _focusVisible={{ outline: "none", boxShadow: "none" }}
                   />
                   {errors.definition && touched.definition && (
                     <Field.ErrorText color="red.400" fontSize="xs">
@@ -326,6 +329,7 @@ function VocabularyForm({ lessons, existingTerm, isEditMode, termId }: Vocabular
                     color="white"
                     _placeholder={{ color: "gray.500" }}
                     _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
+                    _focusVisible={{ outline: "none", boxShadow: "none" }}
                   />
                   <Field.HelperText color="gray.500" fontSize="xs">
                     Optional context to help learners understand the term better

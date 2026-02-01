@@ -41,7 +41,7 @@ export function LessonDetail() {
   const { data: lesson, isLoading: lessonLoading } = useLesson(slug);
   const { data: progressData, isLoading: progressLoading } = useProgressStats();
   // ✅ Use slug directly - no cascading dependency on lesson.id
-  const { data: vocabularyStats } = useVocabularyStats(slug);
+  const { data: vocabularyStats, isLoading: vocabStatsLoading } = useVocabularyStats(slug);
 
   const completedChallenges = progressData?.completedChallenges ?? new Set<string>();
 
@@ -58,7 +58,8 @@ export function LessonDetail() {
   }, [queryClient]);
 
   // ✅ Only show loading on initial load (no cached data)
-  const isInitialLoading = (!lesson && lessonLoading) || (!progressData && progressLoading);
+  // Include vocabStats to prevent layout shift when Study Vocabulary card pops in
+  const isInitialLoading = (!lesson && lessonLoading) || (!progressData && progressLoading) || (!vocabularyStats && vocabStatsLoading);
 
   if (isInitialLoading) {
     return (
