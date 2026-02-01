@@ -35,3 +35,20 @@ npm-debug.log*
 
 # TypeScript
 *.tsbuildinfo
+
+# Python
+python-service/.venv/
+python-service/__pycache__/
+python-service/**/__pycache__/
+python-service/*.egg-info/
+python-service/.pytest_cache/
+python-service/.ruff_cache/
+*.pyc
+
+# FAISS indexes (generated, can be large)
+python-service/data/faiss/*.faiss
+python-service/data/faiss/*.pkl
+!python-service/data/faiss/.gitkeep
+
+# Upload directory
+data/uploads/

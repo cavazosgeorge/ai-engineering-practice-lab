@@ -233,6 +233,11 @@ export function generateQuizQuestion(
     )
     .all(lessonId, termId);
 
+  // Need at least 1 distractor for a meaningful quiz
+  if (otherTerms.length < 1) {
+    return null;
+  }
+
   // Build options array
   const options = [
     {

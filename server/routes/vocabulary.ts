@@ -146,8 +146,8 @@ app.post("/flashcard/:termId/review", async (c) => {
     return c.json({ error: "Missing sessionId" }, 400);
   }
 
-  if (quality === undefined || quality < 0 || quality > 5) {
-    return c.json({ error: "Quality must be between 0 and 5" }, 400);
+  if (quality === undefined || typeof quality !== "number" || isNaN(quality) || quality < 0 || quality > 5) {
+    return c.json({ error: "Quality must be a number between 0 and 5" }, 400);
   }
 
   const term = getTermById(termId);
@@ -233,7 +233,7 @@ app.post("/quiz/:termId/answer", async (c) => {
     sessionId,
     termId,
     isCorrect,
-    timeSpentMs || 0
+    Math.max(0, timeSpentMs || 0)
   );
 
   return c.json({

@@ -10,9 +10,19 @@ import challengesRoutes from "./routes/challenges";
 import progressRoutes from "./routes/progress";
 import vocabularyRoutes from "./routes/vocabulary";
 import adminRoutes from "./routes/admin";
+import { checkPythonServiceHealth } from "./services/python-service-client";
 
 // Run migrations on startup
 runMigrations();
+
+// Check Python RAG/Agent service availability (non-blocking)
+checkPythonServiceHealth().then((health) => {
+  if (health) {
+    console.log(`Python RAG service: connected (${health.models.chat})`);
+  } else {
+    console.log("Python RAG service: not available (RAG/agent features disabled)");
+  }
+});
 
 const app = new Hono();
 
