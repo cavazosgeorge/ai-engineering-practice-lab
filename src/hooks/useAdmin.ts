@@ -12,6 +12,8 @@ export const adminKeys = {
   dataSourceDetail: (id: string) => [...adminKeys.all, "data-source", id] as const,
   dataSourceStats: (weekId: string) => [...adminKeys.all, "data-source-stats", weekId] as const,
   ragStats: () => [...adminKeys.all, "rag-stats"] as const,
+  generationJobs: (weekId?: string) => [...adminKeys.all, "generation-jobs", weekId] as const,
+  generationJob: (jobId: string) => [...adminKeys.all, "generation-job", jobId] as const,
 };
 
 const ADMIN_STALE_TIME = 30_000; // 30s — admin data changes infrequently
@@ -262,5 +264,65 @@ export function useRAGStats() {
     queryKey: adminKeys.ragStats(),
     queryFn: adminApi.fetchRAGStats,
     staleTime: ADMIN_STALE_TIME,
+  });
+}
+
+// ============================================
+// AI Generation Hooks
+// ============================================
+
+export function useGenerationJobs(weekId?: string) {
+  return useQuery({
+    queryKey: adminKeys.generationJobs(weekId),
+    queryFn: () => adminApi.fetchGenerationJobs(weekId),
+    staleTime: 10_000,
+  });
+}
+
+export function useGenerationJob(jobId: string) {
+  return useQuery({
+    queryKey: adminKeys.generationJob(jobId),
+    queryFn: () => adminApi.fetchGenerationJob(jobId),
+    enabled: !!jobId,
+    staleTime: 5_000,
+  });
+}
+
+export function useRequestGeneration() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.requestGeneration,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [...adminKeys.all, "generation-jobs"],
+      });
+    },
+  });
+}
+
+export function useApproveGeneration() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ jobId, input }: { jobId: string; input: adminApi.ApproveRequest }) =>
+      adminApi.approveGeneration(jobId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [...adminKeys.all, "generation-jobs"],
+      });
+      queryClient.invalidateQueries({ queryKey: adminKeys.vocabularyTerms() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.stats() });
+    },
+  });
+}
+
+export function useDeleteGenerationJob() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.deleteGenerationJob,
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: [...adminKeys.all, "generation-jobs"],
+      });
+    },
   });
 }

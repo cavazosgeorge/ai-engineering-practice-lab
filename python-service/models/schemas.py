@@ -119,6 +119,60 @@ class GenerateVocabularyResponse(BaseModel):
     output_tokens: int | None = None
 
 
+# --- Quiz Generation ---
+
+
+class GenerateQuizRequest(BaseModel):
+    week_slug: str
+    count: int = 5
+    existing_questions: list[str] = Field(default_factory=list)
+    temperature: float = 0.7
+
+
+class QuizOption(BaseModel):
+    text: str
+    is_correct: bool
+
+
+class GeneratedQuizQuestion(BaseModel):
+    question: str
+    options: list[QuizOption]
+    explanation: str
+    difficulty: str = "intermediate"
+
+
+class GenerateQuizResponse(BaseModel):
+    questions: list[GeneratedQuizQuestion]
+    model: str
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+
+
+# --- Challenge Generation ---
+
+
+class GenerateChallengeRequest(BaseModel):
+    week_slug: str
+    count: int = 3
+    existing_titles: list[str] = Field(default_factory=list)
+    temperature: float = 0.7
+
+
+class GeneratedChallenge(BaseModel):
+    title: str
+    description: str
+    starter_code: str
+    test_code: str
+    difficulty: str = "intermediate"
+
+
+class GenerateChallengeResponse(BaseModel):
+    challenges: list[GeneratedChallenge]
+    model: str
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+
+
 # --- Agent ---
 
 

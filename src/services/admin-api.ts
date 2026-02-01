@@ -348,3 +348,122 @@ export async function fetchRAGStats(): Promise<RAGStats> {
   });
   return handleResponse<RAGStats>(res);
 }
+
+// ============================================================================
+// AI Generation Types & API
+// ============================================================================
+
+export type GenerationJobType = "vocabulary" | "quiz" | "challenge";
+export type GenerationJobStatus = "pending" | "running" | "completed" | "failed";
+
+export interface GeneratedVocabularyTerm {
+  term: string;
+  definition: string;
+  context: string | null;
+  difficulty: string;
+}
+
+export interface QuizOption {
+  text: string;
+  isCorrect: boolean;
+}
+
+export interface GeneratedQuizQuestion {
+  question: string;
+  options: QuizOption[];
+  explanation: string;
+  difficulty: string;
+}
+
+export interface GeneratedChallenge {
+  title: string;
+  description: string;
+  starterCode: string;
+  testCode: string;
+  difficulty: string;
+}
+
+export interface GenerationJob {
+  id: string;
+  weekId: string;
+  jobType: GenerationJobType;
+  status: GenerationJobStatus;
+  prompt: string | null;
+  result: GeneratedVocabularyTerm[] | GeneratedQuizQuestion[] | GeneratedChallenge[] | null;
+  modelName: string | null;
+  inputTokenCount: number | null;
+  outputTokenCount: number | null;
+  errorMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GenerateRequest {
+  weekId: string;
+  weekSlug: string;
+  jobType: GenerationJobType;
+  count?: number;
+  temperature?: number;
+  existingTerms?: string[];
+  existingQuestions?: string[];
+  existingTitles?: string[];
+}
+
+export interface ApproveRequest {
+  lessonId: string;
+  selectedIndices?: number[];
+}
+
+export interface ApproveResponse {
+  approved: number;
+  jobId: string;
+}
+
+export async function requestGeneration(input: GenerateRequest): Promise<GenerationJob> {
+  const res = await fetch(`${API_URL}/api/admin/ai-generation/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+  return handleResponse<GenerationJob>(res);
+}
+
+export async function fetchGenerationJobs(weekId?: string): Promise<GenerationJob[]> {
+  const url = weekId
+    ? `${API_URL}/api/admin/ai-generation/jobs?weekId=${weekId}`
+    : `${API_URL}/api/admin/ai-generation/jobs`;
+  const res = await fetch(url, { credentials: "include" });
+  return handleResponse<GenerationJob[]>(res);
+}
+
+export async function fetchGenerationJob(jobId: string): Promise<GenerationJob> {
+  const res = await fetch(`${API_URL}/api/admin/ai-generation/jobs/${jobId}`, {
+    credentials: "include",
+  });
+  return handleResponse<GenerationJob>(res);
+}
+
+export async function approveGeneration(
+  jobId: string,
+  input: ApproveRequest,
+): Promise<ApproveResponse> {
+  const res = await fetch(`${API_URL}/api/admin/ai-generation/jobs/${jobId}/approve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+  return handleResponse<ApproveResponse>(res);
+}
+
+export async function deleteGenerationJob(jobId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/admin/ai-generation/jobs/${jobId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Delete failed" }));
+    throw new Error(error.message || `HTTP ${res.status}`);
+  }
+}

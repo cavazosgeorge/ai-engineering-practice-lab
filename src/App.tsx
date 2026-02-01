@@ -17,6 +17,7 @@ import { AdminLoginPage } from "./pages/admin/AdminLoginPage";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { VocabularyFormPage } from "./pages/admin/VocabularyFormPage";
 import { DataSourcesPage } from "./pages/admin/DataSourcesPage";
+import { GenerationAdminPage } from "./pages/admin/GenerationAdminPage";
 
 function VocabularyFormEdit() {
   const { termId } = useParams();
@@ -52,6 +53,7 @@ function App() {
             <Route path="/admin/vocabulary/new" element={<VocabularyFormPage />} />
             <Route path="/admin/vocabulary/:termId/edit" element={<VocabularyFormEdit />} />
             <Route path="/admin/weeks/:weekId/sources" element={<DataSourcesPage />} />
+            <Route path="/admin/generation" element={<GenerationAdminPage />} />
           </Route>
         </Route>
       </Routes>

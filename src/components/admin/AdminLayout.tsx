@@ -12,12 +12,14 @@ import {
   MenuContent,
   MenuItem,
 } from "@chakra-ui/react";
-import { LuArrowLeft, LuLogOut, LuChevronDown, LuUser } from "react-icons/lu";
+import { useLocation } from "react-router-dom";
+import { LuArrowLeft, LuLogOut, LuChevronDown, LuUser, LuSparkles, LuLayoutDashboard } from "react-icons/lu";
 import { signOut, useSession } from "../../lib/auth-client";
 
 export function AdminLayout() {
   const navigate = useNavigate();
   const { data: session } = useSession();
+  const location = useLocation();
 
   const handleLogout = async () => {
     await signOut();
@@ -184,6 +186,38 @@ export function AdminLayout() {
               </MenuPositioner>
             </MenuRoot>
           </Flex>
+        </Container>
+      </Box>
+      <Box borderBottom="1px solid" borderColor="gray.800">
+        <Container maxW="container.xl">
+          <HStack gap={1} py={2}>
+            {[
+              { to: "/admin/dashboard", label: "Dashboard", icon: <LuLayoutDashboard /> },
+              { to: "/admin/generation", label: "AI Generation", icon: <LuSparkles /> },
+            ].map((link) => {
+              const isActive = location.pathname === link.to ||
+                (link.to === "/admin/dashboard" && location.pathname.startsWith("/admin/dashboard"));
+              return (
+                <RouterLink key={link.to} to={link.to}>
+                  <HStack
+                    gap={1.5}
+                    px={3}
+                    py={1.5}
+                    borderRadius="md"
+                    fontSize="sm"
+                    fontWeight="medium"
+                    color={isActive ? "cyan.400" : "gray.500"}
+                    bg={isActive ? "cyan.400/10" : "transparent"}
+                    transition="all 0.15s ease"
+                    _hover={{ color: isActive ? "cyan.400" : "gray.300", bg: isActive ? "cyan.400/10" : "gray.800" }}
+                  >
+                    <Box fontSize="14px">{link.icon}</Box>
+                    <Text>{link.label}</Text>
+                  </HStack>
+                </RouterLink>
+              );
+            })}
+          </HStack>
         </Container>
       </Box>
       <Box as="main">
