@@ -20,19 +20,25 @@ import {
   LuBookOpen,
   LuFileText,
   LuBrain,
+  LuCalendar,
   LuPlus,
   LuPencil,
   LuTrash2,
   LuSearch,
   LuTriangleAlert,
+  LuEye,
+  LuEyeOff,
 } from "react-icons/lu";
 import {
   useAdminStats,
   useAdminVocabularyTerms,
   useAdminLessons,
   useDeleteVocabularyTerm,
+  useAdminWeeks,
+  useUpdateWeek,
+  useDeleteWeek,
 } from "../../hooks/useAdmin";
-import type { AdminVocabularyTerm } from "../../services/admin-api";
+import type { AdminVocabularyTerm, AdminWeek } from "../../services/admin-api";
 
 // ============================================
 // Shared Components
@@ -106,7 +112,13 @@ function DashboardTab() {
       <Heading size="lg" color="white" mb={4}>
         Overview
       </Heading>
-      <SimpleGrid columns={{ base: 1, md: 3 }} gap={6}>
+      <SimpleGrid columns={{ base: 2, md: 4 }} gap={6}>
+        <StatCard
+          label="Weeks"
+          value={stats?.weekCount ?? 0}
+          icon={<LuCalendar />}
+          color="blue.400"
+        />
         <StatCard
           label="Total Lessons"
           value={stats?.lessonCount ?? 0}
@@ -580,6 +592,371 @@ function VocabularyTab() {
 }
 
 // ============================================
+// Weeks Tab
+// ============================================
+
+interface WeekDeleteConfirmationProps {
+  week: AdminWeek;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isDeleting: boolean;
+}
+
+function WeekDeleteConfirmation({
+  week,
+  onConfirm,
+  onCancel,
+  isDeleting,
+}: WeekDeleteConfirmationProps) {
+  return (
+    <Box
+      position="fixed"
+      top={0}
+      left={0}
+      right={0}
+      bottom={0}
+      bg="blackAlpha.700"
+      zIndex={100}
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+    >
+      <Card.Root bg="gray.900" borderColor="gray.700" maxW="md" mx={4}>
+        <Card.Body p={6}>
+          <VStack gap={4} align="start">
+            <HStack gap={3}>
+              <Box color="red.400" fontSize="24px">
+                <LuTriangleAlert />
+              </Box>
+              <Heading size="md" color="white">
+                Delete Week
+              </Heading>
+            </HStack>
+            <Text color="gray.300">
+              Are you sure you want to delete "Week {week.weekNumber}: {week.title}"?
+              This will also remove all associated data sources and generation jobs.
+            </Text>
+            <HStack gap={3} justify="flex-end" w="full">
+              <Button
+                variant="ghost"
+                color="gray.400"
+                _hover={{ color: "white", bg: "gray.800" }}
+                onClick={onCancel}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                bg="red.600"
+                color="white"
+                _hover={{ bg: "red.500" }}
+                onClick={onConfirm}
+                loading={isDeleting}
+                loadingText="Deleting..."
+              >
+                Delete
+              </Button>
+            </HStack>
+          </VStack>
+        </Card.Body>
+      </Card.Root>
+    </Box>
+  );
+}
+
+function WeeksTab() {
+  const { data: weeks, isLoading, error } = useAdminWeeks();
+  const updateMutation = useUpdateWeek();
+  const deleteMutation = useDeleteWeek();
+  const [weekToDelete, setWeekToDelete] = useState<AdminWeek | null>(null);
+
+  const handleTogglePublish = (week: AdminWeek) => {
+    updateMutation.mutate({
+      id: week.id,
+      input: { isPublished: !week.isPublished },
+    });
+  };
+
+  const handleDelete = async () => {
+    if (!weekToDelete) return;
+    try {
+      await deleteMutation.mutateAsync(weekToDelete.id);
+      setWeekToDelete(null);
+    } catch {
+      // Error handled by mutation
+    }
+  };
+
+  if (!weeks && isLoading) {
+    return (
+      <Box
+        minH="40vh"
+        opacity={0}
+        animation="fadeIn 0.2s ease-in 0.2s forwards"
+        css={{ "@keyframes fadeIn": { to: { opacity: 1 } } }}
+      >
+        <Center h="40vh">
+          <Spinner size="xl" color="cyan.400" />
+        </Center>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card.Root bg="red.900/20" borderColor="red.700/50" borderWidth="1px">
+        <Card.Body>
+          <Text color="red.300">
+            Error loading weeks: {error instanceof Error ? error.message : "Unknown error"}
+          </Text>
+        </Card.Body>
+      </Card.Root>
+    );
+  }
+
+  return (
+    <>
+      {weekToDelete && (
+        <WeekDeleteConfirmation
+          week={weekToDelete}
+          onConfirm={handleDelete}
+          onCancel={() => setWeekToDelete(null)}
+          isDeleting={deleteMutation.isPending}
+        />
+      )}
+
+      <VStack gap={6} align="stretch">
+        <HStack justify="space-between" align="center">
+          <Text color="gray.400" fontSize="sm">
+            {weeks?.length ?? 0} week{(weeks?.length ?? 0) !== 1 ? "s" : ""}
+          </Text>
+        </HStack>
+
+        {(weeks?.length ?? 0) === 0 ? (
+          <Card.Root bg="gray.900" borderColor="gray.800" borderWidth="1px">
+            <Card.Body py={12}>
+              <Center>
+                <Text color="gray.500" fontSize="lg">
+                  No weeks configured yet. Run `bun run db:seed-weeks` to seed weeks.
+                </Text>
+              </Center>
+            </Card.Body>
+          </Card.Root>
+        ) : (
+          <Box
+            bg="gray.900"
+            borderRadius="lg"
+            border="1px solid"
+            borderColor="gray.800"
+            overflow="hidden"
+          >
+            {/* Table header */}
+            <Box
+              px={5}
+              py={3}
+              bg="gray.800/60"
+              borderBottom="1px solid"
+              borderColor="gray.800"
+            >
+              <HStack>
+                <Box w="50px">
+                  <Text
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    color="gray.500"
+                    letterSpacing="0.08em"
+                    textTransform="uppercase"
+                    fontFamily="'JetBrains Mono', monospace"
+                  >
+                    #
+                  </Text>
+                </Box>
+                <Box flex="2">
+                  <Text
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    color="gray.500"
+                    letterSpacing="0.08em"
+                    textTransform="uppercase"
+                    fontFamily="'JetBrains Mono', monospace"
+                  >
+                    Title
+                  </Text>
+                </Box>
+                <Box w="90px" textAlign="center">
+                  <Text
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    color="gray.500"
+                    letterSpacing="0.08em"
+                    textTransform="uppercase"
+                    fontFamily="'JetBrains Mono', monospace"
+                  >
+                    Status
+                  </Text>
+                </Box>
+                <Box w="90px" textAlign="center">
+                  <Text
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    color="gray.500"
+                    letterSpacing="0.08em"
+                    textTransform="uppercase"
+                    fontFamily="'JetBrains Mono', monospace"
+                  >
+                    Lessons
+                  </Text>
+                </Box>
+                <Box w="90px" textAlign="center">
+                  <Text
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    color="gray.500"
+                    letterSpacing="0.08em"
+                    textTransform="uppercase"
+                    fontFamily="'JetBrains Mono', monospace"
+                  >
+                    Terms
+                  </Text>
+                </Box>
+                <Box w="80px" textAlign="right">
+                  <Text
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    color="gray.500"
+                    letterSpacing="0.08em"
+                    textTransform="uppercase"
+                    fontFamily="'JetBrains Mono', monospace"
+                  >
+                    Actions
+                  </Text>
+                </Box>
+              </HStack>
+            </Box>
+
+            {/* Table rows */}
+            {(weeks ?? []).map((week, index) => (
+              <Box
+                key={week.id}
+                px={5}
+                py={3.5}
+                borderBottom={index < (weeks?.length ?? 0) - 1 ? "1px solid" : "none"}
+                borderColor="gray.800/60"
+                transition="all 0.15s ease"
+                cursor="default"
+                position="relative"
+                _hover={{
+                  bg: "gray.800/40",
+                }}
+                css={{
+                  "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: "2px",
+                    bg: "transparent",
+                    transition: "background 0.15s ease",
+                  },
+                  "&:hover::before": {
+                    background: "var(--chakra-colors-cyan-500)",
+                  },
+                }}
+              >
+                <HStack align="center">
+                  <Box w="50px">
+                    <Text
+                      color="cyan.300"
+                      fontWeight="medium"
+                      fontSize="sm"
+                      fontFamily="'JetBrains Mono', monospace"
+                    >
+                      {week.weekNumber}
+                    </Text>
+                  </Box>
+                  <Box flex="2">
+                    <Text color="white" fontWeight="medium" fontSize="sm">
+                      {week.title}
+                    </Text>
+                    {week.description && (
+                      <Text color="gray.500" fontSize="xs" lineClamp={1}>
+                        {week.description}
+                      </Text>
+                    )}
+                  </Box>
+                  <Box w="90px" textAlign="center">
+                    <Box
+                      as="button"
+                      px={2}
+                      py={0.5}
+                      borderRadius="full"
+                      fontSize="xs"
+                      fontWeight="medium"
+                      bg={week.isPublished ? "green.900/40" : "gray.800"}
+                      color={week.isPublished ? "green.400" : "gray.500"}
+                      border="1px solid"
+                      borderColor={week.isPublished ? "green.700/50" : "gray.700"}
+                      transition="all 0.15s ease"
+                      _hover={{
+                        bg: week.isPublished ? "red.900/30" : "green.900/30",
+                        color: week.isPublished ? "red.400" : "green.400",
+                        borderColor: week.isPublished ? "red.700/50" : "green.700/50",
+                      }}
+                      onClick={() => handleTogglePublish(week)}
+                    >
+                      <HStack gap={1} justify="center">
+                        <Box fontSize="10px">
+                          {week.isPublished ? <LuEye /> : <LuEyeOff />}
+                        </Box>
+                        <Text>{week.isPublished ? "Published" : "Draft"}</Text>
+                      </HStack>
+                    </Box>
+                  </Box>
+                  <Box w="90px" textAlign="center">
+                    <Text
+                      color="gray.400"
+                      fontSize="sm"
+                      fontFamily="'JetBrains Mono', monospace"
+                    >
+                      {week.lessonCount}
+                    </Text>
+                  </Box>
+                  <Box w="90px" textAlign="center">
+                    <Text
+                      color="gray.400"
+                      fontSize="sm"
+                      fontFamily="'JetBrains Mono', monospace"
+                    >
+                      {week.vocabularyCount}
+                    </Text>
+                  </Box>
+                  <Box w="80px">
+                    <HStack gap={1} justify="flex-end">
+                      <Box
+                        as="button"
+                        p={1.5}
+                        borderRadius="md"
+                        color="gray.600"
+                        transition="all 0.15s ease"
+                        _hover={{ color: "red.400", bg: "gray.800" }}
+                        onClick={() => setWeekToDelete(week)}
+                      >
+                        <Box fontSize="14px"><LuTrash2 /></Box>
+                      </Box>
+                    </HStack>
+                  </Box>
+                </HStack>
+              </Box>
+            ))}
+          </Box>
+        )}
+      </VStack>
+    </>
+  );
+}
+
+// ============================================
 // Main Page
 // ============================================
 
@@ -632,6 +1009,17 @@ export function AdminDashboardPage() {
             >
               Vocabulary
             </Tabs.Trigger>
+            <Tabs.Trigger
+              value="weeks"
+              color="gray.400"
+              _selected={{ color: "cyan.400", borderColor: "cyan.400" }}
+              _checked={{ color: "cyan.400", borderColor: "cyan.400" }}
+              _focusVisible={{ outline: "none", boxShadow: "none" }}
+              fontWeight="medium"
+              fontSize="sm"
+            >
+              Weeks
+            </Tabs.Trigger>
           </Tabs.List>
 
           <Box pt={6}>
@@ -640,6 +1028,9 @@ export function AdminDashboardPage() {
             </Tabs.Content>
             <Tabs.Content value="vocabulary">
               <VocabularyTab />
+            </Tabs.Content>
+            <Tabs.Content value="weeks">
+              <WeeksTab />
             </Tabs.Content>
           </Box>
         </Tabs.Root>

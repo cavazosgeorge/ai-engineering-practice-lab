@@ -248,3 +248,60 @@ export async function fetchVocabularyStats(lessonIdOrSlug?: string): Promise<Voc
   if (!res.ok) throw new Error("Failed to fetch vocabulary stats");
   return res.json();
 }
+
+// ============================================================================
+// Week Types
+// ============================================================================
+
+export interface Week {
+  id: string;
+  weekNumber: number;
+  slug: string;
+  title: string;
+  description: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  orderIndex: number;
+  lessonCount: number;
+  vocabularyCount: number;
+}
+
+export interface WeekLesson {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  orderIndex: number;
+  conceptCount: number;
+  challengeCount: number;
+  vocabularyCount: number;
+}
+
+export interface WeekDetail {
+  id: string;
+  weekNumber: number;
+  slug: string;
+  title: string;
+  description: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  orderIndex: number;
+  isPublished: boolean;
+  lessons: WeekLesson[];
+}
+
+// ============================================================================
+// Week API Functions
+// ============================================================================
+
+export async function fetchWeeks(): Promise<Week[]> {
+  const res = await fetch(`${API_BASE}/weeks`);
+  if (!res.ok) throw new Error("Failed to fetch weeks");
+  return res.json();
+}
+
+export async function fetchWeekDetail(slug: string): Promise<WeekDetail> {
+  const res = await fetch(`${API_BASE}/weeks/${slug}`);
+  if (!res.ok) throw new Error("Failed to fetch week detail");
+  return res.json();
+}

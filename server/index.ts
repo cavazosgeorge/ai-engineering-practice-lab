@@ -10,6 +10,7 @@ import challengesRoutes from "./routes/challenges";
 import progressRoutes from "./routes/progress";
 import vocabularyRoutes from "./routes/vocabulary";
 import adminRoutes from "./routes/admin";
+import weeksRoutes from "./routes/weeks";
 import { checkPythonServiceHealth } from "./services/python-service-client";
 
 // Run migrations on startup
@@ -50,6 +51,7 @@ app.route("/api/lessons", lessonsRoutes);
 app.route("/api/challenges", challengesRoutes);
 app.route("/api/progress", progressRoutes);
 app.route("/api/vocabulary", vocabularyRoutes);
+app.route("/api/weeks", weeksRoutes);
 app.route("/api/admin", adminRoutes);
 
 // Serve static files in production

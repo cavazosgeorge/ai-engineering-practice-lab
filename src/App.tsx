@@ -7,6 +7,8 @@ import { ChallengePage } from "./pages/ChallengePage";
 import { Review } from "./pages/Review";
 import { ProgressPage } from "./pages/Progress";
 import { VocabularyPage } from "./pages/VocabularyPage";
+import { Weeks } from "./pages/Weeks";
+import { WeekDetail } from "./pages/WeekDetail";
 
 // Admin components
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
@@ -27,6 +29,8 @@ function App() {
         {/* Main app routes */}
         <Route element={<AppShell />}>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/weeks" element={<Weeks />} />
+          <Route path="/weeks/:slug" element={<WeekDetail />} />
           <Route path="/lessons" element={<Lessons />} />
           <Route path="/lessons/:slug" element={<LessonDetail />} />
           <Route path="/challenges/:id" element={<ChallengePage />} />

@@ -13,6 +13,7 @@ export interface AdminDashboardStats {
   lessonCount: number;
   vocabularyCount: number;
   challengeCount: number;
+  weekCount: number;
 }
 
 export function getAdminDashboardStats(): AdminDashboardStats {
@@ -28,10 +29,15 @@ export function getAdminDashboardStats(): AdminDashboardStats {
     .query<{ count: number }, []>("SELECT COUNT(*) as count FROM challenges")
     .get()?.count ?? 0;
 
+  const weekCount = db
+    .query<{ count: number }, []>("SELECT COUNT(*) as count FROM weeks")
+    .get()?.count ?? 0;
+
   return {
     lessonCount,
     vocabularyCount,
     challengeCount,
+    weekCount,
   };
 }
 

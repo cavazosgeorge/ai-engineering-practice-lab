@@ -4,6 +4,7 @@ export interface AdminStats {
   lessonCount: number;
   vocabularyCount: number;
   challengeCount: number;
+  weekCount: number;
 }
 
 export interface AdminLesson {
@@ -103,6 +104,93 @@ export async function updateVocabularyTerm(
 
 export async function deleteVocabularyTerm(id: string): Promise<void> {
   const res = await fetch(`${API_URL}/api/admin/vocabulary/terms/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Delete failed" }));
+    throw new Error(error.message || `HTTP ${res.status}`);
+  }
+}
+
+// ============================================================================
+// Admin Week Types
+// ============================================================================
+
+export interface AdminWeek {
+  id: string;
+  weekNumber: number;
+  slug: string;
+  title: string;
+  description: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  isPublished: boolean;
+  orderIndex: number;
+  lessonCount: number;
+  vocabularyCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateWeekInput {
+  weekNumber: number;
+  title: string;
+  slug: string;
+  description?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  isPublished?: boolean;
+}
+
+export interface UpdateWeekInput {
+  weekNumber?: number;
+  title?: string;
+  slug?: string;
+  description?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  isPublished?: boolean;
+  orderIndex?: number;
+  lessonIds?: string[];
+}
+
+// ============================================================================
+// Admin Week API Functions
+// ============================================================================
+
+export async function fetchAdminWeeks(): Promise<AdminWeek[]> {
+  const res = await fetch(`${API_URL}/api/admin/weeks`, {
+    credentials: "include",
+  });
+  return handleResponse<AdminWeek[]>(res);
+}
+
+export async function createWeek(input: CreateWeekInput): Promise<AdminWeek> {
+  const res = await fetch(`${API_URL}/api/admin/weeks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+  return handleResponse<AdminWeek>(res);
+}
+
+export async function updateWeek(
+  id: string,
+  input: UpdateWeekInput
+): Promise<AdminWeek> {
+  const res = await fetch(`${API_URL}/api/admin/weeks/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+  return handleResponse<AdminWeek>(res);
+}
+
+export async function deleteWeek(id: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/admin/weeks/${id}`, {
     method: "DELETE",
     credentials: "include",
   });
