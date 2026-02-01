@@ -65,7 +65,9 @@ def get_vocabulary_terms(lesson_slug: str) -> str:
         if response.status_code != 200:
             return f"Could not fetch vocabulary for lesson '{lesson_slug}'."
 
-        terms = response.json()
+        data = response.json()
+        # API returns {"terms": [...]} wrapper
+        terms = data.get("terms", data) if isinstance(data, dict) else data
         if not terms:
             return f"No vocabulary terms found for lesson '{lesson_slug}'."
 
@@ -82,16 +84,18 @@ def get_vocabulary_terms(lesson_slug: str) -> str:
 
 
 @tool
-def get_vocabulary_stats(lesson_slug: str) -> str:
+def get_vocabulary_stats(lesson_slug: str, session_id: str = "anonymous") -> str:
     """Get the student's vocabulary mastery statistics for a lesson. Use this when
     a student asks about their progress or how well they know the material.
 
     Args:
         lesson_slug: The lesson slug (e.g. 'tokenization', 'language-models')
+        session_id: The student's session ID (defaults to 'anonymous')
     """
     try:
         response = httpx.get(
             f"{settings.BUN_API_URL}/api/vocabulary/{lesson_slug}/stats",
+            params={"sessionId": session_id},
             timeout=TOOL_TIMEOUT,
         )
         if response.status_code != 200:
@@ -100,10 +104,10 @@ def get_vocabulary_stats(lesson_slug: str) -> str:
         stats = response.json()
         return (
             f"Vocabulary stats for '{lesson_slug}':\n"
-            f"- Total terms: {stats.get('totalTerms', 0)}\n"
+            f"- Total terms: {stats.get('total', 0)}\n"
             f"- Mastered: {stats.get('mastered', 0)}\n"
-            f"- In progress: {stats.get('inProgress', 0)}\n"
-            f"- Not started: {stats.get('notStarted', 0)}"
+            f"- Reviewing: {stats.get('reviewing', 0)}\n"
+            f"- Learning: {stats.get('learning', 0)}"
         )
     except Exception as e:
         logger.error("get_vocabulary_stats failed: %s", str(e))
