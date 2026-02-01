@@ -194,14 +194,14 @@ export function VocabularyListPage() {
           <HStack justify="space-between" align="start">
             <Box>
               <Heading
-                size="xl"
+                size="2xl"
                 color="white"
                 mb={2}
                 fontFamily="'JetBrains Mono', monospace"
               >
                 Vocabulary Terms
               </Heading>
-              <Text color="gray.400">
+              <Text color="gray.400" fontSize="lg">
                 {filteredTerms.length} term{filteredTerms.length !== 1 ? "s" : ""}{" "}
                 {searchQuery || lessonFilter || difficultyFilter ? "matching filters" : "total"}
               </Text>

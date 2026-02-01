@@ -103,7 +103,7 @@ function DashboardTab() {
 
   return (
     <Box>
-      <Heading size="md" color="white" mb={4}>
+      <Heading size="lg" color="white" mb={4}>
         Overview
       </Heading>
       <SimpleGrid columns={{ base: 1, md: 3 }} gap={6}>
@@ -593,14 +593,14 @@ export function AdminDashboardPage() {
       <VStack gap={8} align="stretch">
         <Box>
           <Heading
-            size="xl"
+            size="2xl"
             color="white"
-            mb={2}
+            mb={4}
             fontFamily="'JetBrains Mono', monospace"
           >
             Admin Dashboard
           </Heading>
-          <Text color="gray.400">
+          <Text color="gray.400" fontSize="lg">
             Manage content and monitor statistics
           </Text>
         </Box>

@@ -192,14 +192,14 @@ function VocabularyForm({ lessons, existingTerm, isEditMode, termId }: Vocabular
         {/* Header */}
         <Box>
           <Heading
-            size="xl"
+            size="2xl"
             color="white"
             mb={2}
             fontFamily="'JetBrains Mono', monospace"
           >
             {isEditMode ? "Edit Vocabulary Term" : "Add Vocabulary Term"}
           </Heading>
-          <Text color="gray.400">
+          <Text color="gray.400" fontSize="lg">
             {isEditMode
               ? "Update the term details below"
               : "Fill in the details to create a new vocabulary term"}
