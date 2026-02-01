@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
-from routers import health, data_sources, search, generation
+from routers import health, data_sources, search, generation, agent
 
 
 @asynccontextmanager
@@ -38,3 +38,4 @@ app.include_router(health.router)
 app.include_router(data_sources.router)
 app.include_router(search.router)
 app.include_router(generation.router)
+app.include_router(agent.router)

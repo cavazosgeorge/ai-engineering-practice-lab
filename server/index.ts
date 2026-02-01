@@ -13,6 +13,7 @@ import adminRoutes from "./routes/admin";
 import weeksRoutes from "./routes/weeks";
 import dataSourcesRoutes from "./routes/data-sources";
 import aiGenerationRoutes from "./routes/ai-generation";
+import agentRoutes from "./routes/agent";
 import ragRoutes from "./routes/rag";
 import { checkPythonServiceHealth } from "./services/python-service-client";
 
@@ -59,6 +60,7 @@ app.route("/api/rag", ragRoutes);
 app.route("/api/admin", adminRoutes);
 app.route("/api/admin/data-sources", dataSourcesRoutes);
 app.route("/api/admin/ai-generation", aiGenerationRoutes);
+app.route("/api/agent", agentRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === "production") {

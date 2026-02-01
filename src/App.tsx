@@ -9,6 +9,7 @@ import { ProgressPage } from "./pages/Progress";
 import { VocabularyPage } from "./pages/VocabularyPage";
 import { Weeks } from "./pages/Weeks";
 import { WeekDetail } from "./pages/WeekDetail";
+import { AgentPage } from "./pages/AgentPage";
 
 // Admin components
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
@@ -41,6 +42,8 @@ function App() {
           <Route path="/vocabulary/:lessonSlug" element={<VocabularyPage />} />
           <Route path="/vocabulary/:lessonSlug/flashcards" element={<VocabularyPage />} />
           <Route path="/vocabulary/:lessonSlug/quiz" element={<VocabularyPage />} />
+          <Route path="/agent" element={<AgentPage />} />
+          <Route path="/agent/:conversationId" element={<AgentPage />} />
         </Route>
 
         {/* Admin login - standalone (no layout) */}
