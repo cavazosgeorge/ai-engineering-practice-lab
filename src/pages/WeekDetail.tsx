@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import {
   Box,
+  Button,
   Container,
   Heading,
   Text,
@@ -12,7 +13,9 @@ import {
   Skeleton,
   SkeletonText,
 } from "@chakra-ui/react";
-import { Link, useParams } from "react-router-dom";
+import { LuBot } from "react-icons/lu";
+import { useCreateConversation } from "../hooks/useAgentChat";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWeekDetail } from "../hooks/useWeeks";
 import { prefetchLesson } from "../hooks/useLessons";
@@ -20,7 +23,9 @@ import { prefetchLesson } from "../hooks/useLessons";
 export function WeekDetail() {
   const { slug } = useParams<{ slug: string }>();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { data: week, isLoading } = useWeekDetail(slug);
+  const createConversation = useCreateConversation();
 
   const handleLessonHover = useCallback(
     (lessonSlug: string) => {
@@ -107,6 +112,27 @@ export function WeekDetail() {
           <Text color="gray.400" fontSize="lg">
             {week.description}
           </Text>
+          <Button
+            mt={4}
+            variant="outline"
+            borderColor="cyan.700"
+            color="cyan.400"
+            _hover={{ bg: "cyan.600/10", borderColor: "cyan.600" }}
+            _focusVisible={{ outline: "none", boxShadow: "none" }}
+            size="sm"
+            onClick={async () => {
+              const conv = await createConversation.mutateAsync({
+                title: `Week ${week.weekNumber}: ${week.title}`,
+              });
+              navigate(`/agent/${conv.id}`);
+            }}
+            loading={createConversation.isPending}
+          >
+            <Box fontSize="14px" mr={1.5}>
+              <LuBot />
+            </Box>
+            Ask AI Agent about this week
+          </Button>
         </Box>
 
         {week.lessons.length === 0 ? (

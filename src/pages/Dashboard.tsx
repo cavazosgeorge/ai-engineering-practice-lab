@@ -18,7 +18,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLessons, useProgressStats } from "../hooks/useProgress";
 import { prefetchLesson } from "../hooks/useLessons";
 import { type Lesson } from "../services/api";
-import { LuCheck } from "react-icons/lu";
+import { LuCheck, LuCalendar, LuBot } from "react-icons/lu";
 
 export function Dashboard() {
   const queryClient = useQueryClient();
@@ -182,6 +182,71 @@ export function Dashboard() {
             </Card.Root>
           </SimpleGrid>
         )}
+
+        <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
+          <Link to="/weeks">
+            <Card.Root
+              bg="gray.900"
+              borderColor="gray.800"
+              _hover={{ borderColor: "cyan.700", transform: "translateY(-2px)" }}
+              transition="all 0.2s"
+              cursor="pointer"
+            >
+              <Card.Body>
+                <HStack gap={3}>
+                  <Box
+                    p={2.5}
+                    borderRadius="lg"
+                    bg="cyan.600/10"
+                    color="cyan.400"
+                    fontSize="20px"
+                  >
+                    <LuCalendar />
+                  </Box>
+                  <Box>
+                    <Text color="white" fontWeight="medium">
+                      Browse by Week
+                    </Text>
+                    <Text color="gray.500" fontSize="sm">
+                      Course organized into weekly modules
+                    </Text>
+                  </Box>
+                </HStack>
+              </Card.Body>
+            </Card.Root>
+          </Link>
+          <Link to="/agent">
+            <Card.Root
+              bg="gray.900"
+              borderColor="gray.800"
+              _hover={{ borderColor: "cyan.700", transform: "translateY(-2px)" }}
+              transition="all 0.2s"
+              cursor="pointer"
+            >
+              <Card.Body>
+                <HStack gap={3}>
+                  <Box
+                    p={2.5}
+                    borderRadius="lg"
+                    bg="blue.600/10"
+                    color="blue.400"
+                    fontSize="20px"
+                  >
+                    <LuBot />
+                  </Box>
+                  <Box>
+                    <Text color="white" fontWeight="medium">
+                      AI Study Agent
+                    </Text>
+                    <Text color="gray.500" fontSize="sm">
+                      Ask questions about course materials
+                    </Text>
+                  </Box>
+                </HStack>
+              </Card.Body>
+            </Card.Root>
+          </Link>
+        </SimpleGrid>
 
         <Box>
           <Heading size="lg" color="white" mb={6}>
