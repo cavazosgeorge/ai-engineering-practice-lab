@@ -8,6 +8,10 @@ export const adminKeys = {
   vocabularyTerms: () => [...adminKeys.all, "vocabulary-terms"] as const,
   vocabularyTerm: (id: string) => [...adminKeys.all, "vocabulary-terms", id] as const,
   weeks: () => [...adminKeys.all, "weeks"] as const,
+  dataSources: (weekId: string) => [...adminKeys.all, "data-sources", weekId] as const,
+  dataSourceDetail: (id: string) => [...adminKeys.all, "data-source", id] as const,
+  dataSourceStats: (weekId: string) => [...adminKeys.all, "data-source-stats", weekId] as const,
+  ragStats: () => [...adminKeys.all, "rag-stats"] as const,
 };
 
 const ADMIN_STALE_TIME = 30_000; // 30s — admin data changes infrequently
@@ -153,5 +157,110 @@ export function useDeleteWeek() {
       queryClient.invalidateQueries({ queryKey: adminKeys.weeks() });
       queryClient.invalidateQueries({ queryKey: adminKeys.stats() });
     },
+  });
+}
+
+// ============================================
+// Data Sources Hooks
+// ============================================
+
+export function useDataSources(weekId: string) {
+  return useQuery({
+    queryKey: adminKeys.dataSources(weekId),
+    queryFn: () => adminApi.fetchDataSources(weekId),
+    enabled: !!weekId,
+    staleTime: ADMIN_STALE_TIME,
+  });
+}
+
+export function useDataSourceDetail(sourceId: string) {
+  return useQuery({
+    queryKey: adminKeys.dataSourceDetail(sourceId),
+    queryFn: () => adminApi.fetchDataSourceDetail(sourceId),
+    enabled: !!sourceId,
+    staleTime: ADMIN_STALE_TIME,
+  });
+}
+
+export function useDataSourceStats(weekId: string) {
+  return useQuery({
+    queryKey: adminKeys.dataSourceStats(weekId),
+    queryFn: () => adminApi.fetchDataSourceStats(weekId),
+    enabled: !!weekId,
+    staleTime: ADMIN_STALE_TIME,
+  });
+}
+
+export function useIngestText() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.ingestText,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: adminKeys.dataSources(variables.weekId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: adminKeys.dataSourceStats(variables.weekId),
+      });
+      queryClient.invalidateQueries({ queryKey: adminKeys.ragStats() });
+    },
+  });
+}
+
+export function useIngestURL() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.ingestURL,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: adminKeys.dataSources(variables.weekId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: adminKeys.dataSourceStats(variables.weekId),
+      });
+      queryClient.invalidateQueries({ queryKey: adminKeys.ragStats() });
+    },
+  });
+}
+
+export function useIngestPDF() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.ingestPDF,
+    onSuccess: () => {
+      // Can't easily get weekId from FormData, invalidate all data sources
+      queryClient.invalidateQueries({
+        queryKey: [...adminKeys.all, "data-sources"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...adminKeys.all, "data-source-stats"],
+      });
+      queryClient.invalidateQueries({ queryKey: adminKeys.ragStats() });
+    },
+  });
+}
+
+export function useDeleteDataSource() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.deleteDataSource,
+    onSettled: () => {
+      // Invalidate all data source related queries
+      queryClient.invalidateQueries({
+        queryKey: [...adminKeys.all, "data-sources"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...adminKeys.all, "data-source-stats"],
+      });
+      queryClient.invalidateQueries({ queryKey: adminKeys.ragStats() });
+    },
+  });
+}
+
+export function useRAGStats() {
+  return useQuery({
+    queryKey: adminKeys.ragStats(),
+    queryFn: adminApi.fetchRAGStats,
+    staleTime: ADMIN_STALE_TIME,
   });
 }

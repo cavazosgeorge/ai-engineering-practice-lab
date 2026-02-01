@@ -199,3 +199,152 @@ export async function deleteWeek(id: string): Promise<void> {
     throw new Error(error.message || `HTTP ${res.status}`);
   }
 }
+
+// ============================================================================
+// Data Source Types
+// ============================================================================
+
+export interface DataSource {
+  id: string;
+  weekId: string;
+  sourceType: "pdf" | "url" | "text";
+  title: string;
+  url: string | null;
+  status: "pending" | "processing" | "processed" | "error";
+  errorMessage: string | null;
+  chunkCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DataSourceDetail extends DataSource {
+  rawContent: string | null;
+  chunks: Array<{
+    id: string;
+    chunkIndex: number;
+    content: string;
+    tokenCount: number;
+  }>;
+}
+
+export interface DataSourceStats {
+  totalSources: number;
+  totalChunks: number;
+  byStatus: Record<string, number>;
+}
+
+export interface IngestTextInput {
+  weekId: string;
+  weekSlug: string;
+  title: string;
+  content: string;
+}
+
+export interface IngestURLInput {
+  weekId: string;
+  weekSlug: string;
+  title: string;
+  url: string;
+}
+
+export interface IngestResult {
+  id: string;
+  status: string;
+  chunkCount?: number;
+  error?: string;
+}
+
+// ============================================================================
+// Data Source API Functions
+// ============================================================================
+
+export async function fetchDataSources(weekId: string): Promise<DataSource[]> {
+  const res = await fetch(`${API_URL}/api/admin/data-sources/${weekId}`, {
+    credentials: "include",
+  });
+  return handleResponse<DataSource[]>(res);
+}
+
+export async function fetchDataSourceDetail(
+  sourceId: string
+): Promise<DataSourceDetail> {
+  const res = await fetch(
+    `${API_URL}/api/admin/data-sources/detail/${sourceId}`,
+    { credentials: "include" }
+  );
+  return handleResponse<DataSourceDetail>(res);
+}
+
+export async function fetchDataSourceStats(
+  weekId: string
+): Promise<DataSourceStats> {
+  const res = await fetch(
+    `${API_URL}/api/admin/data-sources/${weekId}/stats`,
+    { credentials: "include" }
+  );
+  return handleResponse<DataSourceStats>(res);
+}
+
+export async function ingestText(input: IngestTextInput): Promise<IngestResult> {
+  const res = await fetch(`${API_URL}/api/admin/data-sources/ingest/text`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+  return handleResponse<IngestResult>(res);
+}
+
+export async function ingestURL(input: IngestURLInput): Promise<IngestResult> {
+  const res = await fetch(`${API_URL}/api/admin/data-sources/ingest/url`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+  return handleResponse<IngestResult>(res);
+}
+
+export async function ingestPDF(formData: FormData): Promise<IngestResult> {
+  const res = await fetch(`${API_URL}/api/admin/data-sources/ingest/pdf`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+  return handleResponse<IngestResult>(res);
+}
+
+export async function deleteDataSource(sourceId: string): Promise<void> {
+  const res = await fetch(
+    `${API_URL}/api/admin/data-sources/${sourceId}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Delete failed" }));
+    throw new Error(error.message || `HTTP ${res.status}`);
+  }
+}
+
+// ============================================================================
+// RAG Stats Types & API
+// ============================================================================
+
+export interface RAGStats {
+  totalChunks: number;
+  totalIndexes: number;
+  indexes: Array<{
+    weekSlug: string;
+    chunkCount: number;
+    indexSizeBytes: number;
+  }>;
+}
+
+export async function fetchRAGStats(): Promise<RAGStats> {
+  const res = await fetch(`${API_URL}/api/rag/stats`, {
+    credentials: "include",
+  });
+  return handleResponse<RAGStats>(res);
+}

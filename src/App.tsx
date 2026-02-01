@@ -16,6 +16,7 @@ import { AdminLayout } from "./components/admin/AdminLayout";
 import { AdminLoginPage } from "./pages/admin/AdminLoginPage";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { VocabularyFormPage } from "./pages/admin/VocabularyFormPage";
+import { DataSourcesPage } from "./pages/admin/DataSourcesPage";
 
 function VocabularyFormEdit() {
   const { termId } = useParams();
@@ -50,6 +51,7 @@ function App() {
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="/admin/vocabulary/new" element={<VocabularyFormPage />} />
             <Route path="/admin/vocabulary/:termId/edit" element={<VocabularyFormEdit />} />
+            <Route path="/admin/weeks/:weekId/sources" element={<DataSourcesPage />} />
           </Route>
         </Route>
       </Routes>

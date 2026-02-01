@@ -11,6 +11,8 @@ import progressRoutes from "./routes/progress";
 import vocabularyRoutes from "./routes/vocabulary";
 import adminRoutes from "./routes/admin";
 import weeksRoutes from "./routes/weeks";
+import dataSourcesRoutes from "./routes/data-sources";
+import ragRoutes from "./routes/rag";
 import { checkPythonServiceHealth } from "./services/python-service-client";
 
 // Run migrations on startup
@@ -52,7 +54,9 @@ app.route("/api/challenges", challengesRoutes);
 app.route("/api/progress", progressRoutes);
 app.route("/api/vocabulary", vocabularyRoutes);
 app.route("/api/weeks", weeksRoutes);
+app.route("/api/rag", ragRoutes);
 app.route("/api/admin", adminRoutes);
+app.route("/api/admin/data-sources", dataSourcesRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === "production") {

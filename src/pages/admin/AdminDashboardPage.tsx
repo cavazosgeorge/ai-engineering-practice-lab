@@ -28,6 +28,7 @@ import {
   LuTriangleAlert,
   LuEye,
   LuEyeOff,
+  LuDatabase,
 } from "react-icons/lu";
 import {
   useAdminStats,
@@ -819,7 +820,7 @@ function WeeksTab() {
                     Terms
                   </Text>
                 </Box>
-                <Box w="80px" textAlign="right">
+                <Box w="100px" textAlign="right">
                   <Text
                     fontSize="xs"
                     fontWeight="semibold"
@@ -931,8 +932,19 @@ function WeeksTab() {
                       {week.vocabularyCount}
                     </Text>
                   </Box>
-                  <Box w="80px">
+                  <Box w="100px">
                     <HStack gap={1} justify="flex-end">
+                      <RouterLink to={`/admin/weeks/${week.id}/sources`} title="Data Sources">
+                        <Box
+                          p={1.5}
+                          borderRadius="md"
+                          color="gray.600"
+                          transition="all 0.15s ease"
+                          _hover={{ color: "cyan.400", bg: "gray.800" }}
+                        >
+                          <Box fontSize="14px"><LuDatabase /></Box>
+                        </Box>
+                      </RouterLink>
                       <Box
                         as="button"
                         p={1.5}
