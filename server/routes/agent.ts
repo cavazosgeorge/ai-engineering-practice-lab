@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { stream } from "hono/streaming";
+import { db } from "../db";
 import {
   createConversation,
   getConversation,
@@ -139,8 +140,14 @@ app.post("/conversations/:id/messages", async (c) => {
     updateConversationTitle(conversationId, title);
   }
 
-  // Determine week slug
-  const weekSlug = body.weekSlug || null;
+  // Determine week slug — use request body, or fall back to conversation's week
+  let weekSlug = body.weekSlug || null;
+  if (!weekSlug && conversation.week_id) {
+    const weekRow = db
+      .query<{ slug: string }, [string]>(`SELECT slug FROM weeks WHERE id = ?`)
+      .get(conversation.week_id);
+    if (weekRow) weekSlug = weekRow.slug;
+  }
 
   try {
     // Forward to Python agent service
@@ -275,7 +282,13 @@ function formatMessage(msg: {
     conversationId: msg.conversation_id,
     role: msg.role,
     content: msg.content,
-    toolCalls: msg.tool_calls ? JSON.parse(msg.tool_calls) : null,
+    toolCalls: msg.tool_calls
+      ? JSON.parse(msg.tool_calls).map((tc: Record<string, unknown>) => ({
+          toolName: tc.tool_name ?? tc.toolName ?? "",
+          arguments: tc.arguments ?? {},
+          result: tc.result ?? null,
+        }))
+      : null,
     toolCallId: msg.tool_call_id,
     tokenCount: msg.token_count,
     retrievedChunks: msg.retrieved_chunks

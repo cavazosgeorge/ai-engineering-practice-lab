@@ -7,6 +7,7 @@ Supports streaming responses via async generators that yield SSE-formatted event
 
 import json
 import logging
+import re
 from collections.abc import AsyncGenerator
 
 from langchain_openai import ChatOpenAI
@@ -24,19 +25,102 @@ DEFAULT_SYSTEM_PROMPT = """You are an AI study assistant for an AI Engineering c
 
 Your capabilities:
 - Search the course knowledge base for relevant information
-- Look up vocabulary terms and definitions for any lesson
+- Look up which lessons belong to a week (use get_week_lessons FIRST to discover lesson slugs)
+- Look up vocabulary terms and lesson content by slug
 - Check a student's vocabulary mastery statistics
 - Generate practice quiz questions
-- Explain lesson structure and content
 
-Guidelines:
+Tool usage strategy:
+1. When asked about a week's content, call get_week_lessons first to get the lesson slugs
+2. Then use those exact slugs with get_lesson_content or get_vocabulary_terms
+3. NEVER guess lesson slugs — always discover them via get_week_lessons first
+4. Call search_course_materials ONCE with a good query — do NOT repeat similar searches
+5. Synthesize information from tool results into a clear, helpful response
+
+Response guidelines:
 - Be concise and technically accurate
 - When citing information, mention the source
-- If you use a tool and get results, synthesize them into a helpful response
+- After gathering tool results, synthesize them into a single helpful response
+- Do NOT repeat tool results verbatim in your response — the student can already see tool results in the UI. Instead, add context, commentary, or a brief summary
+- For practice questions: present the question with your own framing, but don't copy the raw tool output word-for-word
 - If you don't know something, say so rather than guessing
-- Encourage active learning — suggest practice questions when appropriate"""
+- Encourage active learning — suggest practice questions when appropriate
+- Do NOT include <think> tags or reasoning traces in your response"""
 
 MAX_HISTORY_MESSAGES = 20
+
+_THINK_PATTERN = re.compile(r"<think>[\s\S]*?</think>\s*", re.DOTALL)
+
+
+def _strip_think_tags(text: str) -> str:
+    """Remove <think>...</think> blocks from completed text."""
+    return _THINK_PATTERN.sub("", text).lstrip()
+
+
+class ThinkBlockFilter:
+    """Filters <think>...</think> blocks from a token stream.
+
+    Buffers tokens while inside a think block and discards them.
+    Passes through tokens outside of think blocks.
+    """
+
+    def __init__(self):
+        self._buffer = ""
+        self._inside_think = False
+
+    def process(self, token: str) -> str:
+        """Process a streaming token. Returns text to emit (may be empty)."""
+        self._buffer += token
+        output = ""
+
+        while self._buffer:
+            if self._inside_think:
+                # Look for closing tag
+                end_idx = self._buffer.find("</think>")
+                if end_idx != -1:
+                    # Skip everything up to and including </think> plus trailing whitespace
+                    after = self._buffer[end_idx + 8:].lstrip()
+                    self._buffer = after
+                    self._inside_think = False
+                else:
+                    # Still inside think block, consume entire buffer
+                    self._buffer = ""
+                    break
+            else:
+                # Look for opening tag
+                start_idx = self._buffer.find("<think>")
+                if start_idx != -1:
+                    # Emit everything before <think>
+                    output += self._buffer[:start_idx]
+                    self._buffer = self._buffer[start_idx + 7:]
+                    self._inside_think = True
+                elif "<" in self._buffer:
+                    # Might be a partial "<think>" tag — hold back from the "<"
+                    lt_idx = self._buffer.rfind("<")
+                    tail = self._buffer[lt_idx:]
+                    if len(tail) < 7 and "<think>"[:len(tail)] == tail:
+                        # Partial match, buffer it
+                        output += self._buffer[:lt_idx]
+                        self._buffer = tail
+                        break
+                    else:
+                        # Not a partial match, emit all
+                        output += self._buffer
+                        self._buffer = ""
+                else:
+                    output += self._buffer
+                    self._buffer = ""
+
+        return output
+
+    def flush(self) -> str:
+        """Flush any remaining buffered content."""
+        if self._inside_think:
+            self._buffer = ""
+            return ""
+        remaining = self._buffer
+        self._buffer = ""
+        return remaining
 
 
 def _get_llm():
@@ -97,15 +181,15 @@ async def chat(request: AgentChatRequest) -> AgentChatResponse:
     tool_calls_info: list[ToolCallInfo] = []
     sources: list[SearchResult] = []
 
-    # Tool-calling loop (max 5 iterations)
-    for iteration in range(5):
+    # Tool-calling loop (max 10 iterations)
+    for iteration in range(10):
         response = await llm_with_tools.ainvoke(messages)
 
         if not response.tool_calls:
             # No tool calls — we have the final response
             usage = response.usage_metadata or {}
             return AgentChatResponse(
-                content=response.content or "",
+                content=_strip_think_tags(response.content or ""),
                 tool_calls=tool_calls_info,
                 sources=sources,
                 model=settings.AGENT_MODEL,
@@ -140,11 +224,17 @@ async def chat(request: AgentChatRequest) -> AgentChatResponse:
             else:
                 result = f"Unknown tool: {tool_name}"
 
+            # Strip hidden answer sections for UI display
+            display_result = str(result)
+            hidden_idx = display_result.find("[HIDDEN")
+            if hidden_idx != -1:
+                display_result = display_result[:hidden_idx].rstrip()
+
             tool_calls_info.append(
                 ToolCallInfo(
                     tool_name=tool_name,
                     arguments=tool_args,
-                    result=str(result),
+                    result=display_result,
                 )
             )
 
@@ -164,12 +254,19 @@ async def chat(request: AgentChatRequest) -> AgentChatResponse:
                 ToolMessage(content=str(result), tool_call_id=tool_id)
             )
 
-    # Max iterations reached — return what we have
+    # Max iterations reached — do a final synthesis call without tools
+    messages.append(HumanMessage(
+        content="You've used all available tool calls. Based on the information you already gathered, please provide a comprehensive answer to the student's question."
+    ))
+    response = await llm.ainvoke(messages)
+    usage = response.usage_metadata or {}
     return AgentChatResponse(
-        content="I've reached the maximum number of tool calls. Here's what I found so far based on the tools I used.",
+        content=response.content or "I gathered information but couldn't synthesize a response.",
         tool_calls=tool_calls_info,
         sources=sources,
         model=settings.AGENT_MODEL,
+        input_tokens=usage.get("input_tokens"),
+        output_tokens=usage.get("output_tokens"),
     )
 
 
@@ -193,7 +290,7 @@ async def chat_stream(request: AgentChatRequest) -> AsyncGenerator[str, None]:
         messages = _build_messages(request)
         tool_calls_info: list[dict] = []
 
-        for iteration in range(5):
+        for iteration in range(10):
             # First, get the full response to check for tool calls
             response = await llm_with_tools.ainvoke(messages)
 
@@ -221,14 +318,19 @@ async def chat_stream(request: AgentChatRequest) -> AsyncGenerator[str, None]:
                     else:
                         result = f"Unknown tool: {tool_name}"
 
+                    # Strip hidden answer sections for UI display and persistence
+                    display_result = str(result)
+                    hidden_idx = display_result.find("[HIDDEN")
+                    if hidden_idx != -1:
+                        display_result = display_result[:hidden_idx].rstrip()
+
                     tool_calls_info.append({
                         "tool_name": tool_name,
                         "arguments": tool_args,
-                        "result": str(result),
+                        "result": display_result,
                     })
 
-                    # Emit tool_result event
-                    yield f"data: {json.dumps({'type': 'tool_result', 'tool_name': tool_name, 'result': str(result)[:500]})}\n\n"
+                    yield f"data: {json.dumps({'type': 'tool_result', 'tool_name': tool_name, 'result': display_result[:500]})}\n\n"
 
                     messages.append(
                         ToolMessage(content=str(result), tool_call_id=tool_id)
@@ -239,15 +341,24 @@ async def chat_stream(request: AgentChatRequest) -> AsyncGenerator[str, None]:
             # No tool calls — stream the final response
             # Re-invoke with streaming this time
             full_content = ""
+            think_filter = ThinkBlockFilter()
             async for chunk in llm_with_tools.astream(messages):
                 if chunk.content:
-                    full_content += chunk.content
-                    yield f"data: {json.dumps({'type': 'content', 'token': chunk.content})}\n\n"
+                    filtered = think_filter.process(chunk.content)
+                    if filtered:
+                        full_content += filtered
+                        yield f"data: {json.dumps({'type': 'content', 'token': filtered})}\n\n"
+            # Flush any remaining buffered content
+            remaining = think_filter.flush()
+            if remaining:
+                full_content += remaining
+                yield f"data: {json.dumps({'type': 'content', 'token': remaining})}\n\n"
 
             # If we got no streaming content, use the non-streaming response
             if not full_content and response.content:
-                full_content = response.content
-                yield f"data: {json.dumps({'type': 'content', 'token': full_content})}\n\n"
+                full_content = _strip_think_tags(response.content)
+                if full_content:
+                    yield f"data: {json.dumps({'type': 'content', 'token': full_content})}\n\n"
 
             usage = response.usage_metadata or {}
 
@@ -255,8 +366,27 @@ async def chat_stream(request: AgentChatRequest) -> AsyncGenerator[str, None]:
             yield f"data: {json.dumps({'type': 'done', 'model': settings.AGENT_MODEL, 'tool_calls': tool_calls_info, 'input_tokens': usage.get('input_tokens'), 'output_tokens': usage.get('output_tokens')})}\n\n"
             return
 
-        # Max iterations reached
-        yield f"data: {json.dumps({'type': 'content', 'token': 'I reached the maximum number of tool calls. Here is what I found based on the tools I used.'})}\n\n"
+        # Max iterations reached — do a final synthesis call without tools
+        messages.append(HumanMessage(
+            content="You've used all available tool calls. Based on the information you already gathered, please provide a comprehensive answer to the student's question."
+        ))
+        llm_no_tools = _get_llm()
+        full_content = ""
+        think_filter = ThinkBlockFilter()
+        async for chunk in llm_no_tools.astream(messages):
+            if chunk.content:
+                filtered = think_filter.process(chunk.content)
+                if filtered:
+                    full_content += filtered
+                    yield f"data: {json.dumps({'type': 'content', 'token': filtered})}\n\n"
+        remaining = think_filter.flush()
+        if remaining:
+            full_content += remaining
+            yield f"data: {json.dumps({'type': 'content', 'token': remaining})}\n\n"
+
+        if not full_content:
+            yield f"data: {json.dumps({'type': 'content', 'token': 'I gathered information from the tools but could not synthesize a response.'})}\n\n"
+
         yield f"data: {json.dumps({'type': 'done', 'model': settings.AGENT_MODEL, 'tool_calls': tool_calls_info})}\n\n"
 
     except Exception as e:

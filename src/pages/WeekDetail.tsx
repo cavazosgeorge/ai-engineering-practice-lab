@@ -122,6 +122,7 @@ export function WeekDetail() {
             size="sm"
             onClick={async () => {
               const conv = await createConversation.mutateAsync({
+                weekId: week.id,
                 title: `Week ${week.weekNumber}: ${week.title}`,
               });
               navigate(`/agent/${conv.id}`);

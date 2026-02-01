@@ -45,7 +45,6 @@ export function useDeleteConversation() {
 }
 
 export function useSendMessage() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       conversationId,
@@ -56,12 +55,7 @@ export function useSendMessage() {
       message: string;
       weekSlug?: string;
     }) => agentApi.sendMessage(conversationId, message, weekSlug),
-    onSuccess: (_, { conversationId }) => {
-      // Invalidate conversation to refresh messages after stream completes
-      queryClient.invalidateQueries({
-        queryKey: agentKeys.conversation(conversationId),
-      });
-      queryClient.invalidateQueries({ queryKey: agentKeys.conversations() });
-    },
+    // NOTE: onSuccess fires when the SSE response starts, NOT when streaming
+    // finishes. The caller (ChatView) handles invalidation after the stream ends.
   });
 }

@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
-  Container,
   Heading,
   Text,
   VStack,
@@ -21,7 +20,10 @@ import {
   LuBot,
   LuUser,
 } from "react-icons/lu";
+import ReactMarkdown from "react-markdown";
+import { useQueryClient } from "@tanstack/react-query";
 import {
+  agentKeys,
   useAgentConversations,
   useAgentConversation,
   useCreateConversation,
@@ -96,6 +98,58 @@ function ToolCallCard({ tool }: { tool: ToolCallInfo }) {
 }
 
 // ============================================
+// Markdown Content
+// ============================================
+
+function MarkdownContent({ content }: { content: string }) {
+  return (
+    <Box
+      css={{
+        "& p": { margin: 0 },
+        "& p + p": { marginTop: "0.5em" },
+        "& strong": { color: "var(--chakra-colors-gray-100)", fontWeight: 600 },
+        "& em": { fontStyle: "italic" },
+        "& ul, & ol": { paddingLeft: "1.5em", margin: "0.4em 0" },
+        "& li": { marginBottom: "0.2em" },
+        "& li + li": { marginTop: "0.15em" },
+        "& code": {
+          background: "var(--chakra-colors-gray-700)",
+          padding: "0.1em 0.35em",
+          borderRadius: "4px",
+          fontSize: "0.85em",
+          fontFamily: "'JetBrains Mono', monospace",
+        },
+        "& pre": {
+          background: "var(--chakra-colors-gray-700)",
+          padding: "0.75em",
+          borderRadius: "6px",
+          overflow: "auto",
+          margin: "0.5em 0",
+        },
+        "& pre code": {
+          background: "none",
+          padding: 0,
+        },
+        "& h1, & h2, & h3": {
+          color: "var(--chakra-colors-gray-100)",
+          fontWeight: 600,
+          marginTop: "0.6em",
+          marginBottom: "0.3em",
+        },
+        "& h2": { fontSize: "1.05em" },
+        "& h3": { fontSize: "0.95em" },
+        "& hr": {
+          borderColor: "var(--chakra-colors-gray-700)",
+          margin: "0.5em 0",
+        },
+      }}
+    >
+      <ReactMarkdown>{content}</ReactMarkdown>
+    </Box>
+  );
+}
+
+// ============================================
 // Message Bubble
 // ============================================
 
@@ -147,15 +201,15 @@ function MessageBubble({
               borderRadius="lg"
               px={4}
               py={3}
+              color="gray.200"
+              fontSize="sm"
+              lineHeight="1.6"
             >
-              <Text
-                color="gray.200"
-                fontSize="sm"
-                whiteSpace="pre-wrap"
-                lineHeight="1.6"
-              >
-                {content}
-              </Text>
+              {isUser ? (
+                <Text whiteSpace="pre-wrap">{content}</Text>
+              ) : (
+                <MarkdownContent content={content} />
+              )}
             </Box>
           )}
         </VStack>
@@ -209,25 +263,21 @@ function StreamingMessage({
               borderRadius="lg"
               px={4}
               py={3}
+              color="gray.200"
+              fontSize="sm"
+              lineHeight="1.6"
             >
-              <Text
-                color="gray.200"
-                fontSize="sm"
-                whiteSpace="pre-wrap"
-                lineHeight="1.6"
-              >
-                {content}
-                <Box
-                  as="span"
-                  display="inline-block"
-                  w="2px"
-                  h="14px"
-                  bg="cyan.400"
-                  ml={0.5}
-                  animation="blink 1s step-end infinite"
-                  css={{ "@keyframes blink": { "50%": { opacity: 0 } } }}
-                />
-              </Text>
+              <MarkdownContent content={content} />
+              <Box
+                as="span"
+                display="inline-block"
+                w="2px"
+                h="14px"
+                bg="cyan.400"
+                ml={0.5}
+                animation="blink 1s step-end infinite"
+                css={{ "@keyframes blink": { "50%": { opacity: 0 } } }}
+              />
             </Box>
           ) : (
             <HStack gap={2} px={4} py={3}>
@@ -344,18 +394,34 @@ function Center({ children, ...props }: { children: React.ReactNode; h?: string 
 // ============================================
 
 function ChatView({ conversationId }: { conversationId: string }) {
+  const queryClient = useQueryClient();
   const { data: conversation } = useAgentConversation(conversationId);
   const sendMutation = useSendMessage();
   const { data: weeks } = useWeeks();
 
   const [input, setInput] = useState("");
-  const [weekSlug, setWeekSlug] = useState("");
+  const [weekSlug, setWeekSlug] = useState(() => {
+    // Will be overridden by useEffect when conversation loads
+    return "";
+  });
+  const [weekSlugInitialized, setWeekSlugInitialized] = useState(false);
   const [streamContent, setStreamContent] = useState("");
   const [streamToolCalls, setStreamToolCalls] = useState<ToolCallInfo[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-select week dropdown when conversation has a weekId
+  useEffect(() => {
+    if (weekSlugInitialized) return;
+    if (!conversation?.weekId || !weeks) return;
+    const match = weeks.find((w) => w.id === conversation.weekId);
+    if (match) {
+      setWeekSlug(match.slug);
+      setWeekSlugInitialized(true);
+    }
+  }, [conversation?.weekId, weeks, weekSlugInitialized]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -424,8 +490,14 @@ function ChatView({ conversationId }: { conversationId: string }) {
         `Error: ${error instanceof Error ? error.message : "Failed to send message"}`
       );
     } finally {
+      // Refetch conversation to get the saved messages BEFORE hiding streaming UI
+      await queryClient.refetchQueries({
+        queryKey: agentKeys.conversation(conversationId),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: agentKeys.conversations(),
+      });
       setIsStreaming(false);
-      // Refetch conversation to get the saved messages
       inputRef.current?.focus();
     }
   };
@@ -589,8 +661,8 @@ export function AgentPage() {
   };
 
   return (
-    <Container maxW="container.xl" py={0} px={0} h="calc(100vh - 64px)">
-      <HStack gap={0} h="full" align="stretch">
+    <Box h="calc(100vh - 64px)" overflow="hidden" display="flex">
+      <HStack gap={0} h="full" align="stretch" flex="1">
         {/* Sidebar */}
         <Box
           w="260px"
@@ -599,6 +671,9 @@ export function AgentPage() {
           bg="gray.900"
           p={4}
           flexShrink={0}
+          overflow="hidden"
+          display="flex"
+          flexDirection="column"
         >
           <ConversationList
             onSelect={handleSelectConversation}
@@ -656,6 +731,6 @@ export function AgentPage() {
           )}
         </Box>
       </HStack>
-    </Container>
+    </Box>
   );
 }

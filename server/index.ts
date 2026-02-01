@@ -20,14 +20,18 @@ import { checkPythonServiceHealth } from "./services/python-service-client";
 // Run migrations on startup
 runMigrations();
 
-// Check Python RAG/Agent service availability (non-blocking)
-checkPythonServiceHealth().then((health) => {
-  if (health) {
-    console.log(`Python RAG service: connected (${health.models.chat})`);
-  } else {
-    console.log("Python RAG service: not available (RAG/agent features disabled)");
+// Check Python RAG/Agent service availability (non-blocking, retry for startup race)
+(async () => {
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    const health = await checkPythonServiceHealth();
+    if (health) {
+      console.log(`Python RAG service: connected (${health.models.chat})`);
+      return;
+    }
+    if (attempt < 5) await new Promise((r) => setTimeout(r, 2000));
   }
-});
+  console.log("Python RAG service: not available (RAG/agent features disabled)");
+})();
 
 const app = new Hono();
 

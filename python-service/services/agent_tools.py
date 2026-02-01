@@ -115,6 +115,10 @@ def generate_practice_question(week_slug: str) -> str:
     """Generate a practice quiz question based on course materials for a specific week.
     Use this when a student wants to test their knowledge or practice.
 
+    The tool returns the question and options, plus a hidden answer section.
+    Present ONLY the question and options to the student first.
+    Wait for them to answer before revealing the correct answer and explanation.
+
     Args:
         week_slug: The week to generate a question for (e.g. 'week-1')
     """
@@ -130,7 +134,7 @@ def generate_practice_question(week_slug: str) -> str:
             return "Could not generate a practice question. The knowledge base may be empty."
 
         q = response.questions[0]
-        lines = [f"**Question:** {q.question}\n"]
+        lines = [f"Question: {q.question}\n"]
         for i, opt in enumerate(q.options):
             letter = chr(65 + i)  # A, B, C, D
             lines.append(f"  {letter}) {opt.text}")
@@ -139,8 +143,9 @@ def generate_practice_question(week_slug: str) -> str:
             (i for i, o in enumerate(q.options) if o.is_correct), 0
         )
         correct_letter = chr(65 + correct_idx)
-        lines.append(f"\n**Answer:** {correct_letter}")
-        lines.append(f"**Explanation:** {q.explanation}")
+        lines.append(f"\n[HIDDEN - do not show until student answers]")
+        lines.append(f"Answer: {correct_letter}")
+        lines.append(f"Explanation: {q.explanation}")
 
         return "\n".join(lines)
     except Exception as e:
@@ -187,10 +192,59 @@ def get_lesson_content(lesson_slug: str) -> str:
         return f"Failed to fetch lesson: {str(e)}"
 
 
+@tool
+def get_week_lessons(week_slug: str) -> str:
+    """Get the list of lessons that belong to a specific week. Use this FIRST when
+    a student asks about a week's content, so you know the correct lesson slugs
+    before calling get_lesson_content or get_vocabulary_terms.
+
+    Args:
+        week_slug: The week slug (e.g. 'week-1', 'week-2')
+    """
+    try:
+        response = httpx.get(
+            f"{settings.BUN_API_URL}/api/weeks/{week_slug}",
+            timeout=TOOL_TIMEOUT,
+        )
+        if response.status_code != 200:
+            return f"Could not fetch week '{week_slug}'."
+
+        week = response.json()
+        lessons = week.get("lessons", [])
+        if not lessons:
+            return f"No lessons found for week '{week_slug}'."
+
+        lines = [f"**{week.get('title', week_slug)}**"]
+        if week.get("description"):
+            lines.append(week["description"])
+        lines.append("")
+        lines.append("Lessons:")
+        for lesson in lessons:
+            parts = [f"  - **{lesson['title']}** (slug: `{lesson['slug']}`)"]
+            if lesson.get("description"):
+                parts.append(f"    {lesson['description']}")
+            counts = []
+            if lesson.get("conceptCount", 0) > 0:
+                counts.append(f"{lesson['conceptCount']} concepts")
+            if lesson.get("challengeCount", 0) > 0:
+                counts.append(f"{lesson['challengeCount']} challenges")
+            if lesson.get("vocabularyCount", 0) > 0:
+                counts.append(f"{lesson['vocabularyCount']} vocab terms")
+            if counts:
+                parts.append(f"    ({', '.join(counts)})")
+            lines.extend(parts)
+
+        return "\n".join(lines)
+    except Exception as e:
+        logger.error("get_week_lessons failed: %s", str(e))
+        return f"Failed to fetch week lessons: {str(e)}"
+
+
 def get_all_tools():
     """Return all agent tools as a list for the AgentExecutor."""
     return [
         search_course_materials,
+        get_week_lessons,
         get_vocabulary_terms,
         get_vocabulary_stats,
         generate_practice_question,
