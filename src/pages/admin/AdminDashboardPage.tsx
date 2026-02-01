@@ -614,6 +614,8 @@ export function AdminDashboardPage() {
               value="dashboard"
               color="gray.400"
               _selected={{ color: "cyan.400", borderColor: "cyan.400" }}
+              _checked={{ color: "cyan.400", borderColor: "cyan.400" }}
+              _focusVisible={{ outline: "none", boxShadow: "none" }}
               fontWeight="medium"
               fontSize="sm"
             >
@@ -623,6 +625,8 @@ export function AdminDashboardPage() {
               value="vocabulary"
               color="gray.400"
               _selected={{ color: "cyan.400", borderColor: "cyan.400" }}
+              _checked={{ color: "cyan.400", borderColor: "cyan.400" }}
+              _focusVisible={{ outline: "none", boxShadow: "none" }}
               fontWeight="medium"
               fontSize="sm"
             >

@@ -542,6 +542,8 @@ export function ChallengePage() {
                   minH="200px"
                   mb={4}
                   _placeholder={{ color: "gray.400" }}
+                  _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
+                  _focusVisible={{ outline: "none", boxShadow: "none" }}
                 />
                 {!answerRevealed ? (
                   <Button

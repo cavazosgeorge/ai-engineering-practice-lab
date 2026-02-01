@@ -77,6 +77,8 @@ export function HintsSection({
                       width="full"
                       justify="space-between"
                       _hover={{ bg: "whiteAlpha.50" }}
+                      _highlighted={{ bg: "whiteAlpha.50" }}
+                      _focusVisible={{ outline: "none", boxShadow: "none" }}
                     >
                       <HStack>
                         <Badge
