@@ -9,7 +9,6 @@ import {
   Button,
   Card,
   Breadcrumb,
-  Collapsible,
   Spinner,
   Textarea,
   Skeleton,
@@ -27,6 +26,7 @@ import { useChallenge } from "../hooks/useProgress";
 import { CodeEditor } from "../components/challenges/CodeEditor";
 import { TestResults } from "../components/challenges/TestResults";
 import { ExecutionVisualizer } from "../components/challenges/ExecutionVisualizer";
+import { HintsSection } from "../components/challenges/HintsSection";
 import { usePyodide } from "../hooks/usePyodide";
 import {
   validatePythonCode,
@@ -469,59 +469,11 @@ export function ChallengePage() {
             )}
 
             {challenge.hints && challenge.hints.length > 0 && (
-              <Card.Root bg="gray.900" borderColor="gray.800">
-                <Card.Header>
-                  <Heading size="md" color="white">
-                    Hints
-                  </Heading>
-                </Card.Header>
-                <Card.Body pt={0}>
-                  <VStack gap={3} align="stretch">
-                    {challenge.hints.map((hint, index) => (
-                      <Collapsible.Root
-                        key={index}
-                        onOpenChange={(details) => {
-                          if (details.open && index >= hintsRevealed) {
-                            setHintsRevealed(index + 1);
-                          }
-                        }}
-                      >
-                        <Collapsible.Trigger asChild>
-                          <Button
-                            variant="ghost"
-                            color="gray.300"
-                            width="full"
-                            justifyContent="flex-start"
-                            _hover={{ bg: "gray.800" }}
-                            _expanded={{ bg: "gray.800" }}
-                          >
-                            {index < hintsRevealed
-                              ? `Hint ${index + 1}`
-                              : `Reveal Hint ${index + 1}`}
-                          </Button>
-                        </Collapsible.Trigger>
-                        <Collapsible.Content>
-                          <Box
-                            p={4}
-                            bg="gray.800"
-                            borderRadius="md"
-                            color="gray.300"
-                            css={{
-                              "& code": {
-                                background: "var(--chakra-colors-gray-700)",
-                                padding: "0.2em 0.4em",
-                                borderRadius: "4px",
-                              },
-                            }}
-                          >
-                            <ReactMarkdown>{hint}</ReactMarkdown>
-                          </Box>
-                        </Collapsible.Content>
-                      </Collapsible.Root>
-                    ))}
-                  </VStack>
-                </Card.Body>
-              </Card.Root>
+              <HintsSection
+                hints={challenge.hints}
+                hintsRevealed={hintsRevealed}
+                setHintsRevealed={setHintsRevealed}
+              />
             )}
 
             {challenge.testCases && challenge.testCases.length > 0 && (
@@ -590,6 +542,8 @@ export function ChallengePage() {
                   minH="200px"
                   mb={4}
                   _placeholder={{ color: "gray.400" }}
+                  _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
+                  _focusVisible={{ outline: "none", boxShadow: "none" }}
                 />
                 {!answerRevealed ? (
                   <Button
@@ -701,52 +655,11 @@ export function ChallengePage() {
             )}
 
             {challenge.hints && challenge.hints.length > 0 && (
-              <Card.Root bg="gray.900" borderColor="gray.800">
-                <Card.Header>
-                  <Heading size="md" color="white">
-                    Hints
-                  </Heading>
-                </Card.Header>
-                <Card.Body pt={0}>
-                  <VStack gap={3} align="stretch">
-                    {challenge.hints.map((hint, index) => (
-                      <Collapsible.Root
-                        key={index}
-                        onOpenChange={(details) => {
-                          if (details.open && index >= hintsRevealed) {
-                            setHintsRevealed(index + 1);
-                          }
-                        }}
-                      >
-                        <Collapsible.Trigger asChild>
-                          <Button
-                            variant="ghost"
-                            color="gray.300"
-                            width="full"
-                            justifyContent="flex-start"
-                            _hover={{ bg: "gray.800" }}
-                            _expanded={{ bg: "gray.800" }}
-                          >
-                            {index < hintsRevealed
-                              ? `Hint ${index + 1}`
-                              : `Reveal Hint ${index + 1}`}
-                          </Button>
-                        </Collapsible.Trigger>
-                        <Collapsible.Content>
-                          <Box
-                            p={4}
-                            bg="gray.800"
-                            borderRadius="md"
-                            color="gray.300"
-                          >
-                            <ReactMarkdown>{hint}</ReactMarkdown>
-                          </Box>
-                        </Collapsible.Content>
-                      </Collapsible.Root>
-                    ))}
-                  </VStack>
-                </Card.Body>
-              </Card.Root>
+              <HintsSection
+                hints={challenge.hints}
+                hintsRevealed={hintsRevealed}
+                setHintsRevealed={setHintsRevealed}
+              />
             )}
           </>
         )}

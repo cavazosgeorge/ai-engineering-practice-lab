@@ -1,15 +1,31 @@
 import { useNavigate, Outlet, Link as RouterLink } from "react-router-dom";
-import { Box, Container, Flex, HStack, Heading, Button, Text } from "@chakra-ui/react";
-import { LuArrowLeft, LuLogOut } from "react-icons/lu";
-import { signOut } from "../../lib/auth-client";
+import {
+  Box,
+  Container,
+  Flex,
+  HStack,
+  Heading,
+  Text,
+  MenuRoot,
+  MenuTrigger,
+  MenuPositioner,
+  MenuContent,
+  MenuItem,
+} from "@chakra-ui/react";
+import { LuArrowLeft, LuLogOut, LuChevronDown, LuUser } from "react-icons/lu";
+import { signOut, useSession } from "../../lib/auth-client";
 
 export function AdminLayout() {
   const navigate = useNavigate();
+  const { data: session } = useSession();
 
   const handleLogout = async () => {
     await signOut();
     navigate("/admin");
   };
+
+  const userName = session?.user?.name || "Admin";
+  const userEmail = session?.user?.email || "";
 
   return (
     <Box minH="100vh" bg="gray.950">
@@ -36,35 +52,137 @@ export function AdminLayout() {
                 Admin Panel
               </Heading>
             </RouterLink>
-            <HStack gap={6}>
-              <RouterLink to="/">
-                <HStack
-                  gap={1}
+            <MenuRoot positioning={{ placement: "bottom-end" }}>
+              <MenuTrigger asChild>
+                <Box
+                  as="button"
+                  display="flex"
+                  alignItems="center"
+                  gap={2}
                   color="gray.400"
-                  _hover={{ color: "white" }}
                   transition="color 0.2s"
-                  fontSize="sm"
-                  fontWeight="medium"
+                  cursor="pointer"
+                  px={3}
+                  py={1.5}
+                  borderRadius="md"
+                  border="1px solid"
+                  borderColor="gray.700"
+                  _hover={{ borderColor: "gray.600", color: "white" }}
+                  _focusVisible={{ outline: "none", boxShadow: "none" }}
                 >
-                  <Box fontSize="16px">
-                    <LuArrowLeft />
+                  <Box
+                    w="28px"
+                    h="28px"
+                    borderRadius="full"
+                    bg="cyan.600/20"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    color="cyan.400"
+                    fontSize="14px"
+                    flexShrink={0}
+                  >
+                    <LuUser />
                   </Box>
-                  <Text>Back to App</Text>
-                </HStack>
-              </RouterLink>
-              <Button
-                size="sm"
-                variant="ghost"
-                color="gray.400"
-                _hover={{ color: "white", bg: "gray.800" }}
-                onClick={handleLogout}
-              >
-                <Box fontSize="16px" mr={1}>
-                  <LuLogOut />
+                  <Text fontSize="sm" fontWeight="medium">
+                    {userName}
+                  </Text>
+                  <Box fontSize="14px">
+                    <LuChevronDown />
+                  </Box>
                 </Box>
-                Logout
-              </Button>
-            </HStack>
+              </MenuTrigger>
+              <MenuPositioner>
+                <MenuContent
+                  bg="gray.900"
+                  borderColor="gray.700"
+                  borderWidth="1px"
+                  minW="240px"
+                  py={0}
+                  overflow="hidden"
+                >
+                  <Box px={4} py={3} bg="gray.800/50">
+                    <HStack gap={3}>
+                      <Box
+                        w="36px"
+                        h="36px"
+                        borderRadius="full"
+                        bg="cyan.600/20"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        color="cyan.400"
+                        fontSize="16px"
+                        flexShrink={0}
+                      >
+                        <LuUser />
+                      </Box>
+                      <Box>
+                        <Text
+                          fontSize="sm"
+                          fontWeight="semibold"
+                          color="white"
+                        >
+                          {userName}
+                        </Text>
+                        {userEmail && (
+                          <Text fontSize="xs" color="gray.400">
+                            {userEmail}
+                          </Text>
+                        )}
+                      </Box>
+                    </HStack>
+                    <Box
+                      mt={2}
+                      display="inline-block"
+                      px={2}
+                      py={0.5}
+                      borderRadius="sm"
+                      bg="cyan.600/15"
+                      fontSize="xs"
+                      fontWeight="medium"
+                      color="cyan.300"
+                      fontFamily="'JetBrains Mono', monospace"
+                    >
+                      admin
+                    </Box>
+                  </Box>
+                  <Box borderBottom="1px solid" borderColor="gray.700" />
+                  <Box py={1}>
+                    <MenuItem
+                      value="back-to-app"
+                      fontSize="sm"
+                      color="gray.300"
+                      bg="transparent"
+                      _hover={{ bg: "gray.800", color: "white" }}
+                      _highlighted={{ bg: "gray.800", color: "white" }}
+                      cursor="pointer"
+                      onClick={() => navigate("/")}
+                    >
+                      <Box fontSize="16px" mr={2}>
+                        <LuArrowLeft />
+                      </Box>
+                      Back to App
+                    </MenuItem>
+                    <MenuItem
+                      value="logout"
+                      fontSize="sm"
+                      color="gray.300"
+                      bg="transparent"
+                      _hover={{ bg: "gray.800", color: "white" }}
+                      _highlighted={{ bg: "gray.800", color: "white" }}
+                      cursor="pointer"
+                      onClick={handleLogout}
+                    >
+                      <Box fontSize="16px" mr={2}>
+                        <LuLogOut />
+                      </Box>
+                      Logout
+                    </MenuItem>
+                  </Box>
+                </MenuContent>
+              </MenuPositioner>
+            </MenuRoot>
           </Flex>
         </Container>
       </Box>

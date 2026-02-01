@@ -541,6 +541,7 @@ export function ExecutionVisualizer({
                   variant="ghost"
                   color="gray.400"
                   _hover={{ color: "white", bg: "gray.700" }}
+                  _focusVisible={{ outline: "none", boxShadow: "none" }}
                   size="sm"
                 >
                   <FaRedo />
@@ -552,6 +553,7 @@ export function ExecutionVisualizer({
                   variant="ghost"
                   color="gray.400"
                   _hover={{ color: "white", bg: "gray.700" }}
+                  _focusVisible={{ outline: "none", boxShadow: "none" }}
                   _disabled={{ opacity: 0.3 }}
                   size="sm"
                 >
@@ -574,6 +576,7 @@ export function ExecutionVisualizer({
                   variant="ghost"
                   color="gray.400"
                   _hover={{ color: "white", bg: "gray.700" }}
+                  _focusVisible={{ outline: "none", boxShadow: "none" }}
                   _disabled={{ opacity: 0.3 }}
                   size="sm"
                 >

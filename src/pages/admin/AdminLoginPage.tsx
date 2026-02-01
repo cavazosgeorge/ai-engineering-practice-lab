@@ -123,6 +123,7 @@ export function AdminLoginPage() {
                       color="white"
                       _placeholder={{ color: "gray.500" }}
                       _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
+                      _focusVisible={{ outline: "none", boxShadow: "none" }}
                       required
                     />
                   </Field.Root>
@@ -141,6 +142,7 @@ export function AdminLoginPage() {
                       color="white"
                       _placeholder={{ color: "gray.500" }}
                       _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
+                      _focusVisible={{ outline: "none", boxShadow: "none" }}
                       required
                     />
                   </Field.Root>

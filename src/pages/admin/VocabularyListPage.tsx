@@ -239,6 +239,7 @@ export function VocabularyListPage() {
                       color="white"
                       _placeholder={{ color: "gray.500" }}
                       _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
+                      _focusVisible={{ outline: "none", boxShadow: "none" }}
                     />
                   </HStack>
                 </Box>
@@ -252,6 +253,7 @@ export function VocabularyListPage() {
                       bg="gray.800"
                       borderColor="gray.700"
                       color="white"
+                      _focusVisible={{ outline: "none", boxShadow: "none", borderColor: "cyan.500" }}
                     >
                       <option value="">All Lessons</option>
                       {(lessons ?? []).map((lesson) => (
@@ -272,6 +274,7 @@ export function VocabularyListPage() {
                       bg="gray.800"
                       borderColor="gray.700"
                       color="white"
+                      _focusVisible={{ outline: "none", boxShadow: "none", borderColor: "cyan.500" }}
                     >
                       <option value="">All Difficulties</option>
                       <option value="beginner">Beginner</option>

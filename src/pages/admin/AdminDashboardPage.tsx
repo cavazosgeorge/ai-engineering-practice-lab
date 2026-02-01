@@ -313,6 +313,7 @@ function VocabularyTab() {
                     color="white"
                     _placeholder={{ color: "gray.500" }}
                     _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
+                    _focusVisible={{ outline: "none", boxShadow: "none" }}
                   />
                 </HStack>
               </Box>
@@ -324,6 +325,7 @@ function VocabularyTab() {
                     bg="gray.800"
                     borderColor="gray.700"
                     color="white"
+                    _focusVisible={{ outline: "none", boxShadow: "none", borderColor: "cyan.500" }}
                   >
                     <option value="">All Lessons</option>
                     {(lessons ?? []).map((lesson) => (
@@ -342,6 +344,7 @@ function VocabularyTab() {
                     bg="gray.800"
                     borderColor="gray.700"
                     color="white"
+                    _focusVisible={{ outline: "none", boxShadow: "none", borderColor: "cyan.500" }}
                   >
                     <option value="">All Difficulties</option>
                     <option value="beginner">Beginner</option>
@@ -611,6 +614,8 @@ export function AdminDashboardPage() {
               value="dashboard"
               color="gray.400"
               _selected={{ color: "cyan.400", borderColor: "cyan.400" }}
+              _checked={{ color: "cyan.400", borderColor: "cyan.400" }}
+              _focusVisible={{ outline: "none", boxShadow: "none" }}
               fontWeight="medium"
               fontSize="sm"
             >
@@ -620,6 +625,8 @@ export function AdminDashboardPage() {
               value="vocabulary"
               color="gray.400"
               _selected={{ color: "cyan.400", borderColor: "cyan.400" }}
+              _checked={{ color: "cyan.400", borderColor: "cyan.400" }}
+              _focusVisible={{ outline: "none", boxShadow: "none" }}
               fontWeight="medium"
               fontSize="sm"
             >

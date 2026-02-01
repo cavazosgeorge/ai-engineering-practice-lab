@@ -2,6 +2,19 @@
 
 ## What Was Done
 
+### Session: Admin Profile Dropdown Menu
+
+Replaced the standalone "Back to App" and "Logout" buttons in the admin navbar with a profile dropdown menu.
+
+**Changes:**
+- `src/components/admin/AdminLayout.tsx` - Replaced HStack buttons with Chakra v3 MenuRoot dropdown
+  - Added `useSession` hook to display logged-in user's name, email, and role
+  - Menu trigger shows user icon + name + chevron with bordered button style
+  - Dropdown header shows profile widget (avatar, name, email, "admin" role badge)
+  - Menu items: "Back to App" (navigates to `/`) and "Logout" (calls signOut)
+  - Positioned bottom-end, styled to match dark terminal theme (gray.900 bg, gray.700 borders, cyan accents)
+  - Uses `navigate()` for both actions instead of RouterLink to avoid ref issues with MenuItem
+
 ### Session: Admin CRM Implementation & Polish
 
 Implemented a complete Admin CRM for managing vocabulary terms with better-auth authentication, then iterated on UI polish, performance, and bug fixes across multiple rounds.
