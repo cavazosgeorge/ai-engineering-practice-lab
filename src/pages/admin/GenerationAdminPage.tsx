@@ -454,7 +454,11 @@ function JobHistory({
           <HStack justify="space-between">
             <HStack gap={3}>
               <JobStatusBadge status={job.status} />
-              <Badge variant="outline" colorPalette="gray">
+              <Badge
+                variant="subtle"
+                colorPalette="purple"
+                fontSize="xs"
+              >
                 {job.jobType}
               </Badge>
               <Text color="gray.400" fontSize="xs">
@@ -464,7 +468,7 @@ function JobHistory({
             <HStack gap={2}>
               {job.modelName && (
                 <Text
-                  color="gray.600"
+                  color="gray.400"
                   fontSize="xs"
                   fontFamily="'JetBrains Mono', monospace"
                 >
@@ -473,7 +477,7 @@ function JobHistory({
               )}
               {(job.inputTokenCount || job.outputTokenCount) && (
                 <Text
-                  color="gray.600"
+                  color="gray.400"
                   fontSize="xs"
                   fontFamily="'JetBrains Mono', monospace"
                 >
@@ -504,7 +508,7 @@ function JobHistory({
             </Text>
           )}
           {job.status === "completed" && job.result && (
-            <Text color="gray.500" fontSize="xs" mt={1}>
+            <Text color="gray.400" fontSize="xs" mt={1}>
               {Array.isArray(job.result) ? job.result.length : 0} items
               generated
             </Text>
