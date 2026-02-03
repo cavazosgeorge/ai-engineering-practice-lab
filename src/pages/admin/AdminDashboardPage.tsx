@@ -314,7 +314,7 @@ function VocabularyTab() {
             <HStack gap={4} flexWrap="wrap">
               <Box flex="1" minW="200px">
                 <HStack>
-                  <Box color="gray.500" fontSize="16px">
+                  <Box color="gray.400" fontSize="16px">
                     <LuSearch />
                   </Box>
                   <Input
@@ -376,7 +376,7 @@ function VocabularyTab() {
             <Card.Body py={12}>
               <Center>
                 <VStack gap={4}>
-                  <Text color="gray.500" fontSize="lg">
+                  <Text color="gray.400" fontSize="lg">
                     {terms?.length === 0
                       ? "No vocabulary terms yet"
                       : "No terms match your filters"}
@@ -416,7 +416,7 @@ function VocabularyTab() {
                   <Text
                     fontSize="xs"
                     fontWeight="semibold"
-                    color="gray.500"
+                    color="gray.400"
                     letterSpacing="0.08em"
                     textTransform="uppercase"
                     fontFamily="'JetBrains Mono', monospace"
@@ -428,7 +428,7 @@ function VocabularyTab() {
                   <Text
                     fontSize="xs"
                     fontWeight="semibold"
-                    color="gray.500"
+                    color="gray.400"
                     letterSpacing="0.08em"
                     textTransform="uppercase"
                     fontFamily="'JetBrains Mono', monospace"
@@ -440,7 +440,7 @@ function VocabularyTab() {
                   <Text
                     fontSize="xs"
                     fontWeight="semibold"
-                    color="gray.500"
+                    color="gray.400"
                     letterSpacing="0.08em"
                     textTransform="uppercase"
                     fontFamily="'JetBrains Mono', monospace"
@@ -452,7 +452,7 @@ function VocabularyTab() {
                   <Text
                     fontSize="xs"
                     fontWeight="semibold"
-                    color="gray.500"
+                    color="gray.400"
                     letterSpacing="0.08em"
                     textTransform="uppercase"
                     fontFamily="'JetBrains Mono', monospace"
@@ -464,7 +464,7 @@ function VocabularyTab() {
                   <Text
                     fontSize="xs"
                     fontWeight="semibold"
-                    color="gray.500"
+                    color="gray.400"
                     letterSpacing="0.08em"
                     textTransform="uppercase"
                     fontFamily="'JetBrains Mono', monospace"
@@ -523,7 +523,7 @@ function VocabularyTab() {
                   </Box>
                   <Box flex="1">
                     <Text
-                      color="gray.500"
+                      color="gray.400"
                       fontSize="xs"
                       fontFamily="'JetBrains Mono', monospace"
                     >
@@ -546,7 +546,7 @@ function VocabularyTab() {
                         flexShrink={0}
                       />
                       <Text
-                        color="gray.500"
+                        color="gray.400"
                         fontSize="xs"
                         fontFamily="'JetBrains Mono', monospace"
                         textTransform="capitalize"
@@ -562,7 +562,7 @@ function VocabularyTab() {
                           as="button"
                           p={1.5}
                           borderRadius="md"
-                          color="gray.600"
+                          color="gray.500"
                           transition="all 0.15s ease"
                           _hover={{ color: "cyan.400", bg: "gray.800" }}
                         >
@@ -573,7 +573,7 @@ function VocabularyTab() {
                         as="button"
                         p={1.5}
                         borderRadius="md"
-                        color="gray.600"
+                        color="gray.500"
                         transition="all 0.15s ease"
                         _hover={{ color: "red.400", bg: "gray.800" }}
                         onClick={() => setTermToDelete(term)}
@@ -737,7 +737,7 @@ function WeeksTab() {
           <Card.Root bg="gray.900" borderColor="gray.800" borderWidth="1px">
             <Card.Body py={12}>
               <Center>
-                <Text color="gray.500" fontSize="lg">
+                <Text color="gray.400" fontSize="lg">
                   No weeks configured yet. Run `bun run db:seed-weeks` to seed weeks.
                 </Text>
               </Center>
@@ -764,7 +764,7 @@ function WeeksTab() {
                   <Text
                     fontSize="xs"
                     fontWeight="semibold"
-                    color="gray.500"
+                    color="gray.400"
                     letterSpacing="0.08em"
                     textTransform="uppercase"
                     fontFamily="'JetBrains Mono', monospace"
@@ -776,7 +776,7 @@ function WeeksTab() {
                   <Text
                     fontSize="xs"
                     fontWeight="semibold"
-                    color="gray.500"
+                    color="gray.400"
                     letterSpacing="0.08em"
                     textTransform="uppercase"
                     fontFamily="'JetBrains Mono', monospace"
@@ -788,7 +788,7 @@ function WeeksTab() {
                   <Text
                     fontSize="xs"
                     fontWeight="semibold"
-                    color="gray.500"
+                    color="gray.400"
                     letterSpacing="0.08em"
                     textTransform="uppercase"
                     fontFamily="'JetBrains Mono', monospace"
@@ -800,7 +800,7 @@ function WeeksTab() {
                   <Text
                     fontSize="xs"
                     fontWeight="semibold"
-                    color="gray.500"
+                    color="gray.400"
                     letterSpacing="0.08em"
                     textTransform="uppercase"
                     fontFamily="'JetBrains Mono', monospace"
@@ -812,7 +812,7 @@ function WeeksTab() {
                   <Text
                     fontSize="xs"
                     fontWeight="semibold"
-                    color="gray.500"
+                    color="gray.400"
                     letterSpacing="0.08em"
                     textTransform="uppercase"
                     fontFamily="'JetBrains Mono', monospace"
@@ -824,7 +824,7 @@ function WeeksTab() {
                   <Text
                     fontSize="xs"
                     fontWeight="semibold"
-                    color="gray.500"
+                    color="gray.400"
                     letterSpacing="0.08em"
                     textTransform="uppercase"
                     fontFamily="'JetBrains Mono', monospace"
@@ -881,7 +881,7 @@ function WeeksTab() {
                       {week.title}
                     </Text>
                     {week.description && (
-                      <Text color="gray.500" fontSize="xs" lineClamp={1}>
+                      <Text color="gray.400" fontSize="xs" lineClamp={1}>
                         {week.description}
                       </Text>
                     )}
@@ -895,7 +895,7 @@ function WeeksTab() {
                       fontSize="xs"
                       fontWeight="medium"
                       bg={week.isPublished ? "green.900/40" : "gray.800"}
-                      color={week.isPublished ? "green.400" : "gray.500"}
+                      color={week.isPublished ? "green.400" : "gray.400"}
                       border="1px solid"
                       borderColor={week.isPublished ? "green.700/50" : "gray.700"}
                       transition="all 0.15s ease"
@@ -938,7 +938,7 @@ function WeeksTab() {
                         <Box
                           p={1.5}
                           borderRadius="md"
-                          color="gray.600"
+                          color="gray.500"
                           transition="all 0.15s ease"
                           _hover={{ color: "cyan.400", bg: "gray.800" }}
                         >
@@ -949,7 +949,7 @@ function WeeksTab() {
                         as="button"
                         p={1.5}
                         borderRadius="md"
-                        color="gray.600"
+                        color="gray.500"
                         transition="all 0.15s ease"
                         _hover={{ color: "red.400", bg: "gray.800" }}
                         onClick={() => setWeekToDelete(week)}

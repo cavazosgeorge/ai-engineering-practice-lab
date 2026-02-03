@@ -140,7 +140,7 @@ app.post("/ingest/text", async (c) => {
         title: body.title,
         content: body.content,
       },
-      timeout: 60000,
+      timeout: 180000,
     });
 
     if (result.status === "error") {
@@ -240,7 +240,7 @@ app.post("/ingest/url", async (c) => {
         title: body.title,
         url: body.url,
       },
-      timeout: 60000,
+      timeout: 180000,
     });
 
     if (result.status === "error") {
@@ -327,7 +327,7 @@ app.post("/ingest/pdf", async (c) => {
         metadata: Record<string, unknown>;
       }>;
       error?: string;
-    }>("/sources/ingest/pdf", pythonForm);
+    }>("/sources/ingest/pdf", pythonForm, 180000);
 
     if (result.status === "error") {
       updateDataSourceStatus(source.id, "error", {

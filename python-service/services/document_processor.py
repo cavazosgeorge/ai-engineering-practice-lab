@@ -28,7 +28,7 @@ def extract_from_text(content: str, title: str = "") -> list[Document]:
 
 def extract_from_url(url: str, title: str = "") -> list[Document]:
     """Extract documents from a URL using WebBaseLoader."""
-    loader = WebBaseLoader(url)
+    loader = WebBaseLoader(url, requests_kwargs={"timeout": 30})
     docs = loader.load()
     for doc in docs:
         doc.metadata["source_type"] = "url"

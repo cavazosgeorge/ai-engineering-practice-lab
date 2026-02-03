@@ -4,6 +4,7 @@ Semantic search router.
 Provides search over the RAG knowledge base and index statistics.
 """
 
+import asyncio
 import logging
 
 from fastapi import APIRouter
@@ -25,7 +26,8 @@ async def semantic_search(request: SearchRequest) -> SearchResponse:
     Optionally scope to a specific week. Returns ranked results
     with similarity scores.
     """
-    results = search_knowledge_base(
+    results = await asyncio.to_thread(
+        search_knowledge_base,
         query=request.query,
         week_slug=request.week_slug,
         top_k=request.top_k,
@@ -41,7 +43,7 @@ async def semantic_search(request: SearchRequest) -> SearchResponse:
 @router.get("/stats", response_model=StatsResponse)
 async def index_stats() -> StatsResponse:
     """Get statistics for all FAISS indexes."""
-    stats = get_all_stats()
+    stats = await asyncio.to_thread(get_all_stats)
     return StatsResponse(
         total_chunks=stats["total_chunks"],
         total_indexes=stats["total_indexes"],

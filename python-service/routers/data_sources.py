@@ -4,6 +4,7 @@ Data source ingestion router.
 Handles text, URL, and PDF ingestion into the RAG pipeline.
 """
 
+import asyncio
 import logging
 import os
 import uuid
@@ -26,7 +27,8 @@ async def ingest_text_source(request: IngestTextRequest) -> IngestResponse:
     if not request.content.strip():
         raise HTTPException(status_code=400, detail="Content cannot be empty")
 
-    return ingest_text(
+    return await asyncio.to_thread(
+        ingest_text,
         source_id=request.source_id,
         week_slug=request.week_slug,
         title=request.title,
@@ -40,7 +42,8 @@ async def ingest_url_source(request: IngestURLRequest) -> IngestResponse:
     if not request.url.strip():
         raise HTTPException(status_code=400, detail="URL cannot be empty")
 
-    return ingest_url(
+    return await asyncio.to_thread(
+        ingest_url,
         source_id=request.source_id,
         week_slug=request.week_slug,
         title=request.title,
@@ -85,7 +88,8 @@ async def ingest_pdf_source(
         with open(file_path, "wb") as f:
             f.write(contents)
 
-        result = ingest_pdf(
+        result = await asyncio.to_thread(
+            ingest_pdf,
             source_id=source_id,
             week_slug=week_slug,
             title=title,
@@ -115,20 +119,20 @@ async def reprocess_source(
     Removes existing chunks and re-runs the pipeline.
     """
     # Remove old chunks first
-    remove_source(week_slug, source_id)
+    await asyncio.to_thread(remove_source, week_slug, source_id)
 
     if source_type == "text":
         if not content:
             raise HTTPException(
                 status_code=400, detail="Content required for text reprocessing"
             )
-        return ingest_text(source_id, week_slug, title, content)
+        return await asyncio.to_thread(ingest_text, source_id, week_slug, title, content)
     elif source_type == "url":
         if not url:
             raise HTTPException(
                 status_code=400, detail="URL required for URL reprocessing"
             )
-        return ingest_url(source_id, week_slug, title, url)
+        return await asyncio.to_thread(ingest_url, source_id, week_slug, title, url)
     else:
         raise HTTPException(
             status_code=400,
@@ -139,5 +143,5 @@ async def reprocess_source(
 @router.delete("/{source_id}")
 async def delete_source(source_id: str, week_slug: str) -> dict:
     """Remove all chunks for a data source from the vector store."""
-    removed = remove_source(week_slug, source_id)
+    removed = await asyncio.to_thread(remove_source, week_slug, source_id)
     return {"source_id": source_id, "chunks_removed": removed}

@@ -5,6 +5,7 @@ Provides endpoints for generating vocabulary terms, quiz questions,
 and coding challenges from RAG-retrieved course materials.
 """
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, HTTPException
@@ -34,7 +35,7 @@ async def generate_vocabulary_terms(
 ) -> GenerateVocabularyResponse:
     """Generate vocabulary terms from week course materials."""
     try:
-        return generate_vocabulary(request)
+        return await asyncio.to_thread(generate_vocabulary, request)
     except Exception as e:
         logger.error("Vocabulary generation failed: %s", str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -46,7 +47,7 @@ async def generate_quiz_questions(
 ) -> GenerateQuizResponse:
     """Generate quiz questions from week course materials."""
     try:
-        return generate_quiz(request)
+        return await asyncio.to_thread(generate_quiz, request)
     except Exception as e:
         logger.error("Quiz generation failed: %s", str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -58,7 +59,7 @@ async def generate_coding_challenges(
 ) -> GenerateChallengeResponse:
     """Generate coding challenges from week course materials."""
     try:
-        return generate_challenges(request)
+        return await asyncio.to_thread(generate_challenges, request)
     except Exception as e:
         logger.error("Challenge generation failed: %s", str(e))
         raise HTTPException(status_code=500, detail=str(e))

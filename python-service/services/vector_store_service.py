@@ -14,7 +14,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 
 from config import settings
-from services.embedding_service import get_embeddings
+from services.embedding_service import embed_texts_parallel, get_embeddings
 
 logger = logging.getLogger(__name__)
 
@@ -91,13 +91,20 @@ def add_documents(week_slug: str, documents: list[Document]) -> int:
         return 0
 
     embeddings = get_embeddings()
+    texts = [doc.page_content for doc in documents]
+    metadatas = [doc.metadata for doc in documents]
+
+    # Embed in parallel batches for large document sets
+    vectors = embed_texts_parallel(texts)
+    text_embeddings = list(zip(texts, vectors))
+
     existing = _load_index(week_slug)
 
     if existing is not None:
-        existing.add_documents(documents)
+        existing.add_embeddings(text_embeddings, metadatas)
         _save_index(week_slug, existing)
     else:
-        store = FAISS.from_documents(documents, embeddings)
+        store = FAISS.from_embeddings(text_embeddings, embeddings, metadatas=metadatas)
         _save_index(week_slug, store)
 
     logger.info(
@@ -190,10 +197,20 @@ def delete_source_chunks(week_slug: str, source_id: str) -> int:
         delete_index(week_slug)
         return len(ids_to_remove)
 
-    # Rebuild index with remaining documents
+    # Rebuild index from existing vectors (no re-embedding needed)
     remaining_docs = [all_docs[doc_id] for doc_id in ids_to_keep]
+    remaining_texts = [doc.page_content for doc in remaining_docs]
+    remaining_metadatas = [doc.metadata for doc in remaining_docs]
+
+    # Extract existing vectors from the FAISS index
+    id_to_index = {v: k for k, v in store.index_to_docstore_id.items()}
+    vectors = [store.index.reconstruct(id_to_index[doc_id]).tolist() for doc_id in ids_to_keep]
+
     embeddings = get_embeddings()
-    new_store = FAISS.from_documents(remaining_docs, embeddings)
+    text_embeddings = list(zip(remaining_texts, vectors))
+    new_store = FAISS.from_embeddings(
+        text_embeddings, embeddings, metadatas=remaining_metadatas
+    )
     _save_index(week_slug, new_store)
 
     logger.info(

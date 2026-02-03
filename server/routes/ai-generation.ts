@@ -98,7 +98,7 @@ app.post("/generate", async (c) => {
             existing_terms: body.existingTerms || [],
             temperature,
           },
-          timeout: 60000,
+          timeout: 120000,
         }
       );
       result = JSON.stringify(response.terms);
@@ -116,7 +116,7 @@ app.post("/generate", async (c) => {
             existing_questions: body.existingQuestions || [],
             temperature,
           },
-          timeout: 60000,
+          timeout: 120000,
         }
       );
       result = JSON.stringify(response.questions);
@@ -134,7 +134,7 @@ app.post("/generate", async (c) => {
             existing_titles: body.existingTitles || [],
             temperature,
           },
-          timeout: 60000,
+          timeout: 120000,
         }
       );
       result = JSON.stringify(response.challenges);

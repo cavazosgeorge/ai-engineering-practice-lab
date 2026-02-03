@@ -34,6 +34,7 @@ import {
   useDataSourceStats,
   useIngestText,
   useIngestURL,
+  useIngestPDF,
   useDeleteDataSource,
   useAdminWeeks,
 } from "../../hooks/useAdmin";
@@ -143,15 +144,20 @@ function AddSourceForm({
   week: AdminWeek;
   onClose: () => void;
 }) {
-  const [sourceType, setSourceType] = useState<"text" | "url">("text");
+  const [sourceType, setSourceType] = useState<"text" | "url" | "pdf">("text");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [url, setUrl] = useState("");
+  const [file, setFile] = useState<File | null>(null);
 
   const ingestTextMutation = useIngestText();
   const ingestURLMutation = useIngestURL();
+  const ingestPDFMutation = useIngestPDF();
 
-  const isSubmitting = ingestTextMutation.isPending || ingestURLMutation.isPending;
+  const isSubmitting =
+    ingestTextMutation.isPending ||
+    ingestURLMutation.isPending ||
+    ingestPDFMutation.isPending;
 
   const handleSubmit = async () => {
     if (!title.trim()) return;
@@ -170,6 +176,13 @@ function AddSourceForm({
         title,
         url,
       });
+    } else if (sourceType === "pdf" && file) {
+      const formData = new FormData();
+      formData.append("weekId", week.id);
+      formData.append("weekSlug", week.slug);
+      formData.append("title", title);
+      formData.append("file", file);
+      await ingestPDFMutation.mutateAsync(formData);
     }
 
     onClose();
@@ -191,7 +204,7 @@ function AddSourceForm({
               <NativeSelect.Field
                 value={sourceType}
                 onChange={(e) =>
-                  setSourceType(e.target.value as "text" | "url")
+                  setSourceType(e.target.value as "text" | "url" | "pdf")
                 }
                 bg="gray.800"
                 borderColor="gray.700"
@@ -204,6 +217,7 @@ function AddSourceForm({
               >
                 <option value="text">Paste Text</option>
                 <option value="url">URL</option>
+                <option value="pdf">PDF Upload</option>
               </NativeSelect.Field>
             </NativeSelect.Root>
           </Box>
@@ -243,7 +257,7 @@ function AddSourceForm({
                 rows={8}
               />
             </Box>
-          ) : (
+          ) : sourceType === "url" ? (
             <Box>
               <Text color="gray.400" fontSize="sm" mb={1}>
                 URL
@@ -259,6 +273,37 @@ function AddSourceForm({
                 _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
                 _focusVisible={{ outline: "none", boxShadow: "none" }}
               />
+            </Box>
+          ) : (
+            <Box>
+              <Text color="gray.400" fontSize="sm" mb={1}>
+                PDF File
+              </Text>
+              <Input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                bg="gray.800"
+                borderColor="gray.700"
+                color="white"
+                p={1.5}
+                _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
+                _focusVisible={{ outline: "none", boxShadow: "none" }}
+                css={{
+                  "&::file-selector-button": {
+                    background: "var(--chakra-colors-gray-700)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    padding: "4px 12px",
+                    marginRight: "8px",
+                    cursor: "pointer",
+                  },
+                }}
+              />
+              <Text color="gray.500" fontSize="xs" mt={1}>
+                Max 10MB
+              </Text>
             </Box>
           )}
 
@@ -281,7 +326,11 @@ function AddSourceForm({
               loadingText="Processing..."
               disabled={
                 !title.trim() ||
-                (sourceType === "text" ? !content.trim() : !url.trim())
+                (sourceType === "text"
+                  ? !content.trim()
+                  : sourceType === "url"
+                  ? !url.trim()
+                  : !file)
               }
             >
               Ingest
@@ -472,10 +521,10 @@ export function DataSourcesPage() {
             <Card.Body py={12}>
               <Center>
                 <VStack gap={4}>
-                  <Text color="gray.500" fontSize="lg">
+                  <Text color="gray.400" fontSize="lg">
                     No data sources for this week yet
                   </Text>
-                  <Text color="gray.600" fontSize="sm">
+                  <Text color="gray.500" fontSize="sm">
                     Add articles, papers, or text content to power RAG features
                   </Text>
                 </VStack>
@@ -522,13 +571,13 @@ export function DataSourcesPage() {
                         <HStack gap={3} mt={1}>
                           <StatusBadge status={source.status} />
                           {source.chunkCount > 0 && (
-                            <Text color="gray.500" fontSize="xs">
+                            <Text color="gray.400" fontSize="xs">
                               {source.chunkCount} chunks
                             </Text>
                           )}
                           {source.url && (
                             <Text
-                              color="gray.600"
+                              color="gray.500"
                               fontSize="xs"
                               lineClamp={1}
                               maxW="300px"
@@ -548,7 +597,7 @@ export function DataSourcesPage() {
                       as="button"
                       p={1.5}
                       borderRadius="md"
-                      color="gray.600"
+                      color="gray.500"
                       transition="all 0.15s ease"
                       _hover={{ color: "red.400", bg: "gray.800" }}
                       onClick={() => setSourceToDelete(source)}
