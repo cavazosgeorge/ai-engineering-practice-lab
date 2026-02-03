@@ -14,6 +14,7 @@ import {
   NativeSelect,
   Breadcrumb,
   Input,
+  Skeleton,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import {
@@ -695,9 +696,39 @@ export function GenerationAdminPage() {
             Generation History
           </Heading>
           {jobsLoading ? (
-            <Center py={8}>
-              <Spinner size="md" color="cyan.400" />
-            </Center>
+            <VStack
+              gap={2}
+              align="stretch"
+              opacity={0}
+              animation="fadeIn 0.2s ease-in 0.2s forwards"
+              css={{
+                "@keyframes fadeIn": { to: { opacity: 1 } },
+              }}
+            >
+              {[1, 2, 3].map((i) => (
+                <Box
+                  key={i}
+                  p={3}
+                  bg="gray.900"
+                  borderWidth="1px"
+                  borderColor="gray.800"
+                  borderRadius="md"
+                >
+                  <HStack justify="space-between">
+                    <HStack gap={3}>
+                      <Skeleton height="20px" width="90px" />
+                      <Skeleton height="20px" width="70px" />
+                      <Skeleton height="14px" width="140px" />
+                    </HStack>
+                    <HStack gap={2}>
+                      <Skeleton height="14px" width="160px" />
+                      <Skeleton height="14px" width="100px" />
+                    </HStack>
+                  </HStack>
+                  <Skeleton height="12px" width="120px" mt={2} />
+                </Box>
+              ))}
+            </VStack>
           ) : (
             <JobHistory
               jobs={sortedJobs}
