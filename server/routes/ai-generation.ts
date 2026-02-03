@@ -255,7 +255,49 @@ app.post("/jobs/:jobId/approve", async (c) => {
     return c.json({ approved: inserted, jobId });
   }
 
-  // Quiz and challenge approval can be added later
+  if (job.job_type === "quiz") {
+    const questions = selectedIndices
+      ? items.filter((_: unknown, i: number) => selectedIndices.includes(i))
+      : items;
+
+    const { nanoid } = await import("nanoid");
+
+    let inserted = 0;
+    db.transaction(() => {
+      for (const q of questions) {
+        const id = nanoid();
+        // Normalize is_correct → isCorrect for storage
+        const options = (q.options as Array<{ text: string; is_correct?: boolean; isCorrect?: boolean }>).map(
+          (opt) => ({
+            text: opt.text,
+            isCorrect: opt.isCorrect ?? opt.is_correct ?? false,
+          })
+        );
+        try {
+          db.run(
+            `INSERT INTO quiz_questions (id, lesson_id, question, options, explanation, difficulty, order_index)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+              id,
+              lessonId,
+              q.question,
+              JSON.stringify(options),
+              q.explanation || "",
+              q.difficulty || "intermediate",
+              0,
+            ]
+          );
+          inserted++;
+        } catch {
+          // Skip duplicates (unique constraint on lesson_id + question)
+        }
+      }
+    })();
+
+    return c.json({ approved: inserted, jobId });
+  }
+
+  // Challenge approval can be added later
   return c.json({ error: `Approval for ${job.job_type} not yet implemented` }, 501);
 });
 

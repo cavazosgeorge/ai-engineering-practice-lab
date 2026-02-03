@@ -38,6 +38,7 @@ import type {
   GenerationJob,
   GenerationJobType,
   GeneratedVocabularyTerm,
+  GeneratedQuizQuestion,
 } from "../../services/admin-api";
 
 // ============================================
@@ -409,6 +410,221 @@ function VocabularyReview({
 }
 
 // ============================================
+// Quiz Review
+// ============================================
+
+function QuizReview({
+  job,
+  onApprove,
+  isApproving,
+}: {
+  job: GenerationJob;
+  onApprove: (jobId: string, lessonId: string, selectedIndices: number[]) => void;
+  isApproving: boolean;
+}) {
+  const { data: lessons } = useAdminLessons();
+  const [lessonId, setLessonId] = useState("");
+  const [selected, setSelected] = useState<Set<number>>(() => {
+    const questions = job.result as GeneratedQuizQuestion[] | null;
+    return new Set(questions?.map((_, i) => i) ?? []);
+  });
+
+  const questions = (job.result as GeneratedQuizQuestion[] | null) ?? [];
+
+  const toggleQuestion = (index: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
+  const selectAll = () => setSelected(new Set(questions.map((_, i) => i)));
+  const selectNone = () => setSelected(new Set());
+
+  return (
+    <Card.Root bg="gray.900" borderColor="green.800" borderWidth="1px">
+      <Card.Body p={6}>
+        <VStack gap={4} align="stretch">
+          <HStack justify="space-between">
+            <Heading size="md" color="white">
+              Review Generated Questions ({questions.length})
+            </Heading>
+            <HStack gap={2}>
+              <Button
+                variant="ghost"
+                size="sm"
+                color="gray.400"
+                _hover={{ color: "white", bg: "gray.800" }}
+                onClick={selectAll}
+              >
+                Select All
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                color="gray.400"
+                _hover={{ color: "white", bg: "gray.800" }}
+                onClick={selectNone}
+              >
+                Select None
+              </Button>
+            </HStack>
+          </HStack>
+
+          <VStack gap={2} align="stretch">
+            {questions.map((q, i) => (
+              <Box
+                key={i}
+                p={3}
+                bg={selected.has(i) ? "gray.800" : "gray.900"}
+                borderWidth="1px"
+                borderColor={selected.has(i) ? "cyan.700/50" : "gray.800"}
+                borderRadius="md"
+                cursor="pointer"
+                transition="all 0.15s ease"
+                _hover={{ borderColor: "cyan.600/50" }}
+                onClick={() => toggleQuestion(i)}
+              >
+                <HStack gap={3} align="start">
+                  <Box
+                    mt={0.5}
+                    w={4}
+                    h={4}
+                    borderRadius="sm"
+                    borderWidth="1px"
+                    borderColor={selected.has(i) ? "cyan.400" : "gray.600"}
+                    bg={selected.has(i) ? "cyan.600" : "transparent"}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    flexShrink={0}
+                  >
+                    {selected.has(i) && (
+                      <Box fontSize="10px" color="white">
+                        <LuCheck />
+                      </Box>
+                    )}
+                  </Box>
+                  <Box flex="1">
+                    <HStack gap={2} mb={1}>
+                      <Text color="white" fontWeight="medium" fontSize="sm">
+                        {q.question}
+                      </Text>
+                      <Badge
+                        colorPalette={
+                          q.difficulty === "beginner"
+                            ? "green"
+                            : q.difficulty === "advanced"
+                            ? "red"
+                            : "blue"
+                        }
+                        variant="subtle"
+                        fontSize="xs"
+                      >
+                        {q.difficulty}
+                      </Badge>
+                    </HStack>
+                    <VStack gap={1} align="stretch" mt={2}>
+                      {(q.options ?? []).map((opt, j) => {
+                        const isCorrect = (opt as { isCorrect?: boolean; is_correct?: boolean }).isCorrect
+                          ?? (opt as { is_correct?: boolean }).is_correct
+                          ?? false;
+                        return (
+                          <HStack
+                            key={j}
+                            gap={2}
+                            px={2}
+                            py={1}
+                            borderRadius="sm"
+                            bg={isCorrect ? "green.900/30" : "transparent"}
+                          >
+                            <Box
+                              w={2}
+                              h={2}
+                              borderRadius="full"
+                              bg={isCorrect ? "green.400" : "gray.600"}
+                              flexShrink={0}
+                            />
+                            <Text
+                              fontSize="xs"
+                              color={isCorrect ? "green.300" : "gray.400"}
+                            >
+                              {opt.text}
+                            </Text>
+                          </HStack>
+                        );
+                      })}
+                    </VStack>
+                    {q.explanation && (
+                      <Text color="gray.500" fontSize="xs" mt={2} fontStyle="italic">
+                        {q.explanation}
+                      </Text>
+                    )}
+                  </Box>
+                </HStack>
+              </Box>
+            ))}
+          </VStack>
+
+          <Box borderTop="1px solid" borderColor="gray.800" pt={4}>
+            <HStack gap={4} flexWrap="wrap">
+              <Box flex="1" minW="200px">
+                <Text color="gray.400" fontSize="sm" mb={1}>
+                  Save to Lesson
+                </Text>
+                <NativeSelect.Root>
+                  <NativeSelect.Field
+                    value={lessonId}
+                    onChange={(e) => setLessonId(e.target.value)}
+                    bg="gray.800"
+                    borderColor="gray.700"
+                    color="white"
+                    _focusVisible={{
+                      outline: "none",
+                      boxShadow: "none",
+                      borderColor: "cyan.500",
+                    }}
+                  >
+                    <option value="">Select a lesson...</option>
+                    {(lessons ?? []).map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.title}
+                      </option>
+                    ))}
+                  </NativeSelect.Field>
+                </NativeSelect.Root>
+              </Box>
+              <Button
+                bg="green.600"
+                color="white"
+                _hover={{ bg: "green.500" }}
+                onClick={() =>
+                  onApprove(job.id, lessonId, Array.from(selected))
+                }
+                loading={isApproving}
+                loadingText="Saving..."
+                disabled={!lessonId || selected.size === 0 || isApproving}
+                alignSelf="flex-end"
+              >
+                <Box fontSize="16px" mr={2}>
+                  <LuCheck />
+                </Box>
+                Approve {selected.size} Questions
+              </Button>
+            </HStack>
+          </Box>
+        </VStack>
+      </Card.Body>
+    </Card.Root>
+  );
+}
+
+// ============================================
 // Job History
 // ============================================
 
@@ -652,7 +868,7 @@ export function GenerationAdminPage() {
                   <LuCheck />
                 </Box>
                 <Text color="green.300" fontSize="sm">
-                  Terms approved and saved to lesson
+                  Content approved and saved to lesson
                 </Text>
               </HStack>
             </Card.Body>
@@ -665,6 +881,18 @@ export function GenerationAdminPage() {
           selectedJob.jobType === "vocabulary" &&
           selectedJob.result && (
             <VocabularyReview
+              job={selectedJob}
+              onApprove={handleApprove}
+              isApproving={approveMutation.isPending}
+            />
+          )}
+
+        {/* Review panel for selected completed quiz job */}
+        {selectedJob &&
+          selectedJob.status === "completed" &&
+          selectedJob.jobType === "quiz" &&
+          selectedJob.result && (
+            <QuizReview
               job={selectedJob}
               onApprove={handleApprove}
               isApproving={approveMutation.isPending}
