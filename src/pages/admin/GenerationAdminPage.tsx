@@ -960,7 +960,11 @@ export function GenerationAdminPage() {
           ) : (
             <JobHistory
               jobs={sortedJobs}
-              onSelectJob={setSelectedJob}
+              onSelectJob={(job) =>
+                setSelectedJob((prev) =>
+                  prev?.id === job.id ? null : job,
+                )
+              }
               onDeleteJob={handleDeleteJob}
               selectedJobId={selectedJob?.id ?? null}
             />
