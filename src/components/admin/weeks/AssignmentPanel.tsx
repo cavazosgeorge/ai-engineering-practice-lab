@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Box, Heading, HStack, VStack, Text, Button, SimpleGrid, Center } from "@chakra-ui/react";
 import { LuSave, LuX, LuCircleCheck } from "react-icons/lu";
 import type { AdminLesson, AdminWeek } from "../../../services/admin-api";
@@ -31,14 +32,27 @@ export function AssignmentPanel({
   showSuccess,
 }: AssignmentPanelProps) {
   // Build a map of weekId -> week label for showing current assignments
-  const weekLabelMap = new Map<string, string>();
-  for (const w of weeks) {
-    weekLabelMap.set(w.id, `Week ${w.weekNumber}`);
-  }
+  const weekLabelMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const w of weeks) {
+      map.set(w.id, `Week ${w.weekNumber}`);
+    }
+    return map;
+  }, [weeks]);
 
   // Split lessons into available (not assigned to this week) and assigned (in pending set)
-  const assignedLessons = allLessons.filter((l) => pendingLessonIds.has(l.id));
-  const availableLessons = allLessons.filter((l) => !pendingLessonIds.has(l.id));
+  const { assignedLessons, availableLessons } = useMemo(() => {
+    const assigned: AdminLesson[] = [];
+    const available: AdminLesson[] = [];
+    for (const l of allLessons) {
+      if (pendingLessonIds.has(l.id)) {
+        assigned.push(l);
+      } else {
+        available.push(l);
+      }
+    }
+    return { assignedLessons: assigned, availableLessons: available };
+  }, [allLessons, pendingLessonIds]);
 
   function getWeekLabel(lesson: AdminLesson): string | undefined {
     if (!lesson.weekId || lesson.weekId === weekId) return undefined;

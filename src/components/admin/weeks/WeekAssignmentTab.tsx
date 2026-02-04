@@ -36,13 +36,6 @@ export function WeekAssignmentTab() {
     );
   }, [lessons, selectedWeekId]);
 
-  // When a week is selected (or data refreshes), initialize pending state from server
-  useEffect(() => {
-    if (selectedWeekId) {
-      setPendingLessonIds(new Set(currentLessonIds));
-    }
-  }, [selectedWeekId, currentLessonIds]);
-
   // Derive isDirty by comparing pending with current server state
   const isDirty = useMemo(() => {
     if (!selectedWeekId) return false;
@@ -55,9 +48,14 @@ export function WeekAssignmentTab() {
 
   const handleSelectWeek = useCallback((weekId: string) => {
     setSelectedWeekId(weekId);
+    // Initialize pending state synchronously to avoid flicker from useEffect
+    const lessonIds = new Set(
+      (lessons ?? []).filter((l) => l.weekId === weekId).map((l) => l.id)
+    );
+    setPendingLessonIds(lessonIds);
     setShowSuccess(false);
     if (successTimerRef.current) clearTimeout(successTimerRef.current);
-  }, []);
+  }, [lessons]);
 
   const handleToggleLesson = useCallback((lessonId: string) => {
     setPendingLessonIds((prev) => {
@@ -92,6 +90,11 @@ export function WeekAssignmentTab() {
     setPendingLessonIds(new Set(currentLessonIds));
   }, [currentLessonIds]);
 
+  const sortedWeeks = useMemo(
+    () => [...(weeks ?? [])].sort((a, b) => a.weekNumber - b.weekNumber),
+    [weeks]
+  );
+
   // Loading state
   if ((!weeks && weeksLoading) || (!lessons && lessonsLoading)) {
     return (
@@ -124,7 +127,6 @@ export function WeekAssignmentTab() {
     );
   }
 
-  const sortedWeeks = [...(weeks ?? [])].sort((a, b) => a.weekNumber - b.weekNumber);
   const selectedWeek = sortedWeeks.find((w) => w.id === selectedWeekId);
 
   return (

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Box, VStack, Text, HStack } from "@chakra-ui/react";
 import { LuCalendar, LuBookOpen } from "react-icons/lu";
 import type { AdminWeek } from "../../../services/admin-api";
@@ -8,7 +9,7 @@ interface WeekSelectorProps {
   onSelectWeek: (weekId: string) => void;
 }
 
-export function WeekSelector({ weeks, selectedWeekId, onSelectWeek }: WeekSelectorProps) {
+export const WeekSelector = memo(function WeekSelector({ weeks, selectedWeekId, onSelectWeek }: WeekSelectorProps) {
   return (
     <VStack gap={2} align="stretch">
       <Text
@@ -91,4 +92,4 @@ export function WeekSelector({ weeks, selectedWeekId, onSelectWeek }: WeekSelect
       })}
     </VStack>
   );
-}
+});

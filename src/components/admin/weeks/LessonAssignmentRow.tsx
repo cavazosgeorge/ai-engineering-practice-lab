@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Box, HStack, Text } from "@chakra-ui/react";
 import { LuBookOpen } from "react-icons/lu";
 import type { AdminLesson } from "../../../services/admin-api";
@@ -9,7 +10,7 @@ interface LessonAssignmentRowProps {
   currentWeekLabel?: string;
 }
 
-export function LessonAssignmentRow({
+export const LessonAssignmentRow = memo(function LessonAssignmentRow({
   lesson,
   isSelected,
   onToggle,
@@ -101,4 +102,4 @@ export function LessonAssignmentRow({
       </HStack>
     </Box>
   );
-}
+});
