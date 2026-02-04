@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   Box,
   SimpleGrid,
@@ -18,6 +18,15 @@ export function WeekAssignmentTab() {
 
   const [selectedWeekId, setSelectedWeekId] = useState<string | null>(null);
   const [pendingLessonIds, setPendingLessonIds] = useState<Set<string>>(new Set());
+  const [showSuccess, setShowSuccess] = useState(false);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Clear success timer on unmount
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    };
+  }, []);
 
   // Get current server-side lesson IDs for the selected week
   const currentLessonIds = useMemo(() => {
@@ -46,6 +55,8 @@ export function WeekAssignmentTab() {
 
   const handleSelectWeek = useCallback((weekId: string) => {
     setSelectedWeekId(weekId);
+    setShowSuccess(false);
+    if (successTimerRef.current) clearTimeout(successTimerRef.current);
   }, []);
 
   const handleToggleLesson = useCallback((lessonId: string) => {
@@ -62,10 +73,19 @@ export function WeekAssignmentTab() {
 
   const handleSave = useCallback(() => {
     if (!selectedWeekId) return;
-    updateWeekMutation.mutate({
-      id: selectedWeekId,
-      input: { lessonIds: Array.from(pendingLessonIds) },
-    });
+    updateWeekMutation.mutate(
+      {
+        id: selectedWeekId,
+        input: { lessonIds: Array.from(pendingLessonIds) },
+      },
+      {
+        onSuccess: () => {
+          setShowSuccess(true);
+          if (successTimerRef.current) clearTimeout(successTimerRef.current);
+          successTimerRef.current = setTimeout(() => setShowSuccess(false), 3000);
+        },
+      }
+    );
   }, [selectedWeekId, pendingLessonIds, updateWeekMutation]);
 
   const handleCancel = useCallback(() => {
@@ -142,6 +162,7 @@ export function WeekAssignmentTab() {
             onCancel={handleCancel}
             isDirty={isDirty}
             isSaving={updateWeekMutation.isPending}
+            showSuccess={showSuccess}
           />
         ) : null}
       </Box>

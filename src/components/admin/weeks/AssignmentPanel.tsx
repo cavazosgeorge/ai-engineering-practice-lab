@@ -1,5 +1,5 @@
-import { Box, Heading, HStack, VStack, Text, Button, SimpleGrid } from "@chakra-ui/react";
-import { LuSave, LuX } from "react-icons/lu";
+import { Box, Heading, HStack, VStack, Text, Button, SimpleGrid, Center } from "@chakra-ui/react";
+import { LuSave, LuX, LuCircleCheck } from "react-icons/lu";
 import type { AdminLesson, AdminWeek } from "../../../services/admin-api";
 import { LessonAssignmentRow } from "./LessonAssignmentRow";
 
@@ -14,6 +14,7 @@ interface AssignmentPanelProps {
   onCancel: () => void;
   isDirty: boolean;
   isSaving: boolean;
+  showSuccess: boolean;
 }
 
 export function AssignmentPanel({
@@ -27,6 +28,7 @@ export function AssignmentPanel({
   onCancel,
   isDirty,
   isSaving,
+  showSuccess,
 }: AssignmentPanelProps) {
   // Build a map of weekId -> week label for showing current assignments
   const weekLabelMap = new Map<string, string>();
@@ -55,8 +57,30 @@ export function AssignmentPanel({
         </Heading>
       </HStack>
 
+      {/* Success state */}
+      {showSuccess && (
+        <Box
+          bg="green.900/20"
+          borderRadius="lg"
+          border="1px solid"
+          borderColor="green.700/40"
+          py={12}
+        >
+          <Center>
+            <VStack gap={3}>
+              <Box color="green.400" fontSize="32px">
+                <LuCircleCheck />
+              </Box>
+              <Text color="green.300" fontWeight="medium" fontSize="md">
+                Lessons saved successfully
+              </Text>
+            </VStack>
+          </Center>
+        </Box>
+      )}
+
       {/* Dual-list columns */}
-      <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
+      <SimpleGrid columns={{ base: 1, md: 2 }} gap={4} display={showSuccess ? "none" : undefined}>
         {/* Available Lessons */}
         <Box
           bg="gray.900"
@@ -180,7 +204,7 @@ export function AssignmentPanel({
       </SimpleGrid>
 
       {/* Action bar */}
-      <HStack justify="flex-end" gap={3} pt={2}>
+      <HStack justify="flex-end" gap={3} pt={2} display={showSuccess ? "none" : "flex"}>
         <Button
           variant="ghost"
           color="gray.400"
