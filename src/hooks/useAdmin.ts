@@ -14,6 +14,7 @@ export const adminKeys = {
   ragStats: () => [...adminKeys.all, "rag-stats"] as const,
   generationJobs: (weekId?: string) => [...adminKeys.all, "generation-jobs", weekId] as const,
   generationJob: (jobId: string) => [...adminKeys.all, "generation-job", jobId] as const,
+  unassignedLessons: () => [...adminKeys.all, "unassigned-lessons"] as const,
 };
 
 const ADMIN_STALE_TIME = 30_000; // 30s — admin data changes infrequently
@@ -30,6 +31,14 @@ export function useAdminLessons() {
   return useQuery({
     queryKey: adminKeys.lessons(),
     queryFn: adminApi.fetchAdminLessons,
+    staleTime: ADMIN_STALE_TIME,
+  });
+}
+
+export function useUnassignedLessons() {
+  return useQuery({
+    queryKey: adminKeys.unassignedLessons(),
+    queryFn: adminApi.fetchUnassignedLessons,
     staleTime: ADMIN_STALE_TIME,
   });
 }
@@ -131,6 +140,9 @@ export function useUpdateWeek() {
       adminApi.updateWeek(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.weeks() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.lessons() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.unassignedLessons() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.stats() });
     },
   });
 }

@@ -16,6 +16,7 @@ import {
   createWeek,
   updateWeek,
   deleteWeek,
+  getUnassignedLessons,
   type CreateWeekInput,
   type UpdateWeekInput,
 } from "../services/week-service";
@@ -48,7 +49,28 @@ app.get("/lessons", (c) => {
       description: l.description,
       orderIndex: l.order_index,
       isPublished: l.is_published === 1,
+      weekId: l.week_id,
       termCount: l.termCount,
+      createdAt: l.created_at,
+      updatedAt: l.updated_at,
+    }))
+  );
+});
+
+/**
+ * GET /api/admin/lessons/unassigned
+ * Lessons not assigned to any week
+ */
+app.get("/lessons/unassigned", (c) => {
+  const lessons = getUnassignedLessons();
+  return c.json(
+    lessons.map((l) => ({
+      id: l.id,
+      title: l.title,
+      slug: l.slug,
+      description: l.description,
+      orderIndex: l.order_index,
+      isPublished: l.is_published === 1,
       createdAt: l.created_at,
       updatedAt: l.updated_at,
     }))
@@ -232,7 +254,7 @@ app.get("/weeks", (c) => {
 app.post("/weeks", async (c) => {
   const body = await c.req.json<CreateWeekInput>();
 
-  if (!body.weekNumber || !body.title || !body.slug) {
+  if (body.weekNumber === undefined || body.weekNumber === null || !body.title || !body.slug) {
     return c.json(
       { error: "Missing required fields: weekNumber, title, slug" },
       400

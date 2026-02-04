@@ -29,6 +29,7 @@ import {
   LuEye,
   LuEyeOff,
   LuDatabase,
+  LuLink,
 } from "react-icons/lu";
 import {
   useAdminStats,
@@ -40,6 +41,7 @@ import {
   useDeleteWeek,
 } from "../../hooks/useAdmin";
 import type { AdminVocabularyTerm, AdminWeek } from "../../services/admin-api";
+import { WeekAssignmentTab } from "../../components/admin/weeks/WeekAssignmentTab";
 
 // ============================================
 // Shared Components
@@ -1032,6 +1034,20 @@ export function AdminDashboardPage() {
             >
               Weeks
             </Tabs.Trigger>
+            <Tabs.Trigger
+              value="assignments"
+              color="gray.400"
+              _selected={{ color: "cyan.400", borderColor: "cyan.400" }}
+              _checked={{ color: "cyan.400", borderColor: "cyan.400" }}
+              _focusVisible={{ outline: "none", boxShadow: "none" }}
+              fontWeight="medium"
+              fontSize="sm"
+            >
+              <Box fontSize="14px" mr={1.5}>
+                <LuLink />
+              </Box>
+              Assignments
+            </Tabs.Trigger>
           </Tabs.List>
 
           <Box pt={6}>
@@ -1043,6 +1059,9 @@ export function AdminDashboardPage() {
             </Tabs.Content>
             <Tabs.Content value="weeks">
               <WeeksTab />
+            </Tabs.Content>
+            <Tabs.Content value="assignments">
+              <WeekAssignmentTab />
             </Tabs.Content>
           </Box>
         </Tabs.Root>

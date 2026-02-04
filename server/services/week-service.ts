@@ -235,7 +235,9 @@ export function updateWeek(id: string, input: UpdateWeekInput): WeekRow | null {
     values.push(input.orderIndex);
   }
 
-  if (updates.length > 0) {
+  // If lessonIds changed but no other fields did, still bump updated_at
+  const hasLessonIdChanges = Array.isArray(input.lessonIds);
+  if (updates.length > 0 || hasLessonIdChanges) {
     updates.push("updated_at = ?");
     values.push(new Date().toISOString());
     values.push(id);
@@ -246,14 +248,16 @@ export function updateWeek(id: string, input: UpdateWeekInput): WeekRow | null {
     );
   }
 
-  // Handle lesson associations
-  if (input.lessonIds !== undefined) {
-    // Clear existing associations
-    db.run(`UPDATE lessons SET week_id = NULL WHERE week_id = ?`, [id]);
-    // Set new associations
-    for (const lessonId of input.lessonIds) {
-      db.run(`UPDATE lessons SET week_id = ? WHERE id = ?`, [id, lessonId]);
-    }
+  // Handle lesson associations atomically
+  if (hasLessonIdChanges) {
+    db.transaction(() => {
+      // Clear existing associations
+      db.run(`UPDATE lessons SET week_id = NULL WHERE week_id = ?`, [id]);
+      // Set new associations
+      for (const lessonId of input.lessonIds!) {
+        db.run(`UPDATE lessons SET week_id = ? WHERE id = ?`, [id, lessonId]);
+      }
+    })();
   }
 
   return (
@@ -265,6 +269,14 @@ export function updateWeek(id: string, input: UpdateWeekInput): WeekRow | null {
 export function deleteWeek(id: string): boolean {
   const result = db.run(`DELETE FROM weeks WHERE id = ?`, [id]);
   return result.changes > 0;
+}
+
+export function getUnassignedLessons(): LessonRow[] {
+  return db
+    .query<LessonRow, []>(
+      `SELECT * FROM lessons WHERE week_id IS NULL ORDER BY order_index ASC`
+    )
+    .all();
 }
 
 export function getWeekLessons(weekId: string): LessonRow[] {

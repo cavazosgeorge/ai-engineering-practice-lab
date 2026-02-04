@@ -1,198 +1,210 @@
-All three subagents have completed their analysis. Let me synthesize their findings into a unified testing strategy.
+Now let me synthesize all three subagent findings into a unified testing strategy.
 
 ---
 
-# Unified Testing Strategy: AI Engineering Practice Lab Capstone
+# Testing Strategy: Admin Dashboard Week-Lesson Assignment
 
 ## Executive Summary
 
-This strategy covers **~452 tests** across three layers: unit tests (~269), integration tests (~98), and edge case/failure mode tests (~85). The plan is organized by priority tiers and follows all existing project conventions (`bun:test`, in-memory SQLite, Hono's `app.request()`, TanStack Query hooks, and the established mock patterns).
+The testing strategy covers **3 layers** (unit, integration, edge cases) across the full stack (SQLite DB, Hono API, React UI). Three subagents analyzed the codebase in parallel and identified **~80 specific test cases** plus **10 confirmed bugs** in the existing implementation that tests should validate.
 
 ---
 
-## 1. Test Architecture Overview
+## 1. Confirmed Bugs Found During Analysis
+
+These should be fixed as part of the implementation and verified by tests:
+
+| # | Severity | Bug | Location |
+|---|----------|-----|----------|
+| 1 | **Critical** | `lessonIds: null` crashes server after clearing all assignments (non-iterable) | `week-service.ts:250-257` |
+| 2 | **High** | Non-atomic clear+set -- server crash mid-operation leaves orphaned lessons (no transaction) | `week-service.ts:250-257` |
+| 3 | **Medium** | `weekNumber: 0` falsiness bug (`!0 === true`) rejects valid input | `admin.ts:235` |
+| 4 | **Medium** | Error message extraction uses `error.message` but server returns `{ error: "..." }` | `admin-api.ts:47` |
+| 5 | **Medium** | Unpublished weeks accessible via direct slug in public API (`getWeekDetail` lacks `is_published` filter) | `week-service.ts:62-64` |
+| 6 | **Low** | `updated_at` not updated when only `lessonIds` changes | `week-service.ts:238-247` |
+| 7 | **Low** | No index on `lessons.week_id` | migration `004` |
+| 8 | **Low** | Silent lesson "stealing" across weeks with no audit trail | `week-service.ts:254-256` |
+| 9 | **Low** | Malformed JSON body causes 500 instead of 400 | `admin.ts:275` |
+| 10 | **Low** | Missing cache invalidation for `stats` and `lessons` queries on week update | `useAdmin.ts:127-136` |
+
+---
+
+## 2. Test File Organization
 
 ```
 server/__tests__/
-├── fixtures/
-│   ├── test-db.ts                          # (existing)
-│   ├── mock-data.ts                        # (extend with capstone objects)
-│   ├── helpers.ts                          # (extend with seed functions)
-│   ├── mock-data-capstone.ts               # NEW: Weeks, sources, chunks, embeddings, vocab, agent
-│   ├── helpers-capstone.ts                 # NEW: seedEmptyWeek, seedFullWeek, etc.
-│   ├── mock-services.ts                    # NEW: LLM mock, file service mock, auth mock
-│   └── mock-llm.ts                         # NEW: Deterministic LLM client mock factory
-├── unit/services/
-│   ├── week-service.test.ts                # ~22 tests
-│   ├── data-source-service.test.ts         # ~18 tests
-│   ├── content-extractor.test.ts           # ~14 tests
-│   ├── rag/
-│   │   ├── chunking.test.ts               # ~18 tests
-│   │   ├── embeddings.test.ts             # ~17 tests
-│   │   └── vector-store.test.ts           # ~15 tests
-│   ├── ai/vocabulary-generator.test.ts     # ~18 tests
-│   └── agent/
-│       ├── tools.test.ts                   # ~14 tests
-│       └── agent-service.test.ts           # ~12 tests
-├── integration/
-│   ├── db/capstone-schema.test.ts          # ~12 tests (migration, cascades, constraints)
-│   ├── routes/
-│   │   ├── weeks.test.ts                   # ~22 tests
-│   │   ├── data-sources.test.ts            # ~18 tests
-│   │   ├── rag.test.ts                     # ~14 tests
-│   │   ├── vocabulary-generation.test.ts   # ~14 tests
-│   │   └── agent.test.ts                   # ~10 tests
-│   └── flows/cross-service.test.ts         # ~8 tests (end-to-end flows)
-└── edge-cases/
-    ├── input-validation.test.ts            # ~18 tests
-    ├── rag-boundaries.test.ts              # ~14 tests
-    ├── llm-failures.test.ts                # ~11 tests
-    ├── agent-edge-cases.test.ts            # ~10 tests
-    ├── file-upload-edge-cases.test.ts      # ~8 tests
-    ├── concurrency.test.ts                 # ~6 tests
-    └── data-integrity.test.ts              # ~7 tests
+  fixtures/
+    mock-data.ts               # Add MOCK_WEEK, MOCK_WEEK_2, MOCK_WEEK_UNPUBLISHED
+    helpers.ts                 # Add seedWeekData(), seedWeekLessonAssignments()
+  integration/
+    db/
+      week-lesson-assignments.test.ts    # Schema & FK integrity (7 tests)
+    routes/
+      admin-weeks.test.ts               # Admin CRUD + assignment flows (43 tests)
+      admin-weeks-auth.test.ts          # Auth rejection tests (4 tests)
+      weeks.test.ts                     # Public week routes (7 tests)
+  unit/
+    services/
+      week-service.test.ts              # Service function tests (13 tests)
 
 src/__tests__/
-├── components/
-│   ├── weeks/WeekSelector.test.tsx         # ~10 tests
-│   ├── admin/
-│   │   ├── DataSourceUploader.test.tsx     # ~10 tests
-│   │   ├── DataSourceList.test.tsx         # ~8 tests
-│   │   ├── RAGPipelineStatus.test.tsx      # ~5 tests
-│   │   ├── AdminWeekManager.test.tsx       # ~10 tests
-│   │   ├── AdminDataSourcePanel.test.tsx   # ~5 tests
-│   │   └── ContentGenerationPanel.test.tsx # ~7 tests
-│   ├── vocabulary/VocabularyCard.test.tsx   # ~6 tests
-│   ├── quiz/FillInBlankQuestion.test.tsx    # ~7 tests
-│   └── agent/AgentChat.test.tsx            # ~14 tests
-├── hooks/
-│   ├── useWeeks.test.ts                    # ~6 tests
-│   ├── useDataSources.test.ts             # ~6 tests
-│   ├── useRAGStatus.test.ts               # ~5 tests
-│   ├── useVocabulary.test.ts              # ~4 tests
-│   ├── useQuiz.test.ts                    # ~4 tests
-│   └── useAgent.test.ts                   # ~8 tests
-└── edge-cases/
-    └── frontend-edge-cases.test.tsx        # ~11 tests
+  services/
+    admin-api-weeks.test.ts             # API client tests (8 tests)
+  hooks/
+    useAdminWeeks.test.tsx              # Hook tests (9 tests)
+  components/
+    admin/
+      WeekLessonAssignment.test.tsx     # Component tests (11 tests)
 ```
 
 ---
 
-## 2. Priority Tiers (Implementation Order)
+## 3. Unit Tests (30 tests)
 
-### Tier 1 - Critical Path (implement first)
+### 3A. Service Layer (`week-service.test.ts`) -- 13 tests
 
-These tests cover the foundational data flow. Everything else depends on them.
+| Test | Expected Behavior |
+|------|-------------------|
+| `updateWeek with lessonIds should clear existing and assign new` | Old lessons get `week_id=NULL`, new ones get assigned |
+| `updateWeek with empty lessonIds should unassign all` | All lessons for that week get `week_id=NULL` |
+| `updateWeek with multiple lessonIds should assign all` | All listed lessons get `week_id=weekId` |
+| `updateWeek with lessonIds should be idempotent` | Calling twice produces identical DB state |
+| `updateWeek without lessonIds key should not affect assignments` | Lesson associations unchanged |
+| `updateWeek with lessonIds: null should not crash` | Graceful handling (fix bug #1) |
+| `getWeekLessons should return lessons ordered by order_index` | Sorted ascending |
+| `getWeekLessons should return empty array for week with no lessons` | Returns `[]` |
+| `getAllWeeksAdmin should include correct lessonCount` | Aggregate counts match |
+| `getWeekDetail should include lesson details with nested counts` | `conceptCount`, `challengeCount`, `vocabularyCount` |
+| `getPublishedWeeks should only count published lessons` | Unpublished lessons excluded from count |
+| `deleteWeek should SET NULL on all assigned lessons` | FK cascade works |
+| `createWeek should auto-increment order_index` | Sequential 0, 1, 2... |
 
-| Test Area | Count | Why Critical |
-|-----------|-------|-------------|
-| RAG Chunking (unit) | 18 | All downstream features depend on correct chunking |
-| Embedding generation (unit) | 17 | Required for vector search to work |
-| Vector store search (unit) | 15 | Core retrieval mechanism for entire RAG pipeline |
-| Week management CRUD (unit + integration) | 44 | Structural foundation for all content organization |
-| Data source status machine (unit + integration) | 36 | Pipeline processing depends on correct state transitions |
-| Schema migration + cascades (integration) | 12 | Data integrity for all new tables |
+### 3B. Frontend API Client (`admin-api-weeks.test.ts`) -- 8 tests
 
-### Tier 2 - Core Features
+Tests for `fetchAdminWeeks`, `createWeek`, `updateWeek`, `deleteWeek` covering correct URL, method, credentials, body serialization, and error handling.
 
-| Test Area | Count | Why Important |
-|-----------|-------|-------------|
-| Vocabulary term extraction (unit) | 18 | Bridges RAG pipeline to learning features |
-| Agent tool execution (unit) | 26 | Primary user-facing AI feature |
-| Cross-service integration flows | 8 | Validates end-to-end data flow |
-| LLM failure modes (edge) | 11 | External dependency resilience |
-| Concurrency race conditions (edge) | 6 | Production reliability |
+### 3C. Frontend Hooks (`useAdminWeeks.test.tsx`) -- 9 tests
 
-### Tier 3 - UI and Polish
-
-| Test Area | Count |
-|-----------|-------|
-| Frontend components (all) | 82 |
-| Frontend hooks (all) | 33 |
-| Input validation edge cases | 18 |
-| File upload edge cases | 8 |
-| Frontend edge cases | 11 |
+Tests for `useAdminWeeks`, `useAdminLessons`, `useCreateWeek`, `useUpdateWeek`, `useDeleteWeek` covering query behavior, cache invalidation, and optimistic update rollback.
 
 ---
 
-## 3. Mock Strategy
+## 4. Integration Tests (56 tests)
 
-### External Dependencies Requiring Mocks
+### 4A. Admin CRUD Routes (`admin-weeks.test.ts`) -- 43 tests
 
-| Dependency | Mock Pattern | Used By |
-|-----------|-------------|---------|
-| **LLM API** (OpenAI/Anthropic) | `createMockLLMClient()` factory returning deterministic responses | Embeddings, vocab generation, agent chat |
-| **File System** (PDF reading) | `mock(fs, "readFileSync", ...)` | Content extraction |
-| **URL Fetching** | `mock(globalThis, "fetch", ...)` | URL data source processing |
-| **Auth Sessions** | `mock.module("../../../auth", ...)` with role-based session lookup | All admin routes |
-| **Database** | In-memory SQLite via existing `test-db.ts` | All backend tests |
+**GET /api/admin/weeks** (5 tests): Returns all weeks including unpublished, with correct counts, ordering, and camelCase field names.
 
-### LLM Mock Factory (key design)
+**POST /api/admin/weeks** (9 tests): Creates weeks, validates required fields, handles 409 on duplicate `weekNumber`/`slug`, auto-assigns `order_index`, defaults `isPublished` to false.
 
-```typescript
-// server/__tests__/fixtures/mock-llm.ts
-export function createMockLLMClient() {
-  return {
-    embed: async (text: string) => ({
-      data: [{ embedding: Array(1536).fill(0.01) }],
-    }),
-    chat: async (messages: any[]) => ({
-      choices: [{ message: { role: "assistant", content: "Mock response" } }],
-    }),
-    chatWithTools: async (messages: any[], tools: any[]) => ({
-      choices: [{ message: { role: "assistant", tool_calls: [...] } }],
-    }),
-    setResponse: (response: any) => { /* override default */ },
-    setError: (error: Error) => { /* simulate failures */ },
-    calls: [] as any[], // Track calls for assertions
-  };
-}
-```
+**PATCH /api/admin/weeks/:id** (15 tests combined):
+- Field updates: title, isPublished, multiple fields, 404 for missing, 409 for duplicates
+- Lesson assignment (core feature):
+  - `should assign lessons to a week`
+  - `should clear previous assignments when reassigning`
+  - `should unassign all lessons with empty array`
+  - `should not affect lessons in other weeks`
+  - `should allow a lesson to move between weeks`
+  - `should combine field updates with lesson assignment`
+  - `should verify assignment via public API after admin update`
+  - `should handle nonexistent lesson IDs gracefully`
 
----
+**DELETE /api/admin/weeks/:id** (5 tests): Deletes, returns 404 for missing, verifies SET NULL on lessons, cascades data_sources/generation_jobs.
 
-## 4. Key Test Fixtures
+**Multi-Step Workflows** (3 tests):
+- Full lifecycle: create -> assign -> publish -> verify public
+- Reassignment flow: assign -> verify -> reassign -> verify
+- Create-then-delete: verify no orphaned data
 
-### Seed State Configurations
+**Data Integrity** (6 tests): FK constraints, UNIQUE constraints, cross-table count consistency.
 
-| Fixture | State | Contents |
-|---------|-------|----------|
-| `seedEmptyWeek()` | Week exists, no content | 1 published week |
-| `seedPartialWeek()` | Mixed processing states | 1 week + 2 sources (1 pending, 1 failed) |
-| `seedFullWeek()` | Fully processed | 1 week + 3 sources + 3 chunks + 3 embeddings + 3 vocab terms |
-| `seedUnpublishedWeek()` | Draft state | 1 unpublished week |
-| `seedAgentConversation()` | Existing chat history | 1 conversation + 3 messages (user, assistant, tool) |
-| `seedAllCapstoneData()` | Everything | All 4 weeks + full content |
+### 4B. Auth Tests (`admin-weeks-auth.test.ts`) -- 4 tests
+
+401 for unauthenticated requests, 403 for non-admin users (separate file due to `mock.module` hoisting).
+
+### 4C. Public Routes (`weeks.test.ts`) -- 7 tests
+
+Published weeks only, correct `lessonCount`, slug detail with lessons, 404 for missing slug, unpublished lessons excluded, nested counts.
+
+### 4D. Schema Tests (`week-lesson-assignments.test.ts`) -- 7 tests
+
+Table structure verification, UNIQUE constraints, FK behavior (NULL allowed, invalid FK rejected, ON DELETE SET NULL).
 
 ---
 
-## 5. High-Risk Edge Cases Requiring Special Attention
+## 5. Edge Case & Failure Mode Tests
 
-The edge case analysis identified **29 high-risk scenarios**. The most critical:
+### Critical Path Tests
 
-1. **Chunking infinite loop** - overlap >= chunkSize causes infinite loop. Must validate `overlap < chunkSize`.
-2. **Embedding dimension mismatch** - switching models between ingestion and query silently corrupts search. Must validate dimensions match.
-3. **LLM malformed JSON** - vocabulary generation relies on parsed JSON from LLM. Must handle parse failures with retry.
-4. **Agent infinite tool loop** - agent could repeatedly call the same tool. Must enforce max tool call limit per turn.
-5. **Concurrent processing** - double-click on "Process" creates duplicate chunks. Must check status before processing.
-6. **Week deletion during processing** - CASCADE deletes data while background job is still writing. Must detect and abort gracefully.
-7. **Path traversal in filenames** - file upload with `../../etc/passwd` filename. Must sanitize before storage.
+| Edge Case | Test Name | What Could Go Wrong |
+|-----------|-----------|-------------------|
+| `lessonIds: null` | `patch-week-lessonIds-null-should-not-crash` | Server crashes after clearing assignments (Bug #1) |
+| Non-atomic operation | `partial-assignment-on-crash-should-use-transaction` | Data inconsistency if server crashes mid-operation (Bug #2) |
+| `weekNumber: 0` | `create-week-zero-should-be-accepted` | Falsiness rejects valid input (Bug #3) |
+| Unpublished week slug | `public-api-should-not-expose-unpublished-weeks` | Data exposure via direct slug access (Bug #5) |
 
-### Existing Code Bugs Found
+### Data Boundary Tests
 
-The edge case analysis also identified validation gaps in existing code:
-- `server/routes/vocabulary.ts:149` - `null` and `NaN` quality values pass the `quality < 0 || quality > 5` check
-- `server/routes/vocabulary.ts:237` - `timeSpentMs || 0` passes negative values through
-- `server/services/vocabulary-service.ts:219` - quiz generates with only 1 option when lesson has 1 term (meaningless quiz)
+| Edge Case | Test Name | Expected |
+|-----------|-----------|----------|
+| Duplicate lesson IDs in array | `duplicate-lessonIds-handled-idempotently` | Single assignment, no error |
+| Non-existent lesson IDs | `nonexistent-lessonIds-silently-skipped` | Valid IDs assigned, invalid ignored |
+| Very large lessonIds array | `10000-lessonIds-does-not-crash` | Processes (slowly) or rejects gracefully |
+| Invalid types in lessonIds | `non-string-lessonIds-handled-safely` | No SQL injection, no crash |
+| Empty string slug | `empty-slug-should-be-rejected` | 400 error (currently passes validation) |
+| Date range: start > end | `invalid-date-range-should-be-rejected` | 400 error (currently not validated) |
+
+### Concurrency Tests
+
+| Edge Case | Test Name | Expected |
+|-----------|-----------|----------|
+| Two admins assigning same week | `concurrent-assignment-last-write-wins` | One set of assignments survives |
+| Assign during delete | `assignment-during-week-deletion` | Either 404 or FK constraint prevents orphan |
+| Rapid double-save | `rapid-double-save-is-idempotent` | Same end state regardless |
+
+### UI Resilience Tests
+
+| Edge Case | Test Name | Expected |
+|-----------|-----------|----------|
+| Network failure during save | `network-failure-shows-error` | Error message displayed, state preserved |
+| Empty lesson list | `no-lessons-shows-empty-state` | Friendly message, no crash |
+| 100+ lessons in picker | `large-lesson-list-renders-performantly` | No UI jank |
+| Stale cache after external change | `stale-data-refreshes-after-staleTime` | Updates within 30s |
 
 ---
 
-## 6. Testing Conventions (matching existing codebase)
+## 6. Mock Requirements
 
-- **Test runner**: `bun:test` with `describe`/`it`/`expect`/`mock`/`beforeEach`/`afterEach`
-- **Backend DB**: In-memory SQLite via `setupTestDb()`/`teardownTestDb()` from `server/__tests__/fixtures/test-db.ts`
-- **Backend mocking**: `mock.module()` for module-level mocks, `bun:test` `mock()` for function-level
-- **Frontend DOM**: happy-dom via `src/__tests__/setup/dom.ts`
-- **Frontend rendering**: Custom `render` with QueryClient + Chakra + MemoryRouter from `src/__tests__/setup/react-utils.tsx`
-- **API testing**: Hono's `app.request()` (no HTTP server needed)
-- **IDs**: `nanoid()` for DB IDs, `crypto.randomUUID()` for session IDs
+| Layer | What to Mock | Pattern |
+|-------|-------------|---------|
+| **DB (backend)** | `mock.module("../../../db", ...)` with in-memory SQLite | Existing pattern in `test-db.ts` |
+| **Auth (backend)** | `mock.module("../../../auth", ...)` returning admin session | New -- needed for all admin route tests |
+| **Fetch (frontend API)** | `createMockFetch()` from `test-utils.ts` | Existing pattern |
+| **Admin API (hooks)** | `mock.module("../../services/admin-api", ...)` | Existing pattern |
+| **Admin hooks (components)** | `mock.module("../../../hooks/useAdmin", ...)` | Existing pattern |
+
+---
+
+## 7. Test Data Fixtures
+
+Add to `mock-data.ts`:
+- `MOCK_WEEK` -- published, week_number 1, with dates
+- `MOCK_WEEK_2` -- published, week_number 2, with dates
+- `MOCK_WEEK_UNPUBLISHED` -- unpublished, week_number 3, no dates
+
+Add to `helpers.ts`:
+- `seedWeekData()` -- inserts 3 weeks, pre-assigns `MOCK_LESSON` to `MOCK_WEEK`
+- Update `clearTestData()` to include `DELETE FROM weeks` in correct FK order
+
+---
+
+## 8. Priority Order for Test Implementation
+
+1. **Service layer unit tests** -- validates the core assignment logic and catches bugs #1, #2, #6
+2. **Admin route integration tests** -- validates the full API contract including validation bugs #3, #9
+3. **Schema/integrity tests** -- validates FK constraints and ON DELETE behavior
+4. **Edge case tests for critical bugs** -- `null` crash, non-atomic operation, unpublished exposure
+5. **Frontend hook tests** -- validates cache invalidation (bug #10)
+6. **Public route tests** -- validates published-only filtering (bug #5)
+7. **Component tests** -- validates UI behavior (depends on actual component implementation)
+8. **Auth tests** -- validates 401/403 (separate file)

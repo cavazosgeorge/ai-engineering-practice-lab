@@ -12,6 +12,7 @@ export interface AdminLesson {
   title: string;
   slug: string;
   termCount: number;
+  weekId: string | null;
 }
 
 export interface AdminVocabularyTerm {
@@ -58,6 +59,13 @@ export async function fetchAdminStats(): Promise<AdminStats> {
 
 export async function fetchAdminLessons(): Promise<AdminLesson[]> {
   const res = await fetch(`${API_URL}/api/admin/lessons`, {
+    credentials: "include",
+  });
+  return handleResponse<AdminLesson[]>(res);
+}
+
+export async function fetchUnassignedLessons(): Promise<AdminLesson[]> {
+  const res = await fetch(`${API_URL}/api/admin/lessons/unassigned`, {
     credentials: "include",
   });
   return handleResponse<AdminLesson[]>(res);

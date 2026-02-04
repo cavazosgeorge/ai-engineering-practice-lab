@@ -1,39 +1,105 @@
-The unified capstone implementation plan is written to `CAPSTONE_PLAN.md` at the project root. Here's a summary of what it contains:
+The `.claude` directory requires permission. Let me present the synthesized plan directly.
 
-## 6 Phases, ~72 new files, ~444 new tests
+---
 
-**Phase 1: Schema + Utilities** (Low-Medium complexity)
-- 2 SQL migrations (7 new tables), embedding math utilities, OpenAI client wrapper
-- ~37 tests. No user-facing changes.
+# Unified Implementation Plan: Week-Lesson Assignment Feature
 
-**Phase 2: Weeks System** (Medium) -- can run parallel with Phase 3
-- Week CRUD (admin + public), 14 frontend files, seed script
-- ~70 tests. Students browse by week, admin manages weeks.
+## Current State
 
-**Phase 3: RAG Pipeline** (High) -- can run parallel with Phase 2
-- Data source upload, text chunking, embedding generation, semantic search
-- SQLite BLOB vector storage with brute-force cosine similarity
-- ~165 tests. Heaviest infrastructure phase.
+| Layer | Status | Notes |
+|-------|--------|-------|
+| DB Schema | **Done** | `lessons.week_id` FK exists (migration 004) |
+| Backend Service | **Done** | `updateWeek(id, { lessonIds })` clears + reassigns |
+| Backend Route | **Done** | `PATCH /api/admin/weeks/:id` accepts `lessonIds` |
+| Frontend Hook | **Done** | `useUpdateWeek()` calls the endpoint |
+| Frontend API Types | **Partial** | `UpdateWeekInput.lessonIds` exists; `AdminLesson.weekId` missing |
+| Frontend UI | **Not Started** | No assignment interface exists |
 
-**Phase 4: AI Content Generation** (Medium-High)
-- Generate vocabulary/quizzes from RAG context via LLM
-- Staging/review/publish workflow for admin quality control
-- ~54 tests. Depends on Phases 2+3.
+**This is ~80% frontend, ~15% backend hardening, ~5% testing.**
 
-**Phase 5: Agent Chat** (High)
-- SSE streaming chat with 5 OpenAI function-calling tools
-- Tool-call visualization, source citations, conversation history
-- ~68 tests. Most complex user-facing feature.
+---
 
-**Phase 6: Integration + Polish** (Medium)
-- Navigation wiring, cross-feature flows, accessibility, responsive audit
-- ~50 tests. No new files, just modifications.
+## Bugs to Fix (In Scope)
 
-Key decisions: SQLite BLOBs for vectors (no external vector DB), SSE for agent streaming, soft FK for week-lesson link, OpenAI via native fetch, content approval workflow before student visibility.
+| # | Severity | Bug | File |
+|---|----------|-----|------|
+| 1 | **Critical** | `lessonIds: null` crashes server (non-iterable) | `week-service.ts:250-257` |
+| 2 | **High** | Non-atomic clear+set (no transaction) | `week-service.ts:250-257` |
+| 3 | **Medium** | `weekNumber: 0` rejected (`!0 === true`) | `admin.ts:235` |
+| 6 | **Low** | `updated_at` not set when only `lessonIds` changes | `week-service.ts:238-247` |
 
-The plan also flags 3 existing bugs in vocabulary code that should be fixed in Phase 1, and lists high-risk edge cases (chunking infinite loops, path traversal, agent tool loop guards) that must be addressed during implementation.
+---
 
-To copy the plan to `.claude/multi-claude-output/plan/synthesis.md`, run:
-```
-cp CAPSTONE_PLAN.md .claude/multi-claude-output/plan/synthesis.md
-```
+## 5 Phases, 10 Steps
+
+### Phase 1: Backend Hardening (Steps 1-3)
+
+**Step 1** — Fix bugs #1, #2, #6 in `server/services/week-service.ts`:
+- Guard `lessonIds` with `Array.isArray()` check (bug #1)
+- Wrap clear+set in `db.transaction()` (bug #2)
+- Update `updated_at` when lessonIds changes (bug #6)
+
+**Step 2** — Fix bug #3 in `server/routes/admin.ts`:
+- Replace `!weekNumber` with `weekNumber === undefined || weekNumber === null`
+
+**Step 3** — Add unassigned lessons endpoint:
+- New service function `getUnassignedLessons()` in `week-service.ts`
+- New route `GET /api/admin/lessons/unassigned` in `admin.ts`
+- Verify lesson responses include `weekId` in camelCase mapping
+
+### Phase 2: Frontend Types & Hooks (Step 4)
+
+**Step 4** — Wire data layer:
+- Add `weekId: string | null` to `AdminLesson` interface in `admin-api.ts`
+- Add `fetchUnassignedLessons()` function in `admin-api.ts`
+- Add `useUnassignedLessons()` hook + query key in `useAdmin.ts`
+- Update `useUpdateWeek` cache invalidation to include `unassignedLessons`
+
+### Phase 3: Frontend UI Components (Steps 5-8)
+
+**Step 5** — `LessonAssignmentRow.tsx`: Checkbox row, click-to-toggle, accessible
+**Step 6** — `AssignmentPanel.tsx`: Dual-list (available | assigned), action bar (Save/Cancel)
+**Step 7** — `WeekSelector.tsx`: Week card list with selection highlight
+**Step 8** — `WeekAssignmentTab.tsx`: Container managing state, save/cancel flow
+
+### Phase 4: Integration (Step 9)
+
+**Step 9** — Add "Week Assignments" tab to `AdminDashboardPage.tsx`
+
+### Phase 5: Testing & Verification (Step 10)
+
+**Step 10** — Backend service + route tests, manual verification checklist
+
+---
+
+## Key Design Decisions
+
+| Decision | Choice | Why |
+|----------|--------|-----|
+| UI pattern | New tab (not modal/page) | Matches existing admin tabs pattern |
+| Assignment UX | Dual-list with checkboxes | Simpler, accessible, no library deps |
+| Update strategy | Pessimistic (wait for server) | Matches codebase patterns |
+| API approach | Reuse existing `PATCH` with `lessonIds[]` | Already implemented, atomic |
+
+---
+
+## Files Modified vs Created
+
+**Modified (6):**
+- `server/services/week-service.ts` — bug fixes + new function
+- `server/routes/admin.ts` — bug fix + new route
+- `src/services/admin-api.ts` — type extension + new fetch
+- `src/hooks/useAdmin.ts` — new hook + cache invalidation
+- `src/pages/admin/AdminDashboardPage.tsx` — new tab
+
+**Created (4 components + test files):**
+- `src/components/admin/weeks/LessonAssignmentRow.tsx`
+- `src/components/admin/weeks/AssignmentPanel.tsx`
+- `src/components/admin/weeks/WeekSelector.tsx`
+- `src/components/admin/weeks/WeekAssignmentTab.tsx`
+
+---
+
+## Out of Scope
+
+Bugs #5 (unpublished slug exposure), #7 (missing index), #8 (silent stealing), #9 (malformed JSON 500). Lesson reordering within weeks. Bulk cross-week operations.
