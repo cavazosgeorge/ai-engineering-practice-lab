@@ -822,7 +822,7 @@ function WeeksTab() {
                     Terms
                   </Text>
                 </Box>
-                <Box w="100px" textAlign="right">
+                <Box w="120px" textAlign="right">
                   <Text
                     fontSize="xs"
                     fontWeight="semibold"
@@ -934,8 +934,19 @@ function WeeksTab() {
                       {week.vocabularyCount}
                     </Text>
                   </Box>
-                  <Box w="100px">
+                  <Box w="120px">
                     <HStack gap={1} justify="flex-end">
+                      <RouterLink to={`/admin/weeks/${week.id}/edit`} title="Edit Week">
+                        <Box
+                          p={1.5}
+                          borderRadius="md"
+                          color="gray.500"
+                          transition="all 0.15s ease"
+                          _hover={{ color: "cyan.400", bg: "gray.800" }}
+                        >
+                          <Box fontSize="14px"><LuPencil /></Box>
+                        </Box>
+                      </RouterLink>
                       <RouterLink to={`/admin/weeks/${week.id}/sources`} title="Data Sources">
                         <Box
                           p={1.5}
