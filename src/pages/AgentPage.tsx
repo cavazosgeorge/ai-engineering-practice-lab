@@ -408,6 +408,7 @@ function ChatView({ conversationId }: { conversationId: string }) {
   const [streamContent, setStreamContent] = useState("");
   const [streamToolCalls, setStreamToolCalls] = useState<ToolCallInfo[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -429,13 +430,14 @@ function ChatView({ conversationId }: { conversationId: string }) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [conversation?.messages, streamContent, scrollToBottom]);
+  }, [conversation?.messages, streamContent, pendingUserMessage, scrollToBottom]);
 
   const handleSend = async () => {
     const msg = input.trim();
     if (!msg || isStreaming) return;
 
     setInput("");
+    setPendingUserMessage(msg);
     setStreamContent("");
     setStreamToolCalls([]);
     setIsStreaming(true);
@@ -497,6 +499,7 @@ function ChatView({ conversationId }: { conversationId: string }) {
       await queryClient.invalidateQueries({
         queryKey: agentKeys.conversations(),
       });
+      setPendingUserMessage(null);
       setIsStreaming(false);
       inputRef.current?.focus();
     }
@@ -591,6 +594,10 @@ function ChatView({ conversationId }: { conversationId: string }) {
                 toolCalls={msg.toolCalls}
               />
             ))}
+
+          {pendingUserMessage && (
+            <MessageBubble role="user" content={pendingUserMessage} />
+          )}
 
           {isStreaming && (
             <StreamingMessage
