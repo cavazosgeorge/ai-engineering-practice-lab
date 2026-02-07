@@ -500,7 +500,9 @@ function ChatView({ conversationId }: { conversationId: string }) {
               <LuBot />
             </Box>
             <Text color="white" fontSize="sm" fontWeight="medium">
-              {conversation?.title || "AI Study Assistant"}
+              {weekSlug
+                ? weeks?.find((w) => w.slug === weekSlug)?.title ?? "AI Study Assistant"
+                : "AI Study Assistant"}
             </Text>
           </HStack>
           <HStack gap={2}>
