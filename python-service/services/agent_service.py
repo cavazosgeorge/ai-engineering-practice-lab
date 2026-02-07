@@ -5,6 +5,7 @@ Uses LangChain with MiniMax M2 (via OpenAI-compatible API) for tool-calling.
 Supports streaming responses via async generators that yield SSE-formatted events.
 """
 
+import asyncio
 import json
 import logging
 import re
@@ -12,14 +13,13 @@ from collections.abc import AsyncGenerator
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-
 from config import settings
-from models.schemas import AgentChatRequest, AgentChatResponse, ToolCallInfo, SearchResult
+from models.schemas import AgentChatRequest, AgentChatResponse, ToolCallInfo
 from services.agent_tools import get_all_tools
-from services.rag_pipeline import search_knowledge_base
 
 logger = logging.getLogger(__name__)
+
+HEARTBEAT_INTERVAL = 5  # seconds between SSE keepalive comments
 
 DEFAULT_SYSTEM_PROMPT = """You are an AI study assistant for an AI Engineering cohort. You help students understand AI/ML concepts, review vocabulary, and practice for assessments.
 
@@ -31,20 +31,23 @@ Your capabilities:
 - Generate practice quiz questions
 
 Tool usage strategy:
-1. When asked about a week's content, call get_week_lessons first to get the lesson slugs
+1. When asked about a week's content, call get_week_lessons FIRST to discover the lesson slugs
 2. Then use those exact slugs with get_lesson_content or get_vocabulary_terms
 3. NEVER guess lesson slugs — always discover them via get_week_lessons first
-4. Call search_course_materials ONCE with a good query — do NOT repeat similar searches
-5. Synthesize information from tool results into a clear, helpful response
+4. Call search_course_materials ONCE with a comprehensive, well-crafted query — do NOT call it multiple times with similar queries
+5. Keep tool calls to a minimum (typically 1-3 per question, max 5). Don't call tools you don't need
+6. If a tool returns an error suggesting a slug is wrong, use get_week_lessons to find the correct one
+7. NEVER call the same tool twice with identical or near-identical arguments
 
 Response guidelines:
-- Be concise and technically accurate
-- When citing information, mention the source
+- Be concise and technically accurate — aim for clarity over length
+- When citing information, mention the source briefly
 - After gathering tool results, synthesize them into a single helpful response
-- Do NOT repeat tool results verbatim in your response — the student can already see tool results in the UI. Instead, add context, commentary, or a brief summary
-- For practice questions: present the question with your own framing, but don't copy the raw tool output word-for-word
+- Do NOT repeat tool results verbatim — the student can already see tool results in the UI. Add context, commentary, or a brief summary instead
+- For practice questions: present the question with your own framing, wait for the student to answer before revealing the correct answer
 - If you don't know something, say so rather than guessing
 - Encourage active learning — suggest practice questions when appropriate
+- Keep responses focused and actionable. Avoid walls of text
 - Do NOT include <think> tags or reasoning traces in your response"""
 
 MAX_HISTORY_MESSAGES = 20
@@ -123,6 +126,38 @@ class ThinkBlockFilter:
         return remaining
 
 
+async def _execute_tool_with_retry(
+    tool_fn,
+    tool_args: dict,
+    max_retries: int = 1,
+) -> str:
+    """Execute a tool with a single retry on transient failures."""
+    last_error = None
+    for attempt in range(max_retries + 1):
+        try:
+            result = await tool_fn.ainvoke(tool_args)
+            return str(result)
+        except Exception as e:
+            last_error = e
+            error_str = str(e).lower()
+            # Only retry on transient errors (timeout, connection)
+            is_transient = any(
+                keyword in error_str
+                for keyword in ("timeout", "timed out", "connection", "unreachable")
+            )
+            if is_transient and attempt < max_retries:
+                logger.warning(
+                    "Tool %s failed (attempt %d), retrying: %s",
+                    tool_fn.name,
+                    attempt + 1,
+                    str(e),
+                )
+                await asyncio.sleep(1)
+                continue
+            break
+    return f"Tool error ({tool_fn.name}): {str(last_error)}"
+
+
 def _get_llm():
     """Create the MiniMax M2 LLM instance via OpenAI-compatible API."""
     return ChatOpenAI(
@@ -143,8 +178,16 @@ def _build_messages(
 
     # System prompt
     prompt = system_prompt or DEFAULT_SYSTEM_PROMPT
+    context_parts = []
     if request.week_slug:
-        prompt += f"\n\nThe student is currently studying week: {request.week_slug}"
+        context_parts.append(f"Current week: {request.week_slug}")
+    if request.session_id and request.session_id != "anonymous":
+        context_parts.append(
+            f"Student session ID: {request.session_id} "
+            f"(pass this to get_vocabulary_stats for accurate progress data)"
+        )
+    if context_parts:
+        prompt += "\n\n" + "\n".join(context_parts)
     messages.append(SystemMessage(content=prompt))
 
     # History (trim to max)
@@ -179,7 +222,6 @@ async def chat(request: AgentChatRequest) -> AgentChatResponse:
 
     messages = _build_messages(request)
     tool_calls_info: list[ToolCallInfo] = []
-    sources: list[SearchResult] = []
 
     # Tool-calling loop (max 10 iterations)
     for iteration in range(10):
@@ -191,7 +233,6 @@ async def chat(request: AgentChatRequest) -> AgentChatResponse:
             return AgentChatResponse(
                 content=_strip_think_tags(response.content or ""),
                 tool_calls=tool_calls_info,
-                sources=sources,
                 model=settings.AGENT_MODEL,
                 input_tokens=usage.get("input_tokens"),
                 output_tokens=usage.get("output_tokens"),
@@ -217,10 +258,7 @@ async def chat(request: AgentChatRequest) -> AgentChatResponse:
                 (t for t in tools if t.name == tool_name), None
             )
             if tool_fn:
-                try:
-                    result = await tool_fn.ainvoke(tool_args)
-                except Exception as e:
-                    result = f"Tool error: {str(e)}"
+                result = await _execute_tool_with_retry(tool_fn, tool_args)
             else:
                 result = f"Unknown tool: {tool_name}"
 
@@ -238,18 +276,6 @@ async def chat(request: AgentChatRequest) -> AgentChatResponse:
                 )
             )
 
-            # If it was a search, collect source info
-            if tool_name == "search_course_materials" and isinstance(result, str):
-                try:
-                    week_slug = tool_args.get("week_slug")
-                    query = tool_args.get("query", "")
-                    search_results = search_knowledge_base(
-                        query=query, week_slug=week_slug, top_k=3
-                    )
-                    sources.extend(search_results)
-                except Exception:
-                    pass
-
             messages.append(
                 ToolMessage(content=str(result), tool_call_id=tool_id)
             )
@@ -263,7 +289,6 @@ async def chat(request: AgentChatRequest) -> AgentChatResponse:
     return AgentChatResponse(
         content=response.content or "I gathered information but couldn't synthesize a response.",
         tool_calls=tool_calls_info,
-        sources=sources,
         model=settings.AGENT_MODEL,
         input_tokens=usage.get("input_tokens"),
         output_tokens=usage.get("output_tokens"),
@@ -279,6 +304,7 @@ async def chat_stream(request: AgentChatRequest) -> AsyncGenerator[str, None]:
     - tool_call: Agent is calling a tool
     - tool_result: Tool returned a result
     - content: Streaming content token
+    - heartbeat: SSE comment keepalive during long operations
     - done: Stream complete with metadata
     - error: An error occurred
     """
@@ -291,34 +317,54 @@ async def chat_stream(request: AgentChatRequest) -> AsyncGenerator[str, None]:
         tool_calls_info: list[dict] = []
 
         for iteration in range(10):
-            # First, get the full response to check for tool calls
-            response = await llm_with_tools.ainvoke(messages)
+            # Stream and accumulate the response
+            full_response = None
+            content_tokens = []
+            think_filter = ThinkBlockFilter()
 
-            if response.tool_calls:
-                # Process tool calls
-                messages.append(response)
+            async for chunk in llm_with_tools.astream(messages):
+                if full_response is None:
+                    full_response = chunk
+                else:
+                    full_response = full_response + chunk
 
-                for tool_call in response.tool_calls:
+                # Stream content tokens in real-time (tool-call responses
+                # don't include content, so this only fires for text replies)
+                if chunk.content:
+                    filtered = think_filter.process(chunk.content)
+                    if filtered:
+                        content_tokens.append(filtered)
+                        yield f"data: {json.dumps({'type': 'content', 'token': filtered})}\n\n"
+
+            # Check accumulated response for tool calls
+            if full_response and full_response.tool_calls:
+                messages.append(full_response)
+
+                for tool_call in full_response.tool_calls:
                     tool_name = tool_call["name"]
                     tool_args = tool_call["args"]
                     tool_id = tool_call.get("id", "")
 
-                    # Emit tool_call event
                     yield f"data: {json.dumps({'type': 'tool_call', 'tool_name': tool_name, 'arguments': tool_args})}\n\n"
 
-                    # Execute tool
-                    tool_fn = next(
-                        (t for t in tools if t.name == tool_name), None
-                    )
+                    tool_fn = next((t for t in tools if t.name == tool_name), None)
                     if tool_fn:
-                        try:
-                            result = await tool_fn.ainvoke(tool_args)
-                        except Exception as e:
-                            result = f"Tool error: {str(e)}"
+                        # Execute tool with heartbeat keepalives
+                        tool_task = asyncio.create_task(
+                            _execute_tool_with_retry(tool_fn, tool_args)
+                        )
+                        while not tool_task.done():
+                            try:
+                                await asyncio.wait_for(
+                                    asyncio.shield(tool_task),
+                                    timeout=HEARTBEAT_INTERVAL,
+                                )
+                            except asyncio.TimeoutError:
+                                yield ": heartbeat\n\n"
+                        result = tool_task.result()
                     else:
                         result = f"Unknown tool: {tool_name}"
 
-                    # Strip hidden answer sections for UI display and persistence
                     display_result = str(result)
                     hidden_idx = display_result.find("[HIDDEN")
                     if hidden_idx != -1:
@@ -330,45 +376,33 @@ async def chat_stream(request: AgentChatRequest) -> AsyncGenerator[str, None]:
                         "result": display_result,
                     })
 
-                    yield f"data: {json.dumps({'type': 'tool_result', 'tool_name': tool_name, 'result': display_result[:500]})}\n\n"
+                    yield f"data: {json.dumps({'type': 'tool_result', 'tool_name': tool_name, 'result': display_result})}\n\n"
 
-                    messages.append(
-                        ToolMessage(content=str(result), tool_call_id=tool_id)
-                    )
+                    messages.append(ToolMessage(content=str(result), tool_call_id=tool_id))
 
-                continue  # Loop back for next LLM call
+                continue  # Loop for next LLM call
 
-            # No tool calls — stream the final response
-            # Re-invoke with streaming this time
-            full_content = ""
-            think_filter = ThinkBlockFilter()
-            async for chunk in llm_with_tools.astream(messages):
-                if chunk.content:
-                    filtered = think_filter.process(chunk.content)
-                    if filtered:
-                        full_content += filtered
-                        yield f"data: {json.dumps({'type': 'content', 'token': filtered})}\n\n"
-            # Flush any remaining buffered content
+            # No tool calls — content was already streamed above
             remaining = think_filter.flush()
             if remaining:
-                full_content += remaining
+                content_tokens.append(remaining)
                 yield f"data: {json.dumps({'type': 'content', 'token': remaining})}\n\n"
 
-            # If we got no streaming content, use the non-streaming response
-            if not full_content and response.content:
-                full_content = _strip_think_tags(response.content)
+            full_content = "".join(content_tokens)
+
+            # Fallback if no content was streamed
+            if not full_content and full_response and full_response.content:
+                full_content = _strip_think_tags(full_response.content)
                 if full_content:
                     yield f"data: {json.dumps({'type': 'content', 'token': full_content})}\n\n"
 
-            usage = response.usage_metadata or {}
-
-            # Emit done event
+            usage = full_response.usage_metadata or {} if full_response else {}
             yield f"data: {json.dumps({'type': 'done', 'model': settings.AGENT_MODEL, 'tool_calls': tool_calls_info, 'input_tokens': usage.get('input_tokens'), 'output_tokens': usage.get('output_tokens')})}\n\n"
             return
 
-        # Max iterations reached — do a final synthesis call without tools
+        # Max iterations — synthesis call without tools
         messages.append(HumanMessage(
-            content="You've used all available tool calls. Based on the information you already gathered, please provide a comprehensive answer to the student's question."
+            content="You've used all available tool calls. Based on the information you already gathered, please provide a comprehensive answer."
         ))
         llm_no_tools = _get_llm()
         full_content = ""
@@ -385,7 +419,7 @@ async def chat_stream(request: AgentChatRequest) -> AsyncGenerator[str, None]:
             yield f"data: {json.dumps({'type': 'content', 'token': remaining})}\n\n"
 
         if not full_content:
-            yield f"data: {json.dumps({'type': 'content', 'token': 'I gathered information from the tools but could not synthesize a response.'})}\n\n"
+            yield f"data: {json.dumps({'type': 'content', 'token': 'I gathered information but could not synthesize a response.'})}\n\n"
 
         yield f"data: {json.dumps({'type': 'done', 'model': settings.AGENT_MODEL, 'tool_calls': tool_calls_info})}\n\n"
 

@@ -135,25 +135,47 @@ export async function sendMessage(
   // Transform raw SSE text stream into parsed SSEEvent objects
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
+  let buffer = "";
 
   return new ReadableStream<SSEEvent>({
     async pull(controller) {
       const { done, value } = await reader.read();
       if (done) {
+        // Process any remaining buffer
+        if (buffer.trim()) {
+          const lines = buffer.split("\n");
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const event = JSON.parse(line.slice(6)) as SSEEvent;
+              controller.enqueue(event);
+            } catch {
+              // Skip malformed JSON
+            }
+          }
+        }
         controller.close();
         return;
       }
 
-      const text = decoder.decode(value, { stream: true });
-      const lines = text.split("\n");
+      buffer += decoder.decode(value, { stream: true });
 
-      for (const line of lines) {
-        if (!line.startsWith("data: ")) continue;
-        try {
-          const event = JSON.parse(line.slice(6)) as SSEEvent;
-          controller.enqueue(event);
-        } catch {
-          // Skip malformed JSON
+      // Process complete SSE events (terminated by \n\n)
+      const events = buffer.split("\n\n");
+      // Keep the last part as it might be incomplete
+      buffer = events.pop() || "";
+
+      for (const eventBlock of events) {
+        const lines = eventBlock.split("\n");
+        for (const line of lines) {
+          if (line.startsWith(":")) continue; // SSE comment (heartbeat)
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6)) as SSEEvent;
+            controller.enqueue(event);
+          } catch {
+            // Skip malformed JSON
+          }
         }
       }
     },

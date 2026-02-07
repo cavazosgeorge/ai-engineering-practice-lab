@@ -124,6 +124,10 @@ app.post("/conversations/:id/messages", async (c) => {
   });
 
   // Build history from saved messages
+  // NOTE: tool_calls field is not included here. The Python service's _build_messages()
+  // would need to reconstruct LangChain AIMessage with tool_calls for full fidelity.
+  // For now, the assistant's text content already references tool results, which is
+  // sufficient for multi-turn context.
   const messages = getMessagesByConversation(conversationId);
   const history = messages
     .filter((m) => m.role !== "system")
@@ -151,7 +155,7 @@ app.post("/conversations/:id/messages", async (c) => {
 
   try {
     // Forward to Python agent service
-    const pythonResponse = await forwardSSERequest("/agent/chat", {
+    const { response: pythonResponse, cleanup } = await forwardSSERequest("/agent/chat", {
       message,
       conversation_id: conversationId,
       week_slug: weekSlug,
@@ -163,6 +167,7 @@ app.post("/conversations/:id/messages", async (c) => {
     return stream(c, async (streamWriter) => {
       const reader = pythonResponse.body?.getReader();
       if (!reader) {
+        cleanup();
         await streamWriter.write(
           `data: ${JSON.stringify({ type: "error", message: "No response stream" })}\n\n`
         );
@@ -174,6 +179,7 @@ app.post("/conversations/:id/messages", async (c) => {
       let toolCalls: string | null = null;
       let inputTokens: number | null = null;
       let outputTokens: number | null = null;
+      let sseBuffer = "";
 
       try {
         while (true) {
@@ -185,27 +191,34 @@ app.post("/conversations/:id/messages", async (c) => {
           // Forward raw SSE chunk to browser
           await streamWriter.write(chunk);
 
-          // Parse events to collect metadata for persistence
-          const lines = chunk.split("\n");
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            try {
-              const data = JSON.parse(line.slice(6));
-              if (data.type === "content" && data.token) {
-                fullContent += data.token;
-              } else if (data.type === "done") {
-                toolCalls = data.tool_calls
-                  ? JSON.stringify(data.tool_calls)
-                  : null;
-                inputTokens = data.input_tokens ?? null;
-                outputTokens = data.output_tokens ?? null;
+          // Buffer-based parsing for metadata collection
+          sseBuffer += chunk;
+          const sseEvents = sseBuffer.split("\n\n");
+          sseBuffer = sseEvents.pop() || "";
+
+          for (const eventBlock of sseEvents) {
+            const lines = eventBlock.split("\n");
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue;
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.type === "content" && data.token) {
+                  fullContent += data.token;
+                } else if (data.type === "done") {
+                  toolCalls = data.tool_calls
+                    ? JSON.stringify(data.tool_calls)
+                    : null;
+                  inputTokens = data.input_tokens ?? null;
+                  outputTokens = data.output_tokens ?? null;
+                }
+              } catch {
+                // Skip malformed JSON
               }
-            } catch {
-              // Skip malformed JSON
             }
           }
         }
       } finally {
+        cleanup();
         reader.releaseLock();
       }
 

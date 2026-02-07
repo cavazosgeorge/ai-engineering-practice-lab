@@ -111,14 +111,19 @@ export async function forwardRequest<T = unknown>(
   }
 }
 
+export interface SSEResponse {
+  response: Response;
+  cleanup: () => void;
+}
+
 /**
  * Forward a request to the Python service and stream the SSE response back.
- * Returns the raw Response object so the caller can pipe the stream.
+ * Returns the Response object and a cleanup function to clear the abort timeout.
  */
 export async function forwardSSERequest(
   path: string,
   body: unknown
-): Promise<Response> {
+): Promise<SSEResponse> {
   const controller = new AbortController();
   // SSE requests can be long-running (agent chat), so use a longer timeout
   const timeoutId = setTimeout(() => controller.abort(), 120000);
@@ -143,9 +148,10 @@ export async function forwardSSERequest(
       );
     }
 
-    // Don't clear timeout here — the stream stays open
-    // The caller is responsible for managing the stream lifecycle
-    return response;
+    return {
+      response,
+      cleanup: () => clearTimeout(timeoutId),
+    };
   } catch (error) {
     clearTimeout(timeoutId);
 
