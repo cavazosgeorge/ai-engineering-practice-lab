@@ -16,7 +16,12 @@ import {
   LuPlus,
   LuSend,
   LuTrash2,
-  LuWrench,
+  LuSearch,
+  LuBookOpen,
+  LuChartBar,
+  LuCircleHelp,
+  LuList,
+  LuFileText,
   LuBot,
   LuUser,
 } from "react-icons/lu";
@@ -37,63 +42,35 @@ import type { SSEEvent, ToolCallInfo } from "../services/agent-api";
 // Tool Call Card
 // ============================================
 
+const TOOL_DISPLAY: Record<string, { label: string; icon: React.ReactNode; argKey: string }> = {
+  search_course_materials: { label: "Searched course materials", icon: <LuSearch />, argKey: "query" },
+  get_week_lessons: { label: "Looked up week lessons", icon: <LuList />, argKey: "week_slug" },
+  get_vocabulary_terms: { label: "Fetched vocabulary", icon: <LuBookOpen />, argKey: "lesson_slug" },
+  get_vocabulary_stats: { label: "Checked mastery stats", icon: <LuChartBar />, argKey: "lesson_slug" },
+  generate_practice_question: { label: "Generated practice question", icon: <LuCircleHelp />, argKey: "week_slug" },
+  get_lesson_content: { label: "Fetched lesson content", icon: <LuFileText />, argKey: "lesson_slug" },
+};
+
 function ToolCallCard({ tool }: { tool: ToolCallInfo }) {
-  const [expanded, setExpanded] = useState(false);
+  const display = TOOL_DISPLAY[tool.toolName];
+  const label = display?.label ?? tool.toolName;
+  const icon = display?.icon ?? <LuSearch />;
+  const summary = display?.argKey
+    ? (tool.arguments[display.argKey] as string) ?? null
+    : null;
 
   return (
-    <Box
-      bg="gray.800"
-      borderWidth="1px"
-      borderColor="cyan.800/50"
-      borderRadius="md"
-      px={3}
-      py={2}
-      cursor="pointer"
-      onClick={() => setExpanded(!expanded)}
-    >
-      <HStack gap={2}>
-        <Box color="cyan.400" fontSize="12px">
-          <LuWrench />
-        </Box>
-        <Text color="cyan.300" fontSize="xs" fontFamily="'JetBrains Mono', monospace">
-          {tool.toolName}
-        </Text>
-        <Text color="gray.600" fontSize="xs">
-          {expanded ? "collapse" : "expand"}
-        </Text>
-      </HStack>
-      {expanded && (
-        <Box mt={2}>
-          <Text color="gray.500" fontSize="xs" mb={1}>
-            Arguments:
-          </Text>
-          <Text
-            color="gray.400"
-            fontSize="xs"
-            fontFamily="'JetBrains Mono', monospace"
-            whiteSpace="pre-wrap"
-          >
-            {JSON.stringify(tool.arguments, null, 2)}
-          </Text>
-          {tool.result && (
-            <>
-              <Text color="gray.500" fontSize="xs" mt={2} mb={1}>
-                Result:
-              </Text>
-              <Text
-                color="gray.400"
-                fontSize="xs"
-                whiteSpace="pre-wrap"
-                maxH="200px"
-                overflow="auto"
-              >
-                {tool.result}
-              </Text>
-            </>
-          )}
-        </Box>
-      )}
-    </Box>
+    <HStack gap={2} px={3} py={1.5}>
+      <Box color="cyan.400/70" fontSize="11px" flexShrink={0}>
+        {icon}
+      </Box>
+      <Text color="gray.500" fontSize="xs">
+        {label}
+        {summary && (
+          <Text as="span" color="gray.400"> — "{summary}"</Text>
+        )}
+      </Text>
+    </HStack>
   );
 }
 
