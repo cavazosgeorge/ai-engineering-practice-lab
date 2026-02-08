@@ -10,9 +10,28 @@ import challengesRoutes from "./routes/challenges";
 import progressRoutes from "./routes/progress";
 import vocabularyRoutes from "./routes/vocabulary";
 import adminRoutes from "./routes/admin";
+import weeksRoutes from "./routes/weeks";
+import dataSourcesRoutes from "./routes/data-sources";
+import aiGenerationRoutes from "./routes/ai-generation";
+import agentRoutes from "./routes/agent";
+import ragRoutes from "./routes/rag";
+import { checkPythonServiceHealth } from "./services/python-service-client";
 
 // Run migrations on startup
 runMigrations();
+
+// Check Python RAG/Agent service availability (non-blocking, retry for startup race)
+(async () => {
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    const health = await checkPythonServiceHealth();
+    if (health) {
+      console.log(`Python RAG service: connected (${health.models.chat})`);
+      return;
+    }
+    if (attempt < 5) await new Promise((r) => setTimeout(r, 2000));
+  }
+  console.log("Python RAG service: not available (RAG/agent features disabled)");
+})();
 
 const app = new Hono();
 
@@ -40,7 +59,12 @@ app.route("/api/lessons", lessonsRoutes);
 app.route("/api/challenges", challengesRoutes);
 app.route("/api/progress", progressRoutes);
 app.route("/api/vocabulary", vocabularyRoutes);
+app.route("/api/weeks", weeksRoutes);
+app.route("/api/rag", ragRoutes);
 app.route("/api/admin", adminRoutes);
+app.route("/api/admin/data-sources", dataSourcesRoutes);
+app.route("/api/admin/ai-generation", aiGenerationRoutes);
+app.route("/api/agent", agentRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === "production") {

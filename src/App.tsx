@@ -7,6 +7,9 @@ import { ChallengePage } from "./pages/ChallengePage";
 import { Review } from "./pages/Review";
 import { ProgressPage } from "./pages/Progress";
 import { VocabularyPage } from "./pages/VocabularyPage";
+import { Weeks } from "./pages/Weeks";
+import { WeekDetail } from "./pages/WeekDetail";
+import { AgentPage } from "./pages/AgentPage";
 
 // Admin components
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
@@ -14,6 +17,9 @@ import { AdminLayout } from "./components/admin/AdminLayout";
 import { AdminLoginPage } from "./pages/admin/AdminLoginPage";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { VocabularyFormPage } from "./pages/admin/VocabularyFormPage";
+import { DataSourcesPage } from "./pages/admin/DataSourcesPage";
+import { GenerationAdminPage } from "./pages/admin/GenerationAdminPage";
+import { WeekFormEdit } from "./pages/admin/WeekFormPage";
 
 function VocabularyFormEdit() {
   const { termId } = useParams();
@@ -27,6 +33,8 @@ function App() {
         {/* Main app routes */}
         <Route element={<AppShell />}>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/weeks" element={<Weeks />} />
+          <Route path="/weeks/:slug" element={<WeekDetail />} />
           <Route path="/lessons" element={<Lessons />} />
           <Route path="/lessons/:slug" element={<LessonDetail />} />
           <Route path="/challenges/:id" element={<ChallengePage />} />
@@ -35,6 +43,8 @@ function App() {
           <Route path="/vocabulary/:lessonSlug" element={<VocabularyPage />} />
           <Route path="/vocabulary/:lessonSlug/flashcards" element={<VocabularyPage />} />
           <Route path="/vocabulary/:lessonSlug/quiz" element={<VocabularyPage />} />
+          <Route path="/agent" element={<AgentPage />} />
+          <Route path="/agent/:conversationId" element={<AgentPage />} />
         </Route>
 
         {/* Admin login - standalone (no layout) */}
@@ -46,6 +56,9 @@ function App() {
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="/admin/vocabulary/new" element={<VocabularyFormPage />} />
             <Route path="/admin/vocabulary/:termId/edit" element={<VocabularyFormEdit />} />
+            <Route path="/admin/weeks/:weekId/edit" element={<WeekFormEdit />} />
+            <Route path="/admin/weeks/:weekId/sources" element={<DataSourcesPage />} />
+            <Route path="/admin/generation" element={<GenerationAdminPage />} />
           </Route>
         </Route>
       </Routes>

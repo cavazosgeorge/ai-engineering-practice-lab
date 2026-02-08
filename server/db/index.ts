@@ -63,6 +63,7 @@ export interface LessonRow {
   description: string | null;
   order_index: number;
   is_published: number;
+  week_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -164,5 +165,94 @@ export interface VocabularySubmissionRow {
   quality: number | null;
   is_correct: number | null;
   time_spent_ms: number | null;
+  created_at: string;
+}
+
+// Capstone: Week-based organization
+export interface WeekRow {
+  id: string;
+  week_number: number;
+  slug: string;
+  title: string;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_published: number;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// Capstone: Data source records for RAG pipeline
+export interface DataSourceRow {
+  id: string;
+  week_id: string;
+  source_type: 'pdf' | 'url' | 'text';
+  title: string;
+  url: string | null;
+  file_path: string | null;
+  raw_content: string | null;
+  content_hash: string | null;
+  status: 'pending' | 'processing' | 'processed' | 'error';
+  error_message: string | null;
+  chunk_count: number;
+  metadata: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Capstone: Text chunks from processed data sources
+export interface ChunkRow {
+  id: string;
+  data_source_id: string;
+  chunk_index: number;
+  content: string;
+  token_count: number;
+  metadata: string;
+  created_at: string;
+}
+
+// Capstone: AI content generation jobs
+export interface GenerationJobRow {
+  id: string;
+  week_id: string;
+  created_by: string | null;
+  job_type: 'vocabulary' | 'quiz' | 'challenge';
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  prompt: string | null;
+  result: string | null;
+  model_name: string | null;
+  input_token_count: number | null;
+  output_token_count: number | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Capstone: Agent chat sessions
+export interface AgentConversationRow {
+  id: string;
+  session_id: string;
+  week_id: string | null;
+  title: string | null;
+  model_name: string | null;
+  system_prompt: string | null;
+  message_count: number;
+  is_archived: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// Capstone: Individual messages in agent conversations
+export interface AgentMessageRow {
+  id: string;
+  conversation_id: string;
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content: string | null;
+  tool_calls: string | null;
+  tool_call_id: string | null;
+  token_count: number | null;
+  retrieved_chunks: string | null;
+  latency_ms: number | null;
   created_at: string;
 }

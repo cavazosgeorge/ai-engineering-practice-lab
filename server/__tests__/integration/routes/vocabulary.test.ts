@@ -325,7 +325,7 @@ describe("Vocabulary API", () => {
 
       expect(res.status).toBe(400);
       const data = await res.json();
-      expect(data.error).toBe("Quality must be between 0 and 5");
+      expect(data.error).toBe("Quality must be a number between 0 and 5");
     });
 
     it("should return 404 for non-existent term", async () => {

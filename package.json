@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"bun run dev:client\" \"bun run dev:server\"",
+    "dev": "concurrently \"bun run dev:client\" \"bun run dev:server\" \"bun run dev:python\"",
     "dev:client": "vite",
     "dev:server": "bun run --watch server/index.ts",
+    "dev:python": "cd python-service && uvicorn main:app --reload --port 8000",
     "build": "tsc && vite build",
     "start": "NODE_ENV=production bun run server/index.ts",
     "lint": "eslint . --ext .ts,.tsx",
@@ -20,7 +21,8 @@
     "test:frontend": "bun test src/__tests__",
     "db:seed": "bun run server/scripts/seed-lessons.ts",
     "db:seed-vocabulary": "bun run server/scripts/seed-vocabulary.ts",
-    "db:seed-admin": "bun run server/scripts/seed-admin.ts"
+    "db:seed-admin": "bun run server/scripts/seed-admin.ts",
+    "db:seed-weeks": "bun run server/scripts/seed-weeks.ts"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.30.0",

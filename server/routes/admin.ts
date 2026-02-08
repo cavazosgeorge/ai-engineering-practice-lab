@@ -11,6 +11,15 @@ import {
   type CreateVocabularyTermInput,
   type UpdateVocabularyTermInput,
 } from "../services/admin-service";
+import {
+  getAllWeeksAdmin,
+  createWeek,
+  updateWeek,
+  deleteWeek,
+  getUnassignedLessons,
+  type CreateWeekInput,
+  type UpdateWeekInput,
+} from "../services/week-service";
 
 const app = new Hono();
 
@@ -40,7 +49,28 @@ app.get("/lessons", (c) => {
       description: l.description,
       orderIndex: l.order_index,
       isPublished: l.is_published === 1,
+      weekId: l.week_id,
       termCount: l.termCount,
+      createdAt: l.created_at,
+      updatedAt: l.updated_at,
+    }))
+  );
+});
+
+/**
+ * GET /api/admin/lessons/unassigned
+ * Lessons not assigned to any week
+ */
+app.get("/lessons/unassigned", (c) => {
+  const lessons = getUnassignedLessons();
+  return c.json(
+    lessons.map((l) => ({
+      id: l.id,
+      title: l.title,
+      slug: l.slug,
+      description: l.description,
+      orderIndex: l.order_index,
+      isPublished: l.is_published === 1,
       createdAt: l.created_at,
       updatedAt: l.updated_at,
     }))
@@ -183,6 +213,128 @@ app.delete("/vocabulary/terms/:id", (c) => {
 
   if (!deleted) {
     return c.json({ error: "Term not found" }, 404);
+  }
+
+  return c.json({ success: true });
+});
+
+// ============================================
+// Weeks Management
+// ============================================
+
+/**
+ * GET /api/admin/weeks
+ * All weeks (including unpublished) with counts
+ */
+app.get("/weeks", (c) => {
+  const weeks = getAllWeeksAdmin();
+  return c.json(
+    weeks.map((w) => ({
+      id: w.id,
+      weekNumber: w.week_number,
+      slug: w.slug,
+      title: w.title,
+      description: w.description,
+      startDate: w.start_date,
+      endDate: w.end_date,
+      isPublished: w.is_published === 1,
+      orderIndex: w.order_index,
+      lessonCount: w.lessonCount,
+      vocabularyCount: w.vocabularyCount,
+      createdAt: w.created_at,
+      updatedAt: w.updated_at,
+    }))
+  );
+});
+
+/**
+ * POST /api/admin/weeks
+ * Create a new week
+ */
+app.post("/weeks", async (c) => {
+  const body = await c.req.json<CreateWeekInput>();
+
+  if (body.weekNumber === undefined || body.weekNumber === null || !body.title || !body.slug) {
+    return c.json(
+      { error: "Missing required fields: weekNumber, title, slug" },
+      400
+    );
+  }
+
+  try {
+    const week = createWeek(body);
+    return c.json(
+      {
+        id: week.id,
+        weekNumber: week.week_number,
+        slug: week.slug,
+        title: week.title,
+        description: week.description,
+        startDate: week.start_date,
+        endDate: week.end_date,
+        isPublished: week.is_published === 1,
+        orderIndex: week.order_index,
+        createdAt: week.created_at,
+        updatedAt: week.updated_at,
+      },
+      201
+    );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    if (message.includes("UNIQUE constraint")) {
+      return c.json({ error: "Week number or slug already exists" }, 409);
+    }
+    throw error;
+  }
+});
+
+/**
+ * PATCH /api/admin/weeks/:id
+ * Update a week (partial)
+ */
+app.patch("/weeks/:id", async (c) => {
+  const id = c.req.param("id");
+  const body = await c.req.json<UpdateWeekInput>();
+
+  try {
+    const week = updateWeek(id, body);
+
+    if (!week) {
+      return c.json({ error: "Week not found" }, 404);
+    }
+
+    return c.json({
+      id: week.id,
+      weekNumber: week.week_number,
+      slug: week.slug,
+      title: week.title,
+      description: week.description,
+      startDate: week.start_date,
+      endDate: week.end_date,
+      isPublished: week.is_published === 1,
+      orderIndex: week.order_index,
+      createdAt: week.created_at,
+      updatedAt: week.updated_at,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    if (message.includes("UNIQUE constraint")) {
+      return c.json({ error: "Week number or slug already exists" }, 409);
+    }
+    throw error;
+  }
+});
+
+/**
+ * DELETE /api/admin/weeks/:id
+ * Delete a week (cascades to data_sources, generation_jobs)
+ */
+app.delete("/weeks/:id", (c) => {
+  const id = c.req.param("id");
+  const deleted = deleteWeek(id);
+
+  if (!deleted) {
+    return c.json({ error: "Week not found" }, 404);
   }
 
   return c.json({ success: true });

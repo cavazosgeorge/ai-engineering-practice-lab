@@ -68,7 +68,9 @@ export function AppShell() {
               </Heading>
             </RouterLink>
             <HStack gap={6}>
+              <NavLink to="/weeks">Weeks</NavLink>
               <NavLink to="/lessons">Lessons</NavLink>
+              <NavLink to="/agent">Agent</NavLink>
               <NavLink to="/review">Review</NavLink>
               <NavLink to="/progress">Progress</NavLink>
             </HStack>

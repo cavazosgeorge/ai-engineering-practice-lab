@@ -149,6 +149,50 @@ This applies to ALL Chakra v3 components: compound components (Menu, Select, Tab
 - **user_progress**: SM-2 tracking (repetitions, ease factor, interval)
 - **submissions**: Audit trail of user attempts
 
+## Obsidian Notes — Keep Updated
+
+This project has companion documentation in Obsidian that **must stay in sync** with code changes. When adding a new feature, pipeline, or architectural component, update the notes as part of the same task — not as a follow-up.
+
+### Paths
+
+- **Notes root:** `~/Desktop/claude-notes/projects/AI Engineering Practice Lab/`
+- **Project index:** `AI Engineering Practice Lab.md` — links to all sub-notes, update when adding new notes
+- **Python RAG Service notes:** `Python RAG Service/` subfolder
+
+### Existing Notes
+
+| Note | Covers |
+|------|--------|
+| `Python RAG Service/LLM Architecture.md` | 3-model setup (Groq, MiniMax, OpenAI) |
+| `Python RAG Service/Service Architecture & API.md` | FastAPI routes, service layer |
+| `Python RAG Service/Configuration & Environment.md` | Env vars, config patterns |
+| `Python RAG Service/RAG Ingestion Pipeline.md` | Data source → chunks → FAISS |
+| `Python RAG Service/Vocabulary Generation Flow.md` | Full vocab generation pipeline |
+| `Python RAG Service/Quiz Generation Flow.md` | Full quiz generation pipeline |
+| `Python RAG Service/Agent Tool-Calling.md` | MiniMax M2 tool-calling agent |
+| `Python RAG Service/Think Block Filtering.md` | Streaming `<think>` block removal |
+| `Seeding Lesson Data.md` | Seed script and lesson structure |
+
+### Pattern for New Flow/Feature Notes
+
+Follow the structure established in `Vocabulary Generation Flow.md` and `Quiz Generation Flow.md`:
+
+1. **Frontmatter** — `created`, `parent: "[[AI Engineering Practice Lab]]"`, `tags`
+2. **How It Works** — Numbered steps (Frontend → Bun → Python → Storage → Review → Approval)
+3. **Summary Diagram** — ASCII flow chart of the pipeline
+4. **Data Sources** — What feeds the feature (link to shared notes with `[[wikilinks]]`)
+5. **Safety Mechanisms** — Dedup layers, constraints, validation
+6. **Gotchas** — Snake_case/camelCase mismatches, normalization quirks
+7. **No Overwrite/Rollback** — Explain audit trail behavior
+8. **Key Files** — Table of file paths and their roles
+
+### When to Update
+
+- **New generation type** (e.g., challenge approval) → new flow note + link in index
+- **New Python service route/feature** → note in `Python RAG Service/`
+- **Schema change** (new migration) → mention in the relevant flow note's Key Files table
+- **Architectural decision** → add to Key Decisions table in the project index
+
 ## Deployment
 
 - Docker multi-stage build
