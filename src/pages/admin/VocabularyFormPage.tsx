@@ -331,7 +331,7 @@ function VocabularyForm({ lessons, existingTerm, isEditMode, termId }: Vocabular
                     _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
                     _focusVisible={{ outline: "none", boxShadow: "none" }}
                   />
-                  <Field.HelperText color="gray.500" fontSize="xs">
+                  <Field.HelperText color="gray.400" fontSize="xs">
                     Optional context to help learners understand the term better
                   </Field.HelperText>
                 </Field.Root>

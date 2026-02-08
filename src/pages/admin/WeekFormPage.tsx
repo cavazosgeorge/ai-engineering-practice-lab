@@ -305,7 +305,7 @@ function WeekForm({ existingWeek, weekId }: WeekFormProps) {
                     _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
                     _focusVisible={{ outline: "none", boxShadow: "none" }}
                   />
-                  <Field.HelperText color="gray.500" fontSize="xs">
+                  <Field.HelperText color="gray.400" fontSize="xs">
                     URL-friendly identifier. Auto-generated from title on create.
                   </Field.HelperText>
                   {errors.slug && touched.slug && (

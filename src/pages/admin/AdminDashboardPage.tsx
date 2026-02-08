@@ -564,7 +564,7 @@ function VocabularyTab() {
                           as="button"
                           p={1.5}
                           borderRadius="md"
-                          color="gray.500"
+                          color="gray.400"
                           transition="all 0.15s ease"
                           _hover={{ color: "cyan.400", bg: "gray.800" }}
                         >
@@ -575,7 +575,7 @@ function VocabularyTab() {
                         as="button"
                         p={1.5}
                         borderRadius="md"
-                        color="gray.500"
+                        color="gray.400"
                         transition="all 0.15s ease"
                         _hover={{ color: "red.400", bg: "gray.800" }}
                         onClick={() => setTermToDelete(term)}
@@ -940,7 +940,7 @@ function WeeksTab() {
                         <Box
                           p={1.5}
                           borderRadius="md"
-                          color="gray.500"
+                          color="gray.400"
                           transition="all 0.15s ease"
                           _hover={{ color: "cyan.400", bg: "gray.800" }}
                         >
@@ -951,7 +951,7 @@ function WeeksTab() {
                         <Box
                           p={1.5}
                           borderRadius="md"
-                          color="gray.500"
+                          color="gray.400"
                           transition="all 0.15s ease"
                           _hover={{ color: "cyan.400", bg: "gray.800" }}
                         >
@@ -962,7 +962,7 @@ function WeeksTab() {
                         as="button"
                         p={1.5}
                         borderRadius="md"
-                        color="gray.500"
+                        color="gray.400"
                         transition="all 0.15s ease"
                         _hover={{ color: "red.400", bg: "gray.800" }}
                         onClick={() => setWeekToDelete(week)}

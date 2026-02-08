@@ -227,7 +227,7 @@ export function VocabularyListPage() {
                 {/* Search */}
                 <Box flex="1" minW="200px">
                   <HStack>
-                    <Box color="gray.500" fontSize="16px">
+                    <Box color="gray.400" fontSize="16px">
                       <LuSearch />
                     </Box>
                     <Input
@@ -293,7 +293,7 @@ export function VocabularyListPage() {
               <Card.Body py={12}>
                 <Center>
                   <VStack gap={4}>
-                    <Text color="gray.500" fontSize="lg">
+                    <Text color="gray.400" fontSize="lg">
                       {terms?.length === 0
                         ? "No vocabulary terms yet"
                         : "No terms match your filters"}
