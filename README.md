@@ -249,17 +249,6 @@ bun test:watch           # Watch mode
 bun run lint             # ESLint
 ```
 
-## Docker
-
-The project includes Docker support for production deployment:
-
-```bash
-# Build and run with Docker Compose
-docker compose up --build
-```
-
-The Docker setup builds the Bun app (frontend + backend) and exposes it on port 3000. The admin user is automatically seeded on startup.
-
 ## Contributing
 
 1. Fork the repo
