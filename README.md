@@ -2,7 +2,6 @@
 
 A full-stack learning application for practicing AI/ML engineering fundamentals. Built to reinforce concepts from the AI Engineering cohort — featuring interactive Python coding challenges, vocabulary drills with spaced repetition, step-by-step algorithm visualizations, and an AI-powered study agent.
 
-**Live demo:** [ai-practice.cavazos.app](https://ai-practice.cavazos.app)
 
 ## Features
 
