@@ -1,288 +1,272 @@
 # AI Engineering Practice Lab
 
-A learning application for practicing AI/ML engineering fundamentals, designed to reinforce concepts from the AI Engineering cohort and prepare for technical interviews.
+A full-stack learning application for practicing AI/ML engineering fundamentals. Built to reinforce concepts from the AI Engineering cohort — featuring interactive Python coding challenges, vocabulary drills with spaced repetition, step-by-step algorithm visualizations, and an AI-powered study agent.
+
+**Live demo:** [ai-practice.cavazos.app](https://ai-practice.cavazos.app)
+
+## Features
+
+- **60 Code Challenges** — Write Python in-browser via Pyodide (WebAssembly) and validate against test cases. No server-side execution needed.
+- **14 Algorithm Visualizations** — Step-by-step animated walkthroughs showing how solutions work (matrix ops, tokenization, softmax, decoding strategies, and more) with playback controls and keyboard shortcuts.
+- **Vocabulary System** — 100+ AI/ML terms with flashcard decks and multiple-choice quizzes, powered by SM-2 spaced repetition.
+- **AI Study Agent** — Chat assistant using MiniMax M2 with 6 tools via LangChain. SSE streaming, week-scoped conversations, searches course materials, generates practice questions.
+- **Spaced Repetition** — SM-2 algorithm schedules optimal review times for both challenges and vocabulary with mastery tracking.
+- **Admin CRM** — Authenticated admin panel for managing vocabulary, weeks, lesson assignments, and AI-powered content generation (vocabulary, quizzes, challenges via Groq Llama 3.3 70B with RAG context).
+- **Progress Tracking** — Per-challenge mastery levels, completion indicators, and review queues.
+
+## Prerequisites
+
+| Requirement | Version | Purpose |
+|-------------|---------|---------|
+| [Bun](https://bun.sh) | v1.0+ | Runtime, package manager, server, test runner, SQLite |
+| [Git](https://git-scm.com) | any | Clone the repo |
+| [Python](https://www.python.org) | 3.11+ | **Optional** — only for the AI study agent / RAG features |
+
+> **Note:** The core app (lessons, challenges, vocabulary, progress) runs entirely on Bun. Python and API keys are only needed if you want the AI-powered study agent.
 
 ## Quick Start
 
 ```bash
+# Clone the repository
+git clone https://github.com/cavazosgeorge/ai-engineering-practice-lab.git
+cd ai-engineering-practice-lab
+
 # Install dependencies
 bun install
 
-# Seed the database with lessons
-bun run db:seed
+# Set up environment variables
+cp .env.example .env
+# Edit .env if you want to change defaults (optional for core features)
 
-# Start development server
+# Seed the database (run in this order)
+bun run db:seed            # Lessons, concepts, challenges, test cases
+bun run db:seed-vocabulary  # Vocabulary terms (depends on lessons)
+bun run db:seed-weeks       # Week groupings (depends on lessons)
+bun run db:seed-admin       # Admin user account
+
+# Start development
 bun dev
 ```
 
-The app will be available at `http://localhost:5173` (frontend) and `http://localhost:3000` (API).
+The app will be available at:
 
-## Current Lessons
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| API Server | http://localhost:3000 |
 
-| # | Lesson | Concepts | Source |
-|---|--------|----------|--------|
-| 1 | Tokenization | Word-level, Character-level, BPE/Subword | Project 1 |
-| 2 | Language Models | Linear Layers, Softmax | Project 1 |
-| 3 | Text Generation (Decoding) | Greedy, Top-k, Top-p, Temperature | Project 1 |
-| 4 | Completion vs Instruction-Tuned | Base LLMs, Instruction-tuning, Chat Templates | Project 1 |
-| 5 | Building LLM Applications | The Complete LLM Pipeline | Project 1 |
+> The database (SQLite) is auto-created on first run — no external database to install. Migrations run automatically when the server starts.
 
-## Adding New Lessons
+## Environment Variables
 
-When new content becomes available from the AI Engineering cohort (Projects 2-6), follow these steps to add lessons:
-
-### 1. Review the Source Material
-
-Look at the Jupyter notebook or course materials for the new project. Identify:
-- Main topics (these become **Lessons**)
-- Sub-topics within each (these become **Concepts**)
-- Coding exercises (these become **Challenges**)
-
-### 2. Edit the Seed Script
-
-Open `server/scripts/seed-lessons.ts` and add your new lesson following the existing pattern:
-
-```typescript
-// ============================================
-// LESSON X: YOUR NEW LESSON
-// ============================================
-const lessonXId = nanoid();
-db.run(
-  `INSERT INTO lessons (id, title, slug, description, order_index, is_published)
-   VALUES (?, ?, ?, ?, ?, ?)`,
-  [
-    lessonXId,
-    "Your Lesson Title",
-    "your-lesson-slug",  // URL-friendly, lowercase with hyphens
-    "Description of what this lesson covers.",
-    6,  // Next order_index after existing lessons
-    1,  // 1 = published, 0 = draft
-  ]
-);
-```
-
-### 3. Add Concepts
-
-Each lesson should have 2-5 concepts. Concepts contain the educational explanation:
-
-```typescript
-const conceptX_1Id = nanoid();
-db.run(
-  `INSERT INTO concepts (id, lesson_id, title, explanation, order_index)
-   VALUES (?, ?, ?, ?, ?)`,
-  [
-    conceptX_1Id,
-    lessonXId,
-    "Concept Title",
-    `# Concept Title
-
-Your explanation in Markdown format.
-
-## How it works
-1. Step one
-2. Step two
-
-## Example
-\`\`\`javascript
-// Code example
-\`\`\`
-
-## Key Points
-- Point 1
-- Point 2`,
-    1,  // order within the lesson
-  ]
-);
-```
-
-### 4. Add Challenges
-
-Challenges are the practice exercises. There are four types:
-
-#### `implement` - Write code that passes tests
-
-```typescript
-const challengeId = nanoid();
-db.run(
-  `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  [
-    challengeId,
-    conceptX_1Id,
-    "implement",
-    "Implement function name",
-    `Description of what to implement.
-
-**Example:**
-\`\`\`javascript
-myFunction(input); // => expected output
-\`\`\``,
-    `function myFunction(param) {
-  // Your code here
-}`,
-    `function myFunction(param) {
-  // Solution code
-  return result;
-}`,
-    JSON.stringify([
-      "Hint 1",
-      "Hint 2",
-      "Hint 3",
-    ]),
-    "beginner",  // beginner, intermediate, advanced
-    1,
-  ]
-);
-
-// Add test cases
-for (const tc of [
-  { input: [arg1, arg2], expected: result, desc: "Test description", order: 1 },
-  { input: [arg1, arg2], expected: result, desc: "Another test", order: 2 },
-]) {
-  db.run(
-    `INSERT INTO test_cases (id, challenge_id, input, expected_output, description, order_index)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [
-      nanoid(),
-      challengeId,
-      JSON.stringify(tc.input),
-      JSON.stringify(tc.expected),
-      tc.desc,
-      tc.order,
-    ]
-  );
-}
-```
-
-#### `explain` - Written explanation (no code tests)
-
-```typescript
-db.run(
-  `INSERT INTO challenges (id, concept_id, type, title, description, starter_code, solution_code, hints, difficulty, order_index)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  [
-    nanoid(),
-    conceptId,
-    "explain",
-    "Explain the concept",
-    `Write an explanation covering:
-1. Point one
-2. Point two
-3. Point three`,
-    null,  // No starter code for explain
-    null,  // No solution code
-    JSON.stringify(["Hint about what to cover"]),
-    "intermediate",
-    1,
-  ]
-);
-```
-
-### 5. Update the Summary Count
-
-At the end of the seed script, update the console.log counts:
-
-```typescript
-console.log("Database seeded successfully!");
-console.log("- X lessons");      // Update this
-console.log("- Y concepts");     // Update this
-console.log("- Z challenges");   // Update this
-```
-
-### 6. Run the Seed Script
+Copy `.env.example` to `.env`. For core functionality, the defaults work out of the box.
 
 ```bash
-# This clears existing data and reseeds everything
+cp .env.example .env
+```
+
+### Core (works with defaults)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `3000` | Bun server port |
+| `NODE_ENV` | `development` | Environment mode |
+| `TRUSTED_ORIGINS` | `http://localhost:5173,http://localhost:3000` | CORS origins |
+
+### AI Features (optional)
+
+These are only needed if you want the study agent and AI-powered features:
+
+| Variable | Description |
+|----------|-------------|
+| `PYTHON_SERVICE_URL` | Python service URL (default: `http://localhost:8000`) |
+| `OPENAI_API_KEY` | OpenAI API key for text embeddings |
+| `GROQ_API_KEY` | Groq API key for LLM generation |
+| `MINIMAX_API_KEY` | MiniMax API key for the study agent |
+
+## Seeding the Database
+
+The app ships with no data — you need to run the seed scripts to populate lessons, vocabulary, and the admin user. The database file and schema are created automatically.
+
+**Important:** Seed scripts must run in this order due to foreign key dependencies:
+
+```bash
+# 1. Lessons & challenges (creates the foundation)
 bun run db:seed
+
+# 2. Vocabulary terms (references lessons by slug)
+bun run db:seed-vocabulary
+
+# 3. Week groupings (assigns lessons to weeks)
+bun run db:seed-weeks
+
+# 4. Admin user (independent, but needs auth tables)
+bun run db:seed-admin
 ```
 
-### 7. Verify in the App
+Each seed script clears and re-creates its data. Re-running is safe but will reset progress for that data type.
 
-Start the dev server and check that your new lessons appear:
-- Dashboard should show all lessons
-- Each lesson should have its concepts
-- Challenges should load with their test cases
+### Admin Access
 
-## Example: Adding RAG Content (Project 2)
+After running `bun run db:seed-admin`, you can log in at `/admin` with:
 
-When Project 2 (RAG) becomes available, you might add:
+- **Email:** admin@admin.com
+- **Password:** admin123
 
-```typescript
-// LESSON 6: RETRIEVAL-AUGMENTED GENERATION (RAG)
-const lesson6Id = nanoid();
-db.run(`INSERT INTO lessons...`, [
-  lesson6Id,
-  "Retrieval-Augmented Generation",
-  "rag",
-  "Learn how to enhance LLM responses with external knowledge retrieval.",
-  6, 1,
-]);
+## Python RAG Service (Optional)
 
-// Concept 6.1: Embeddings
-// Concept 6.2: Vector Databases
-// Concept 6.3: Semantic Search
-// Concept 6.4: RAG Pipeline
+The Python service powers the AI study agent, RAG search, and AI-generated content. **It's not required for the core learning experience.**
 
-// Challenges:
-// - Implement cosine similarity
-// - Implement k-nearest neighbors
-// - Build a simple retrieval pipeline
+### What requires the Python service?
+
+| Feature | Needs Python? |
+|---------|:------------:|
+| Lessons & code challenges | No |
+| Vocabulary flashcards & quizzes | No |
+| Spaced repetition & progress | No |
+| Execution visualizations | No |
+| Admin vocabulary CRUD | No |
+| **Study Agent (AI chat)** | **Yes** |
+| **RAG course material search** | **Yes** |
+| **AI content generation (admin)** | **Yes** |
+
+### Setup
+
+```bash
+cd python-service
+
+# Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate  # macOS/Linux
+# .venv\Scripts\activate   # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start the service
+uvicorn main:app --reload --port 8000
 ```
+
+Or use the Makefile:
+
+```bash
+cd python-service
+make install  # pip install -e ".[dev]"
+make dev      # uvicorn main:app --reload --port 8000
+```
+
+> When the Python service is running, `bun dev` automatically starts it alongside the frontend and API server via `concurrently`.
+
+## Lesson Content
+
+The app covers 6 weeks of AI/ML engineering topics with 11 lessons, 34 concepts, and 60 challenges:
+
+| Week | Lessons | Topics |
+|------|---------|--------|
+| 1 | Tokenization, Language Models | Word-level / BPE tokenization, linear layers, softmax |
+| 2 | Text Generation | Greedy / top-k / top-p / temperature decoding |
+| 3 | Model Types, Building LLM Apps | Completion vs instruction-tuned, chat templates, full LLM pipeline |
+| 4 | RAG | Chunking, embeddings, vector search, RAG prompt engineering |
+| 5 | Tool Calling, AI Agents, Multimodal AI | Function calling, ReAct pattern, agent loops, multimodal systems |
+| 6 | Inference-Time Reasoning, Deep Research | Chain-of-thought, multi-step reasoning, deep research systems |
 
 ## Project Structure
 
 ```
-server/
+src/                          # React frontend
+├── components/
+│   ├── layout/               # AppShell, Header, Sidebar
+│   ├── challenges/           # CodeEditor, TestRunner, Visualizations
+│   ├── vocabulary/           # Flashcards, Quiz, Dashboard
+│   ├── admin/                # AdminLayout, ProtectedRoute
+│   └── progress/             # MasteryMeter, ReviewQueue
+├── hooks/                    # TanStack Query hooks
+├── services/                 # API client, Pyodide validator
+└── pages/                    # Route pages
+
+server/                       # Bun/Hono backend
+├── index.ts                  # Hono app entry
+├── routes/                   # API route handlers
+├── services/                 # Business logic (code validator, SM-2)
+├── middleware/                # Auth middleware
 ├── db/
-│   ├── index.ts           # Database connection + migration runner
-│   └── migrations/        # SQL migration files
-├── routes/
-│   ├── lessons.ts         # GET /api/lessons
-│   ├── challenges.ts      # GET/POST /api/challenges
-│   └── progress.ts        # User progress tracking
-├── services/
-│   ├── code-validator.ts  # Runs user code against tests
-│   └── spaced-repetition.ts  # SM-2 algorithm
-└── scripts/
-    └── seed-lessons.ts    # ← ADD NEW LESSONS HERE
+│   ├── index.ts              # SQLite connection + auto-migrations
+│   └── migrations/           # SQL migration files
+└── scripts/                  # Seed scripts
+
+python-service/               # FastAPI RAG/Agent service (optional)
+├── main.py                   # FastAPI app entry
+├── routers/                  # API routes (agent, RAG, generation)
+├── services/                 # LLM, embeddings, vector search
+├── prompts/                  # System prompts for agent
+├── models/                   # Pydantic models
+├── config.py                 # Environment configuration
+└── data/                     # FAISS indexes, uploads
 ```
 
-## Database Schema
+## Tech Stack
 
-| Table | Purpose |
-|-------|---------|
-| `lessons` | Top-level topics (Tokenization, RAG, etc.) |
-| `concepts` | Sub-topics with explanations |
-| `challenges` | Practice problems |
-| `test_cases` | Input/output pairs for validation |
-| `user_progress` | SM-2 spaced repetition tracking |
-| `submissions` | User code submission history |
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, TypeScript, Vite, Chakra UI v3, CodeMirror |
+| Backend | Bun, Hono |
+| Database | SQLite (bun:sqlite) with WAL mode |
+| State | TanStack Query |
+| Auth | better-auth |
+| Code Execution | Pyodide (Python in the browser) |
+| AI Service | FastAPI, LangChain, FAISS, Groq, MiniMax |
+| Testing | bun:test, Testing Library, happy-dom |
 
-## Tips for Good Challenges
-
-1. **Start simple** - First test case should be the simplest possible
-2. **Build complexity** - Each test adds a new edge case
-3. **Match the course** - Use similar examples to the Jupyter notebooks
-4. **Provide good hints** - 3 hints that progressively reveal the solution
-5. **Test your solution** - Run the seed, then try solving the challenge yourself
-
-## Expected Future Lessons
-
-Based on the AI Engineering cohort curriculum:
-
-| Week | Project | Potential Lessons |
-|------|---------|-------------------|
-| 2 | RAG | Embeddings, Vector DBs, Semantic Search |
-| 3 | Agents | Tool Use, ReAct Pattern, Agent Loops |
-| 4 | Fine-tuning | LoRA, Dataset Preparation, Training |
-| 5 | Evaluation | Metrics, Benchmarks, A/B Testing |
-| 6 | Production | Deployment, Monitoring, Optimization |
-
-## Commands Reference
+## Scripts Reference
 
 ```bash
-bun dev           # Start development (client + server)
-bun run build     # Production build
-bun run db:seed   # Seed/reseed database
-bun run lint      # Run ESLint
+# Development
+bun dev                  # Start all services (frontend + API + Python)
+bun run dev:client       # Frontend only (Vite on :5173)
+bun run dev:server       # API server only (Bun on :3000)
+bun run dev:python       # Python service only (uvicorn on :8000)
+
+# Database
+bun run db:seed          # Seed lessons, concepts, challenges
+bun run db:seed-vocabulary  # Seed vocabulary terms
+bun run db:seed-weeks    # Seed week groupings
+bun run db:seed-admin    # Seed admin user
+
+# Build & Production
+bun run build            # TypeScript check + Vite build
+bun run start            # Run production server
+
+# Testing
+bun test                 # All tests
+bun test:backend         # Backend tests only
+bun test:frontend        # Frontend tests only
+bun test:unit            # Unit tests
+bun test:integration     # Integration tests
+bun test:components      # React component tests
+bun test:coverage        # With coverage report
+bun test:watch           # Watch mode
+
+# Linting
+bun run lint             # ESLint
 ```
+
+## Docker
+
+The project includes Docker support for production deployment:
+
+```bash
+# Build and run with Docker Compose
+docker compose up --build
+```
+
+The Docker setup builds the Bun app (frontend + backend) and exposes it on port 3000. The admin user is automatically seeded on startup.
+
+## Contributing
+
+1. Fork the repo
+2. Create a feature branch from `main`
+3. Make your changes
+4. Run tests: `bun test`
+5. Open a pull request to `main`
+
+The `main` branch is protected — all changes go through pull requests.
