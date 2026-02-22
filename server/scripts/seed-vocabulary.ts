@@ -471,6 +471,346 @@ function seedVocabulary() {
         },
       ],
     },
+
+    // ============================================
+    // LESSON 7: TOOL CALLING
+    // ============================================
+    {
+      slug: "tool-calling",
+      terms: [
+        {
+          term: "tool calling",
+          definition:
+            "Mechanism allowing LLMs to invoke external functions and APIs to access data or perform actions",
+          context:
+            "Without tool calling, LLMs can only generate text — they can't check the weather, search the web, or query databases.",
+          difficulty: "beginner",
+        },
+        {
+          term: "function schema",
+          definition:
+            "Structured JSON description of a function's name, parameters, and types that tells the LLM how to call it",
+          context:
+            "A function schema is like a menu — it lists what tools are available and what arguments they accept.",
+          difficulty: "beginner",
+        },
+        {
+          term: "tool call parser",
+          definition:
+            "Component that detects and extracts structured tool calls from LLM text output",
+          context:
+            "When using manual tool calling, a regex parser scans for patterns like TOOL_CALL: {...} in the model's output.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "tool registry",
+          definition:
+            "Collection of available tools with their schemas and callable references",
+          context:
+            "A tool registry maps tool names to their implementations, so the agent can look up and execute any registered tool.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "native tool support",
+          definition:
+            "Built-in model capability to output structured tool calls without manual parsing",
+          context:
+            "Models with 3B+ parameters (like Llama 3.2:3B, Mistral) support native tool calling, while smaller models need manual prompt engineering.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "structured output",
+          definition:
+            "Formatted tool calls in JSON rather than plain text, enabling reliable parsing",
+          context:
+            "Structured output means the model returns { 'name': 'search', 'args': {'query': 'python'} } instead of embedding tool calls in prose.",
+          difficulty: "beginner",
+        },
+        {
+          term: "tool execution loop",
+          definition:
+            "The cycle of LLM generating a tool call, executing it, and feeding the result back for continued reasoning",
+          context:
+            "In a tool execution loop, the LLM decides what tool to call, the system executes it, and the result is added to the conversation for the next step.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "inspect module",
+          definition:
+            "Python standard library module for extracting function signatures, parameters, and type annotations programmatically",
+          context:
+            "The inspect module lets you auto-generate function schemas by reading type hints and docstrings at runtime.",
+          difficulty: "intermediate",
+        },
+      ],
+    },
+
+    // ============================================
+    // LESSON 8: AI AGENTS
+    // ============================================
+    {
+      slug: "ai-agents",
+      terms: [
+        {
+          term: "agent",
+          definition:
+            "Autonomous AI system that can reason, plan, use tools, and take actions to accomplish goals",
+          context:
+            "Unlike a simple chatbot, an agent can decide to search the web, call an API, or chain multiple tools together to answer complex questions.",
+          difficulty: "beginner",
+        },
+        {
+          term: "ReAct",
+          definition:
+            "Reasoning + Acting pattern where an agent alternates between thinking and tool use in a loop",
+          context:
+            "In a ReAct loop, the agent thinks 'I need weather data' (reasoning), calls a weather API (acting), then reasons about the result.",
+          difficulty: "beginner",
+        },
+        {
+          term: "planning loop",
+          definition:
+            "Iterative process where an agent decides the next action, executes it, observes the result, and plans again",
+          context:
+            "A planning loop continues until the agent has enough information to provide a final answer or exhausts its maximum steps.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "DuckDuckGo/DDGS",
+          definition:
+            "Privacy-focused search engine with a Python API commonly used for web search tool implementations",
+          context:
+            "The ddgs library provides a simple Python interface for searching the web without requiring API keys.",
+          difficulty: "beginner",
+        },
+        {
+          term: "MCP",
+          definition:
+            "Model Context Protocol, a universal standard for connecting LLMs to external tools and data sources",
+          context:
+            "MCP works like USB for AI — any MCP client can connect to any MCP server's tools, regardless of the framework.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "MCP server",
+          definition:
+            "A service that exposes tools and data via the Model Context Protocol for LLMs to use",
+          context:
+            "An MCP server like mcp-server-fetch provides web fetching capabilities that any MCP-compatible agent can discover and use.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "MCP client",
+          definition:
+            "An application that connects to MCP servers and uses their exposed tools",
+          context:
+            "LangChain's langchain-mcp-adapters package acts as an MCP client, letting LangChain agents use any MCP server's tools.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "Chainlit",
+          definition:
+            "Python library for building interactive LLM and agent user interfaces with streaming and tool visualization",
+          context:
+            "Chainlit provides @cl.on_message handlers, streaming support, and step visualization for debugging agent tool calls.",
+          difficulty: "beginner",
+        },
+        {
+          term: "tool discovery",
+          definition:
+            "The process of an agent or client querying available tools and their schemas from a server or registry",
+          context:
+            "With MCP, agents can discover available tools at runtime instead of having them hardcoded, making systems more flexible.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "multi-step reasoning",
+          definition:
+            "Agent capability to chain multiple tool calls and reasoning steps to solve complex problems",
+          context:
+            "A multi-step agent might search the web, analyze results, search again with refined terms, and synthesize a final answer from all findings.",
+          difficulty: "advanced",
+        },
+      ],
+    },
+
+    // ============================================
+    // LESSON 9: INFERENCE-TIME REASONING
+    // ============================================
+    {
+      slug: "inference-time-reasoning",
+      terms: [
+        {
+          term: "chain-of-thought (CoT)",
+          definition:
+            "Prompting technique where the model generates step-by-step reasoning before arriving at a final answer",
+          context:
+            "Adding 'Let's think step by step' to a prompt can dramatically improve math accuracy by triggering chain-of-thought reasoning.",
+          difficulty: "beginner",
+        },
+        {
+          term: "zero-shot CoT",
+          definition:
+            "Activating reasoning with a simple cue like 'Let's think step by step' without providing examples",
+          context:
+            "Zero-shot CoT is the simplest inference-time scaling method — just append the cue and the model starts reasoning.",
+          difficulty: "beginner",
+        },
+        {
+          term: "few-shot CoT",
+          definition:
+            "Providing examples of step-by-step reasoning before the question to guide format and reasoning style",
+          context:
+            "Few-shot CoT with structured formats like [GIVEN]/[FIND]/[SOLVE]/[ANSWER] helps control how instruction-tuned models organize their reasoning.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "self-consistency",
+          definition:
+            "Generating multiple independent reasoning paths and using majority voting to select the most reliable answer",
+          context:
+            "Self-consistency with 5 samples can improve math accuracy by 10-20% over single-pass chain-of-thought.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "majority voting",
+          definition:
+            "Selecting the most frequent answer from multiple independent samples",
+          context:
+            "If 4 out of 5 reasoning traces arrive at '12' and one says '10', majority voting picks '12' as the final answer.",
+          difficulty: "beginner",
+        },
+        {
+          term: "sequential revision",
+          definition:
+            "Iteratively improving an answer through multiple rounds of self-critique and refinement",
+          context:
+            "Each revision round is kept short and focused — the model critiques one aspect at a time rather than rewriting the entire answer.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "tree-of-thoughts (ToT)",
+          definition:
+            "Reframing reasoning as a search problem: expand candidate thoughts, score them, prune weak ones, and continue the best paths",
+          context:
+            "Tree-of-thoughts uses beam search over reasoning paths — like how a chess player evaluates multiple moves before committing.",
+          difficulty: "advanced",
+        },
+        {
+          term: "beam search",
+          definition:
+            "Search algorithm that keeps only the top-K most promising candidates at each expansion level",
+          context:
+            "With beam width 3, the algorithm explores 3 paths at each depth, pruning the rest — balancing thoroughness with computational cost.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "inference-time scaling",
+          definition:
+            "Improving model reasoning quality without retraining by adjusting prompts, sampling, or output aggregation at generation time",
+          context:
+            "Inference-time scaling methods like CoT and self-consistency are cheaper than fine-tuning and can be applied to any model.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "temperature",
+          definition:
+            "Sampling parameter controlling output randomness: 0 is deterministic, higher values increase diversity",
+          context:
+            "Self-consistency requires temperature > 0 to generate diverse reasoning paths — deterministic decoding would produce identical traces.",
+          difficulty: "beginner",
+        },
+      ],
+    },
+
+    // ============================================
+    // LESSON 10: DEEP RESEARCH
+    // ============================================
+    {
+      slug: "deep-research",
+      terms: [
+        {
+          term: "CoT training",
+          definition:
+            "Fine-tuning a model on (question, rationale, answer) triples so it learns to generate step-by-step reasoning",
+          context:
+            "Models trained on rationales produce more accurate and stable reasoning than models trained only on question-answer pairs.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "STaR",
+          definition:
+            "Self-Taught Reasoner, a bootstrapping approach where a teacher model generates rationales that train a student model",
+          context:
+            "STaR iterates: the teacher generates reasoning traces, incorrect ones are filtered out, and the student trains on the remainder.",
+          difficulty: "advanced",
+        },
+        {
+          term: "outcome reward model (ORM)",
+          definition:
+            "A model that predicts a single reward score for the final answer, evaluating only the end result",
+          context:
+            "ORMs are easy to train — you just need correct/incorrect labels — but they can't tell you which reasoning step went wrong.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "process reward model (PRM)",
+          definition:
+            "A model that evaluates each individual reasoning step, providing granular feedback on where logic breaks down",
+          context:
+            "PRMs require step-level annotations which are expensive to collect, but they give much more precise feedback for improving reasoning.",
+          difficulty: "advanced",
+        },
+        {
+          term: "reasoning tokens",
+          definition:
+            "Intermediate thinking steps generated by reasoning models, often wrapped in special tags like <think>...</think>",
+          context:
+            "DeepSeek-R1 produces explicit thinking tokens before the final answer — these are hidden in production but valuable for debugging.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "DeepSeek-R1",
+          definition:
+            "A reasoning model that produces explicit thinking tokens in <think> tags before generating its final answer",
+          context:
+            "DeepSeek-R1 was one of the first open models to show that explicit reasoning traces improve answer quality across benchmarks.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "task decomposition",
+          definition:
+            "Breaking a complex query into smaller, focused sub-questions that can be researched independently",
+          context:
+            "A query like 'Compare React and Vue for enterprise apps' might decompose into sub-questions about performance, ecosystem, and learning curve.",
+          difficulty: "beginner",
+        },
+        {
+          term: "planner agent",
+          definition:
+            "An agent that analyzes a complex query and breaks it into focused sub-questions for parallel research",
+          context:
+            "The planner doesn't search — it strategizes, deciding what questions need to be answered to fully address the user's query.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "synthesizer agent",
+          definition:
+            "An agent that combines research findings from multiple researchers into a coherent, structured final report",
+          context:
+            "The synthesizer reads all researcher summaries and produces a markdown report that answers the original complex query.",
+          difficulty: "intermediate",
+        },
+        {
+          term: "multi-agent system",
+          definition:
+            "Architecture where multiple specialized agents collaborate — each with a defined role — to accomplish tasks too complex for a single agent",
+          context:
+            "The Planner-Researcher-Synthesizer pattern divides complex research into planning, parallel information gathering, and synthesis phases.",
+          difficulty: "beginner",
+        },
+      ],
+    },
   ];
 
   // Insert terms for each lesson

@@ -346,7 +346,7 @@ function VocabularyReview({
                       {term.definition}
                     </Text>
                     {term.context && (
-                      <Text color="gray.500" fontSize="xs" mt={1}>
+                      <Text color="gray.400" fontSize="xs" mt={1}>
                         {term.context}
                       </Text>
                     )}
@@ -561,7 +561,7 @@ function QuizReview({
                       })}
                     </VStack>
                     {q.explanation && (
-                      <Text color="gray.500" fontSize="xs" mt={2} fontStyle="italic">
+                      <Text color="gray.400" fontSize="xs" mt={2} fontStyle="italic">
                         {q.explanation}
                       </Text>
                     )}
@@ -644,7 +644,7 @@ function JobHistory({
       <Card.Root bg="gray.900" borderColor="gray.800" borderWidth="1px">
         <Card.Body py={8}>
           <Center>
-            <Text color="gray.500">No generation history yet</Text>
+            <Text color="gray.400">No generation history yet</Text>
           </Center>
         </Card.Body>
       </Card.Root>

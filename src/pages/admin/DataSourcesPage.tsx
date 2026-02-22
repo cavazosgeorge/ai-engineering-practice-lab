@@ -301,7 +301,7 @@ function AddSourceForm({
                   },
                 }}
               />
-              <Text color="gray.500" fontSize="xs" mt={1}>
+              <Text color="gray.400" fontSize="xs" mt={1}>
                 Max 10MB
               </Text>
             </Box>
@@ -524,7 +524,7 @@ export function DataSourcesPage() {
                   <Text color="gray.400" fontSize="lg">
                     No data sources for this week yet
                   </Text>
-                  <Text color="gray.500" fontSize="sm">
+                  <Text color="gray.400" fontSize="sm">
                     Add articles, papers, or text content to power RAG features
                   </Text>
                 </VStack>
@@ -577,7 +577,7 @@ export function DataSourcesPage() {
                           )}
                           {source.url && (
                             <Text
-                              color="gray.500"
+                              color="gray.400"
                               fontSize="xs"
                               lineClamp={1}
                               maxW="300px"
@@ -597,7 +597,7 @@ export function DataSourcesPage() {
                       as="button"
                       p={1.5}
                       borderRadius="md"
-                      color="gray.500"
+                      color="gray.400"
                       transition="all 0.15s ease"
                       _hover={{ color: "red.400", bg: "gray.800" }}
                       onClick={() => setSourceToDelete(source)}

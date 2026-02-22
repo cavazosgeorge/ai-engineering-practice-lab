@@ -6,7 +6,8 @@
  *   Week 2: Text Generation (Decoding)
  *   Week 3: Completion vs Instruction-Tuned Models, Building LLM Applications
  *   Week 4: RAG
- *   Week 5: (Future content — Agents, etc.)
+ *   Week 5: Tool Calling, AI Agents
+ *   Week 6: Inference-Time Reasoning, Deep Research Systems
  *
  * Usage: bun run db:seed-weeks
  */
@@ -66,7 +67,16 @@ const weeks = [
     title: "Week 5: Agents & Tool Calling",
     description:
       "AI agents that reason and act. Covers tool-calling patterns, multi-step planning, and agent architectures.",
-    lessonSlugs: [],
+    lessonSlugs: ["tool-calling", "ai-agents"],
+  },
+  {
+    id: nanoid(),
+    weekNumber: 6,
+    slug: "week-6",
+    title: "Week 6: Inference-Time Reasoning & Deep Research",
+    description:
+      "Advanced reasoning techniques at inference time. Covers chain-of-thought prompting, self-consistency, tree-of-thoughts, and building multi-agent deep research systems.",
+    lessonSlugs: ["inference-time-reasoning", "deep-research"],
   },
 ];
 
